@@ -1,0 +1,14 @@
+[package]
+name = "geo-planner"
+description = "Rule-based query planner v0 (RFC-003): engine selection with an observable decision log"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+geo-source-geoparquet = { path = "../geo-source-geoparquet" }
+serde.workspace = true
+thiserror.workspace = true

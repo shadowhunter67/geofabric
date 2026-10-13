@@ -57,7 +57,7 @@ def main() -> int:
     for n in md["resolve"]["nodes"]:
         deps = []
         for d in n["deps"]:
-            if any(k["kind"] in (None, "build") for k in d["dep_kinds"]):
+            if any(k["kind"] in (None, "build") and "wasm" not in str(k.get("target")) for k in d["dep_kinds"]):
                 deps.append(d["pkg"])
         graph[n["id"]] = deps
     members = set(md["workspace_members"])

@@ -562,6 +562,11 @@ name = "geo-engine-duckdb"
 version = "0.1.0"
 dependencies = [
  "duckdb",
+ "geo-executor",
+ "geo-ir",
+ "geo-source-geoparquet",
+ "geo-types",
+ "serde_json",
 ]
 
 [[package]]
@@ -584,6 +589,34 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "thiserror",
+]
+
+[[package]]
+name = "geo-planner"
+version = "0.1.0"
+dependencies = [
+ "geo-executor",
+ "geo-ir",
+ "geo-source-geoparquet",
+ "geo-types",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "geo-runtime"
+version = "0.1.0"
+dependencies = [
+ "arrow-array",
+ "geo-engine-duckdb",
+ "geo-executor",
+ "geo-ir",
+ "geo-planner",
+ "geo-source-geoparquet",
+ "geo-types",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 

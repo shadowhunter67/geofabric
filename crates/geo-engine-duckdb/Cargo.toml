@@ -6,4 +6,9 @@ version.workspace = true
 license.workspace = true
 
 [dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 duckdb = { version = "1", features = ["bundled", "parquet"] }
+serde_json.workspace = true

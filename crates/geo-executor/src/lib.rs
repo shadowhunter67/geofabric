@@ -115,7 +115,7 @@ pub enum EngineError {
     Engine(String),
 }
 
-pub trait ExecutionEngine {
+pub trait ExecutionEngine: Send + Sync {
     fn id(&self) -> EngineId;
     fn capabilities(&self) -> Capabilities;
     fn estimate(&self, plan: &Plan) -> Result<Estimate, EngineError>;

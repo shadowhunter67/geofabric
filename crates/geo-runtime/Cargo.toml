@@ -1,0 +1,20 @@
+[package]
+name = "geo-runtime"
+description = "Composition root: validate -> plan -> execute. The only crate that wires engines to the planner."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+geo-planner = { path = "../geo-planner" }
+geo-source-geoparquet = { path = "../geo-source-geoparquet" }
+geo-engine-duckdb = { path = "../geo-engine-duckdb" }
+thiserror.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+arrow-array = "58"
