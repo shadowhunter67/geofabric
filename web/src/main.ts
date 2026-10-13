@@ -2,6 +2,11 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
+import { DuckDbWasmEngine } from "./engine/wasm.ts";
+import { resultDigest } from "./engine/digest.ts";
+import { wkbToGeoJSON } from "./engine/wkb.ts";
+import { EngineError } from "./engine/contract.ts";
+import type { PlanGraph, SourceBinding } from "./engine/contract.ts";
 
 // ---------- types ----------
 interface Column { name: string; type: string }
@@ -11,9 +16,16 @@ interface SourceMeta {
   columns: Column[]; error?: string;
 }
 interface Decision { rule: string; subject: string; outcome: string; reason: string }
+interface Candidate {
+  engine: string; kind: "server" | "browser"; feasible: boolean; score_ms: number | null;
+  cost: { fixed_ms: number; scan_ms: number; transfer_ms: number; scan_bytes: number; transfer_bytes: number } | null;
+  reasons: string[]; rejected_because: string[];
+}
 interface Physical {
-  engine: string; decisions: Decision[]; steps: { label: string; detail: string }[];
-  scans: { uri: string; prune: { kept: number[]; skipped: number; total_row_groups: number; kept_bytes: number; total_bytes: number } }[];
+  engine: string; placement?: "server" | "browser"; decisions: Decision[]; steps: { label: string; detail: string }[];
+  candidates?: Candidate[]; input_bytes_upper_bound?: number; result_rows_estimate?: number;
+  scans: { uri: string; covering?: { xmin: string; ymin: string; xmax: string; ymax: string; declared: boolean } | null;
+    prune: { kept: number[]; skipped: number; total_row_groups: number; kept_rows: number; kept_bytes: number; total_bytes: number } }[];
 }
 interface Metric<T> { value: T | null; source: string }
 interface Metrics {
@@ -23,6 +35,8 @@ interface Metrics {
   notes: string[];
 }
 interface RunResp {
+  placement?: "server" | "browser"; result_digest?: { count: number; sha256: string };
+  source_urls?: Record<string, string>; limits?: { max_rows: number; timeout_ms: number };
   plan_id: string; ir: unknown; physical: Physical; lineage: { id: string; op: string }[];
   columns: { name: string; type: string; geometry: boolean }[]; rows: Record<string, unknown>[]; rows_total: number;
   geojson: GeoJSON.FeatureCollection | null; metrics: Metrics;
@@ -59,6 +73,8 @@ const S = {
   filter: { column: "", op: "eq", value: "" },
   groupBy: "",
   busy: false,
+  engine: "auto",
+  allowBrowser: true,
 };
 
 // ---------- layout ----------
@@ -199,6 +215,73 @@ function currentRequest() {
     source: S.cur!.id, kind: S.kind, bbox, crs: S.cur!.crs, limit: S.limit,
     filter: f.column && f.value !== "" ? { column: f.column, op: f.op, value: isNaN(Number(f.value)) ? f.value : Number(f.value) } : undefined,
     group_by: S.kind === "count_by" ? S.groupBy : undefined,
+    engine: S.engine === "auto" ? undefined : S.engine,
+    browser: S.allowBrowser,
+  };
+}
+
+
+// ---------- engine placement: the planner decides, the browser engine runs only when chosen ----------
+const wasm = new DuckDbWasmEngine();
+
+function bindSources(r: RunResp): Record<string, SourceBinding> {
+  const out: Record<string, SourceBinding> = {};
+  for (const [uri, url] of Object.entries(r.source_urls ?? {})) {
+    const scan = r.physical.scans.find((x) => x.uri === uri);
+    out[uri] = { url, covering: scan?.covering ?? null };
+  }
+  return out;
+}
+
+/** If the planner placed the plan in the browser, run it there and return a server-shaped response. */
+async function resolvePlacement(r: RunResp): Promise<RunResp> {
+  if (r.placement !== "browser") return r;
+  const t0 = performance.now();
+  const plan = r.ir as PlanGraph;
+  let res;
+  try {
+    res = await wasm.execute(plan, { sources: bindSources(r), timeoutMs: r.limits?.timeout_ms ?? 30000, maxRows: r.limits?.max_rows ?? 100000 });
+  } catch (e) {
+    const k = e instanceof EngineError ? `${e.kind}: ` : "";
+    throw new Error(`browser engine failed (${k}${e instanceof Error ? e.message : String(e)})`);
+  }
+  const t1 = performance.now();
+  const srcNode = Object.values(plan.nodes).find((n) => n.op === "source");
+  const geomName = srcNode && srcNode.op === "source" ? srcNode.schema.geometry_columns[0]?.name : undefined;
+  const geomIdx = res.columns.findIndex((c) => c.name === geomName);
+  const scalarCols = res.columns.map((c, i) => ({ c, i })).filter(({ i }) => {
+    const v = res.rows.find((row) => row[i] !== null && row[i] !== undefined)?.[i];
+    return i !== geomIdx && !(v instanceof Uint8Array) && !(typeof v === "object" && v !== null);
+  });
+  const cell = (v: unknown) => (typeof v === "bigint" ? (Number.isSafeInteger(Number(v)) ? Number(v) : v.toString()) : v);
+  const objects = res.rows.map((row) => Object.fromEntries(scalarCols.map(({ c, i }) => [c.name, cell(row[i])])));
+  const features = geomIdx >= 0
+    ? res.rows.map((row, k) => ({ type: "Feature" as const, properties: objects[k], geometry: row[geomIdx] instanceof Uint8Array ? wkbToGeoJSON(row[geomIdx] as Uint8Array) : null }))
+    : null;
+  const digest = await resultDigest(res.rows, res.columns.map((c) => c.type));
+  const t2 = performance.now();
+  const sum = (f: (s: Physical["scans"][number]) => number) => r.physical.scans.reduce((a, s) => a + f(s), 0);
+  const m = (value: number | null, source: string): Metric<number> => ({ value, source });
+  const metrics: Metrics = {
+    elapsed_ms: res.metrics.elapsed_ms, rows_returned: res.metrics.rows_returned,
+    row_groups_total: m(sum((s) => s.prune.total_row_groups), "source_observed"),
+    row_groups_skipped: m(sum((s) => s.prune.skipped), "source_estimated"),
+    rows_scanned_upper_bound: m(sum((s) => s.prune.kept_rows), "source_estimated"),
+    estimated_bytes_upper_bound: m(sum((s) => s.prune.kept_bytes), "source_estimated"),
+    bytes_read: res.metrics.bytes_read, peak_memory_bytes: m(null, "unknown"),
+    notes: ["executed in the browser (DuckDB-Wasm); the server only planned and served authorized Parquet byte ranges", ...res.metrics.notes],
+  };
+  return {
+    ...r,
+    columns: res.columns.map((c, i) => ({ name: c.name, type: c.type, geometry: i === geomIdx })),
+    rows: objects.slice(0, 1000), rows_total: res.rows.length,
+    geojson: features ? { type: "FeatureCollection", features: features.filter((f) => f.geometry) as GeoJSON.Feature[] } : null,
+    metrics, result_digest: digest,
+    timing: {
+      total_ms: m(t2 - t0, "engine_observed"),
+      plan_and_overhead_ms: m(Math.max(0, t1 - t0 - (res.metrics.elapsed_ms.value ?? 0)), "derived"),
+      boundary_conversion_ms: m(t2 - t1, "engine_observed"),
+    },
   };
 }
 
@@ -211,7 +294,7 @@ async function run() {
   }
   S.busy = true; runBtn.disabled = true; statusEl.textContent = "running…";
   try {
-    await handle(await api<RunResp>("/api/query", currentRequest()), `${S.kind} @ ${S.cur.id}`);
+    await handle(await resolvePlacement(await api<RunResp>("/api/query", currentRequest())), `${S.kind} @ ${S.cur.id}`);
   } catch (e) {
     log(String(e), true); statusEl.textContent = "error";
     setTab("logs");
@@ -330,6 +413,8 @@ function queryTab(): HTMLElement {
     el("label", {}, "value", el("input", { value: S.filter.value, oninput: (e: Event) => { S.filter.value = (e.target as HTMLInputElement).value; } })),
     S.kind === "count_by" ? el("label", {}, "group by", sel(colOpts.slice(1), S.groupBy, (v) => { S.groupBy = v; })) : null,
     el("label", {}, "feature limit", el("input", { type: "number", min: 1, max: 100000, value: S.limit, onchange: (e: Event) => { S.limit = Math.min(100000, Math.max(1, Number((e.target as HTMLInputElement).value) || 20000)); } })),
+    el("label", {}, "Engine", sel([["auto", "Auto (planner decides)"], ["duckdb", "Server / DuckDB"], ["duckdb-wasm", "Browser / DuckDB-Wasm"]], S.engine, (v) => { S.engine = v; })),
+    el("label", { style: "flex-direction:row;align-items:center;gap:4px" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), "allow browser execution"),
     el("button", { class: "primary", onclick: () => void run() }, "Run viewport query"),
   );
   const ta = el("textarea", { class: "ir", spellcheck: false, "aria-label": "Spatial IR JSON" }) as HTMLTextAreaElement;
@@ -350,7 +435,7 @@ async function runIr(text: string, explainOnly: boolean) {
       const r = await api<{ physical: Physical }>("/api/ir/explain", { ir });
       S.last = { ...(S.last as RunResp), physical: r.physical, metrics: { ...(S.last?.metrics as Metrics) } };
       setTab("execution");
-    } else await handle(await api<RunResp>("/api/ir/run", { ir }), "IR run");
+    } else await handle(await resolvePlacement(await api<RunResp>("/api/ir/run", { ir, engine: S.engine === "auto" ? undefined : S.engine, browser: S.allowBrowser })), "IR run");
   } catch (e) { log(String(e), true); setTab("logs"); }
 }
 
@@ -410,7 +495,33 @@ function executionTab(): HTMLElement {
   });
   const dec = el("div", {}, el("h3", { style: "padding-left:0" }, "Planner decisions"),
     ...p.decisions.map((d) => el("div", { class: "dec" }, el("span", { class: `o-${d.outcome}` }, `[${d.outcome}] `), `${d.rule} · ${d.subject}: ${d.reason}`)));
-  return el("div", {}, metricCards(r.metrics, r.timing), pipe, dec, ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
+  return el("div", {}, plannerPanel(r), metricCards(r.metrics, r.timing), pipe, dec, ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
+}
+
+const ENGINE_LABEL: Record<string, string> = { "duckdb-wasm": "Local Browser / DuckDB-Wasm", duckdb: "Server / DuckDB" };
+
+/** Which engine runs the plan, what the alternatives were, and why. */
+function plannerPanel(r: RunResp): HTMLElement {
+  const p = r.physical;
+  const sel = p.candidates?.find((c) => c.engine === p.engine);
+  const alts = (p.candidates ?? []).filter((c) => c.engine !== p.engine);
+  const where = p.placement === "browser" ? "Local (browser)" : "Server";
+  const inputMb = p.input_bytes_upper_bound == null ? "—" : `≤ ${fmtBytes(p.input_bytes_upper_bound)}`;
+  const transfer = sel?.cost ? fmtBytes(sel.cost.transfer_bytes) : "—";
+  const box = el("div", { class: "planner", "data-testid": "planner-panel" },
+    el("div", { class: "row" },
+      el("span", { class: `engine ${p.placement ?? "server"}`, "data-testid": "engine-selected", "data-engine": p.engine }, ENGINE_LABEL[p.engine] ?? p.engine),
+      el("span", { class: "badge der" }, where),
+      sel?.score_ms != null ? el("span", { class: "note" }, `score ${sel.score_ms.toFixed(1)} ms (lower wins)`) : null),
+    el("div", { class: "kv2" },
+      el("span", {}, "Estimated input"), el("b", {}, inputMb),
+      el("span", {}, p.placement === "browser" ? "Estimated transfer to the browser" : "Estimated result transfer"), el("b", {}, `~${transfer}`)),
+    ...(sel?.reasons ?? []).map((t) => el("div", { class: "dec" }, "✓ ", t)),
+    ...alts.map((c) => el("div", { class: "alt", "data-testid": "engine-alternative", "data-engine": c.engine },
+      el("b", {}, `Alternative: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
+      c.feasible ? `score ${c.score_ms?.toFixed(1)} ms` : "not feasible", c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),
+    r.result_digest ? el("div", { class: "note" }, `result digest ${r.result_digest.sha256.slice(0, 12)} · count ${r.result_digest.count}`) : null);
+  return box;
 }
 
 function profileTab(): HTMLElement {
@@ -428,5 +539,5 @@ renderLeft(); renderRight(); renderTab();
 
 // Test hook for the browser smoke test only (?e2e=1): exposes the map and state, nothing else.
 if (new URLSearchParams(location.search).has("e2e")) {
-  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab };
+  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab, wasm, resultDigest, resolvePlacement, bindSources };
 }

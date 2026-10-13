@@ -181,3 +181,72 @@ fn intersects_literal_and_bbox_without_covering_column_are_exact() {
     };
     assert_eq!(rows(bb, &["id"]), vec![vec![Some(1)], vec![Some(2)]]);
 }
+
+// ---------- DAG: one shared source feeding both sides of a join ----------
+
+fn dag_self_join() -> Plan {
+    use geo_ir::{GraphBuilder, PlanNode};
+    let mut b = GraphBuilder::new();
+    let source_node = match src("left.parquet") {
+        Node::Source { uri, format, schema, statistics } => PlanNode::Source { uri, format, schema, statistics },
+        _ => unreachable!(),
+    };
+    let s = b.add(source_node); // ONE node, two consumers
+    let a = b.add(PlanNode::Filter {
+        input: s.clone(),
+        predicate: Expr::Compare { column: "id".into(), op: CompareOp::Le, value: Literal::Int(2) },
+    });
+    let c = b.add(PlanNode::Filter {
+        input: s,
+        predicate: Expr::Compare { column: "id".into(), op: CompareOp::Ge, value: Literal::Int(2) },
+    });
+    let j = b.add(PlanNode::SpatialJoin {
+        left: a,
+        right: c,
+        left_column: "geometry".into(),
+        right_column: "geometry".into(),
+        predicate: SpatialPredicate::Intersects,
+        join_type: JoinType::Inner,
+        right_prefix: "r_".into(),
+    });
+    let p = b.add(PlanNode::Project { input: j, columns: vec!["id".into(), "r_id".into()] });
+    let root = b.add(PlanNode::Sort {
+        input: p,
+        keys: vec![SortKey { column: "id".into(), descending: false }, SortKey { column: "r_id".into(), descending: false }],
+    });
+    b.finish(root)
+}
+
+#[test]
+fn shared_source_dag_runs_with_exact_result_and_one_cte_for_the_source() {
+    let plan = dag_self_join();
+    assert_eq!(plan.nodes.values().filter(|n| n.kind() == OpKind::Source).count(), 1);
+    assert!(validate(&plan).is_ok());
+    // left side {1,2}, right side {2,3,4}: intersecting pairs (1,2) [touch] and (2,2) [self]
+    let out = rt().run(&plan, &ctx()).expect("run");
+    let mut got = Vec::new();
+    for b in &out.result.batches {
+        let a = b.column_by_name("id").unwrap().as_primitive::<Int64Type>().clone();
+        let r = b.column_by_name("r_id").unwrap().as_primitive::<Int64Type>().clone();
+        for i in 0..b.num_rows() {
+            got.push((a.value(i), r.value(i)));
+        }
+    }
+    assert_eq!(got, vec![(1, 2), (2, 2)]);
+    // the shared source is compiled once and referenced twice
+    let sql = geo_engine_duckdb::DuckDbEngine::new(Default::default()).compile_sql(&plan, &ctx()).unwrap();
+    assert_eq!(sql.matches("read_parquet(").count(), 1, "{sql}");
+    // planner: one scan for the shared source
+    let phys = rt().plan(&plan, &ctx()).unwrap();
+    assert_eq!(phys.scans.len(), 1);
+    assert_eq!(phys.scans[0].access_paths, 1, "both filters are above the join's inputs without spatial constraints => one unconstrained path");
+}
+
+#[test]
+fn tree_and_dag_forms_of_the_same_plan_give_identical_results() {
+    let dag = dag_self_join();
+    let tree_plan = Plan::new(dag.to_tree().unwrap());
+    assert_eq!(tree_plan.plan_id(), dag.plan_id(), "same logical plan");
+    let digest = |p: &Plan| geo_executor::result_digest(&rt().run(p, &ctx()).unwrap().result.batches);
+    assert_eq!(digest(&dag), digest(&tree_plan));
+}

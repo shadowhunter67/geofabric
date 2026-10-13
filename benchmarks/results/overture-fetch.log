@@ -24,3 +24,177 @@
    .. 0 MB written
    .. 0 MB written
    .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 0 MB written
+   .. 9 MB written
+   .. 19 MB written
+   .. 19 MB written
+   .. 38 MB written
+   .. 67 MB written
+   .. 85 MB written
+   .. 105 MB written
+   .. 114 MB written
+   .. 123 MB written
+   .. 133 MB written
+   .. 152 MB written
+   .. 171 MB written
+   .. 180 MB written
+   .. 209 MB written
+   .. 219 MB written
+   .. 237 MB written
+   .. 266 MB written
+   .. 275 MB written
+   .. 294 MB written
+   .. 323 MB written
+   .. 332 MB written
+   .. 351 MB written
+   .. 351 MB written
+   .. 361 MB written
+   .. 361 MB written
+   .. 361 MB written
+   .. 370 MB written
+   .. 389 MB written
+   .. 389 MB written
+   .. 408 MB written
+   .. 436 MB written
+   .. 436 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 455 MB written
+   .. 465 MB written
+   .. 465 MB written
+   .. 465 MB written
+   .. 474 MB written
+   .. 474 MB written
+   .. 474 MB written
+   .. 474 MB written
+   .. 474 MB written
+   .. 493 MB written
+   .. 502 MB written
+   .. 521 MB written
+   .. 550 MB written
+   .. 569 MB written
+   .. 578 MB written
+   .. 616 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 635 MB written
+   .. 644 MB written
+   .. 644 MB written
+   .. 644 MB written
+   .. 644 MB written
+   .. 644 MB written
+   .. 654 MB written
+   .. 654 MB written
+   .. 663 MB written
+   .. 663 MB written
+   .. 663 MB written
+   .. 663 MB written
+   .. 682 MB written
+   .. 701 MB written
+   .. 710 MB written
+   .. 710 MB written
+   .. 710 MB written
+   .. 738 MB written
+   .. 757 MB written
+   .. 785 MB written
+   .. 794 MB written
+   .. 812 MB written
+   .. 831 MB written
+   .. 841 MB written
+   .. 859 MB written
+   .. 869 MB written
+   .. 897 MB written
+   .. 916 MB written
+   .. 935 MB written
+   .. 953 MB written
+   .. 972 MB written
+   .. 991 MB written
+   .. 1019 MB written
+   .. 1029 MB written
+   .. 1047 MB written
+   .. 1066 MB written
+   .. 1075 MB written
+   .. 1075 MB written
+   .. 1085 MB written
+   .. 1094 MB written
+   .. 1122 MB written
+   .. 1131 MB written
+   .. 1160 MB written
+   .. 1188 MB written
+   .. 1208 MB written
+   .. 1230 MB written
+   .. 1246 MB written
+   .. 1246 MB written
+   .. 1266 MB written
+   .. 1285 MB written
+   .. 1304 MB written
+   .. 1323 MB written
+   .. 1352 MB written
+   .. 1371 MB written
+   .. 1399 MB written
+   .. 1399 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+   .. 1408 MB written
+{
+  "name": "vn_south",
+  "source": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=buildings/type=building/*",
+  "release": "2026-09-23.1",
+  "bbox": [
+    105.0,
+    8.5,
+    108.0,
+    12.0
+  ],
+  "crs": "OGC:CRS84",
+  "file": "overture_buildings_vn_south.parquet",
+  "size_bytes": 1451854492,
+  "seconds": 921.3,
+  "license_note": "Overture Maps Foundation data; see https://docs.overturemaps.org/attribution/ (ODbL for buildings sources vary per record)"
+}

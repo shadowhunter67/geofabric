@@ -58,6 +58,11 @@ pub struct Covering {
     pub ymin: String,
     pub xmax: String,
     pub ymax: String,
+    /// `true` when the file's `geo` metadata declares the covering (GeoParquet 1.1).
+    /// `false` = **inferred by naming convention**: no `covering` key, but a top-level
+    /// struct column `bbox` with `xmin/ymin/xmax/ymax` double children (the Overture Maps
+    /// convention). Engines may use it for pruning; the planner reports that it was inferred.
+    pub declared: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -161,10 +166,9 @@ impl GeoParquetSource {
                 _ => None,
             }
         });
-        let covering = parse_covering(&col["covering"]["bbox"]);
-
         // schema
         let arrow_schema = parquet::arrow::parquet_to_arrow_schema(fmd.schema_descr(), fmd.key_value_metadata())?;
+        let covering = parse_covering(&col["covering"]["bbox"]).or_else(|| infer_covering(&arrow_schema));
         let mut fields = Vec::new();
         for f in arrow_schema.fields() {
             let ty = if *f.name() == primary {
@@ -408,5 +412,23 @@ fn parse_covering(v: &serde_json::Value) -> Option<Covering> {
         let arr = v.get(k)?.as_array()?;
         Some(arr.iter().filter_map(|x| x.as_str()).collect::<Vec<_>>().join("."))
     };
-    Some(Covering { xmin: p("xmin")?, ymin: p("ymin")?, xmax: p("xmax")?, ymax: p("ymax")? })
+    Some(Covering { xmin: p("xmin")?, ymin: p("ymin")?, xmax: p("xmax")?, ymax: p("ymax")?, declared: true })
+}
+
+/// Overture-style convention: a top-level struct `bbox{xmin,ymin,xmax,ymax}` of doubles.
+fn infer_covering(schema: &arrow_schema::Schema) -> Option<Covering> {
+    let f = schema.field_with_name("bbox").ok()?;
+    let DataType::Struct(children) = f.data_type() else { return None };
+    let is_f64 = |n: &str| children.iter().any(|c| c.name() == n && matches!(c.data_type(), DataType::Float64));
+    if ["xmin", "ymin", "xmax", "ymax"].iter().all(|n| is_f64(n)) {
+        Some(Covering {
+            xmin: "bbox.xmin".into(),
+            ymin: "bbox.ymin".into(),
+            xmax: "bbox.xmax".into(),
+            ymax: "bbox.ymax".into(),
+            declared: false,
+        })
+    } else {
+        None
+    }
 }

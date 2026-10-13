@@ -283,7 +283,7 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
             let cols: Vec<String> = s
                 .fields
                 .iter()
-                .filter(|f| !matches!(&f.data_type, FieldType::Other(t) if t == "struct"))
+                .filter(|f| !matches!(&f.data_type, FieldType::Other(t) if t != "geometry"))
                 .map(|f| f.name.clone())
                 .collect();
             Node::Limit { input: Box::new(Node::Project { input: Box::new(node), columns: cols }), n: limit }

@@ -17,6 +17,8 @@ fn write_fixture(path: &std::path::Path, crs_json: &str) {
     let geo = format!(
             r#"{{"version":"1.1.0","primary_column":"geometry","columns":{{"geometry":{{"encoding":"WKB","geometry_types":["Polygon"],{crs_json}"covering":{{"bbox":{{"xmin":["bbox","xmin"],"ymin":["bbox","ymin"],"xmax":["bbox","xmax"],"ymax":["bbox","ymax"]}}}}}}}}}}"#
     );
+    // test hook: `"__no_covering":true` in crs_json hides the covering declaration
+    let geo = if crs_json.contains("__no_covering") { geo.replace("\"covering\"", "\"ignored_covering\"") } else { geo };
     let schema = Arc::new(Schema::new_with_metadata(
         vec![
             Field::new("id", DataType::Int64, false),
@@ -198,4 +200,80 @@ fn benchmark_dataset_pruning_if_present() {
     let b = GeoParquetSource::open(&sh).unwrap().prune(&q).unwrap();
     // spatial ordering must prune strictly more than shuffled (shuffled ~ keeps nearly everything)
     assert!(a.skipped > b.skipped, "spatial skipped {} vs shuffled {}", a.skipped, b.skipped);
+}
+
+// ---------- PlanGraph scan analysis: shared sources, union over access paths ----------
+
+fn shared_source_join(src: geo_ir::Node, a: BoundingBox, b: Option<BoundingBox>) -> geo_ir::Plan {
+    use geo_ir::*;
+    let left = Node::BboxFilter { input: Box::new(src.clone()), geometry_column: "geometry".into(), bbox: a };
+    let right = match b {
+        Some(b) => Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: b },
+        None => src,
+    };
+    Plan::new(Node::SpatialJoin {
+        left: Box::new(left),
+        right: Box::new(right),
+        left_column: "geometry".into(),
+        right_column: "geometry".into(),
+        predicate: SpatialPredicate::Intersects,
+        join_type: JoinType::Inner,
+        right_prefix: "r_".into(),
+    })
+}
+
+#[test]
+fn shared_source_is_analysed_once_with_union_of_access_paths() {
+    let p = tmp("fx_shared.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"#);
+    let s = GeoParquetSource::open(&p).unwrap();
+    let guard = geo_types::RootedAccessGuard::new([p.parent().unwrap().to_path_buf()]);
+    let bb = |x0: f64, x1: f64| BoundingBox::new(x0, -1.0, x1, 2.0, Crs::Epsg(4326)).unwrap();
+
+    // path A reads row group 0 (x ~ 0), path B reads row group 3 (x ~ 30): union = {0, 3}
+    let plan = shared_source_join(s.to_ir_source(), bb(-1.0, 1.5), Some(bb(29.0, 31.0)));
+    assert_eq!(plan.nodes.values().filter(|n| n.kind() == geo_ir::OpKind::Source).count(), 1, "source is shared");
+    let scans = analyze_plan(&plan, &guard).unwrap();
+    assert_eq!(scans.len(), 1, "one scan for the one shared source");
+    assert_eq!(scans[0].access_paths, 2);
+    assert_eq!(scans[0].prune.kept, vec![0, 3]);
+    assert_eq!(scans[0].prune.skipped, 2);
+
+    // a path with no spatial constraint needs every row group
+    let plan = shared_source_join(s.to_ir_source(), bb(-1.0, 1.5), None);
+    let scans = analyze_plan(&plan, &guard).unwrap();
+    assert_eq!(scans[0].prune.kept, vec![0, 1, 2, 3]);
+    assert!(scans[0].has_covering);
+}
+
+#[test]
+fn unauthorized_shared_source_is_denied_before_any_read() {
+    let p = tmp("fx_shared_denied.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"#);
+    let s = GeoParquetSource::open(&p).unwrap();
+    let other_root = std::env::temp_dir().join(format!("gf-other-root-{}", std::process::id()));
+    std::fs::create_dir_all(&other_root).unwrap();
+    let guard = geo_types::RootedAccessGuard::new([other_root]);
+    let plan = shared_source_join(s.to_ir_source(), BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap(), None);
+    assert!(matches!(analyze_plan(&plan, &guard), Err(SourceError::AccessDenied)));
+}
+
+// ---------- covering: declared vs inferred (real-data finding: Overture subset has no `covering` key) ----------
+
+#[test]
+fn covering_is_declared_when_present_and_inferred_by_convention_when_not() {
+    let p = tmp("fx_cov_declared.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"#);
+    let c = GeoParquetSource::open(&p).unwrap().info().covering.clone().unwrap();
+    assert!(c.declared);
+
+    let p = tmp("fx_cov_inferred.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"__no_covering":true,"#);
+    let s = GeoParquetSource::open(&p).unwrap();
+    let c = s.info().covering.clone().expect("a struct column `bbox` is recognised by convention");
+    assert!(!c.declared, "must be flagged as inferred");
+    assert_eq!(c.xmin, "bbox.xmin");
+    // pruning works through the inferred covering (statistics exist)
+    let q = BoundingBox::new(19.0, -1.0, 21.0, 2.0, Crs::Epsg(4326)).unwrap();
+    assert_eq!(s.prune(&q).unwrap().kept, vec![2]);
 }

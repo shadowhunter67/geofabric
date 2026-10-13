@@ -1,0 +1,32 @@
+{
+  "overture_buildings_vn_south": {
+    "ov_bbox_count_small": {
+      "count": 812006,
+      "hash": "6e433193fc37823cffd1d6490617bb5f7886a5f1e4a1aa6c35b10019c3ec1ead"
+    },
+    "ov_bbox_count_large": {
+      "count": 12648395,
+      "hash": "6099a19e218a6884248ae99154101f099dd3cf6bf3c3669629c417547b26f1c1"
+    },
+    "ov_attr_filter_fullscan": {
+      "count": 8599896,
+      "hash": "0b8161df665146b42652ef485485ffb2e1434184989e6911ab44ec6162c5aac0"
+    },
+    "ov_intersects_polygon": {
+      "count": 284071,
+      "hash": "06c475ea80767b1fa5a9e9cbac7a7b853a119da61aabacf3c2123a9342763e57"
+    },
+    "ov_aggregate_version_small": {
+      "count": 10,
+      "hash": "60bb979d0b28fb81e19b0d3ff7ef51ba3b2bc7b8ba7bfa751898eb879b8d36b0"
+    },
+    "ov_spatial_join_small": {
+      "count": 145,
+      "hash": "be47addbcb8f60566a3d7fd5a36f8195798e2848b368195d9a5d20e007c59a0c"
+    },
+    "ov_return_rows_small(id,version)": {
+      "count": 28169,
+      "hash": "041309ba7902c31f5520b37a47816935747f97fd42130eab5d316de583ab9ef5"
+    }
+  }
+}

@@ -13,15 +13,11 @@
 //! statistics-derived bounds, not measurements; actual bytes read is unknown
 //! and is not reported.
 
-use arrow_array::cast::AsArray;
-use arrow_array::{Array, RecordBatch};
-use arrow_schema::DataType;
-use geo_executor::ExecutionContext;
+use geo_executor::{result_digest, ExecutionContext};
 use geo_ir::*;
 use geo_runtime::Runtime;
 use geo_types::*;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 
 #[derive(Serialize)]
@@ -48,43 +44,6 @@ struct Row {
     time_ms_min_engine_observed: f64,
     peak_buffer_memory_bytes_engine_observed: Option<u64>,
     reps: usize,
-}
-
-/// One canonical string per row (must match benchmarks/oracle.py): cells joined by "|";
-/// Int64 decimal, Utf8 raw, Binary lowercase hex.
-fn row_strings(batches: &[RecordBatch]) -> Vec<String> {
-    let mut out = Vec::new();
-    for b in batches {
-        for r in 0..b.num_rows() {
-            let mut cells = Vec::new();
-            for c in b.columns() {
-                cells.push(if c.is_null(r) {
-                    "NULL".to_string()
-                } else {
-                    match c.data_type() {
-                        DataType::Int64 => c.as_primitive::<arrow_array::types::Int64Type>().value(r).to_string(),
-                        DataType::Utf8 => c.as_string::<i32>().value(r).to_string(),
-                        DataType::Binary => c.as_binary::<i32>().value(r).iter().map(|x| format!("{x:02x}")).collect(),
-                        other => format!("<unsupported {other}>"),
-                    }
-                });
-            }
-            out.push(cells.join("|"));
-        }
-    }
-    out
-}
-
-/// (count, sha256-hex). A single-row single-column Int64 result is a count query: count = the value.
-fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
-    let mut rows = row_strings(batches);
-    let n_rows = rows.len() as u64;
-    let is_scalar_count = n_rows == 1 && batches.iter().any(|b| b.num_rows() == 1 && b.num_columns() == 1 && b.column(0).data_type() == &DataType::Int64);
-    let count = if is_scalar_count { rows[0].parse::<u64>().unwrap_or(n_rows) } else { n_rows };
-    rows.sort();
-    let mut h = Sha256::new();
-    h.update(rows.join("\n").as_bytes());
-    (count, h.finalize().iter().map(|b| format!("{b:02x}")).collect())
 }
 
 fn bb(x0: f64, y0: f64, x1: f64, y1: f64) -> BoundingBox {
@@ -163,6 +122,66 @@ fn queries(src: &Node) -> Vec<(&'static str, Plan)> {
     ]
 }
 
+fn bb84(x0: f64, y0: f64, x1: f64, y1: f64) -> BoundingBox {
+    BoundingBox::new(x0, y0, x1, y1, Crs::OgcCrs84).unwrap()
+}
+
+/// Queries over real Overture buildings (CRS84, nested schema, mostly-NULL attributes).
+/// Windows are around Ho Chi Minh City. Definitions must match benchmarks/oracle_overture.py.
+fn overture_queries(src: &Node) -> Vec<(&'static str, Plan)> {
+    let small = || bb84(106.60, 10.70, 106.80, 10.90);
+    let large = || bb84(105.0, 9.5, 107.5, 11.5);
+    let cnt = count;
+    let bbox84 = |b: BoundingBox| Node::BboxFilter { input: Box::new(src.clone()), geometry_column: "geometry".into(), bbox: b };
+    let tri = "POLYGON((106.62 10.72, 106.78 10.74, 106.70 10.88, 106.62 10.72))";
+    vec![
+        ("ov_bbox_count_small", Plan::new(cnt(bbox84(small())))),
+        ("ov_bbox_count_large", Plan::new(cnt(bbox84(large())))),
+        (
+            "ov_attr_filter_fullscan",
+            Plan::new(cnt(Node::Filter {
+                input: Box::new(src.clone()),
+                predicate: Expr::Compare { column: "version".into(), op: CompareOp::Ge, value: Literal::Int(4) },
+            })),
+        ),
+        (
+            "ov_intersects_polygon",
+            Plan::new(cnt(Node::Intersects {
+                input: Box::new(src.clone()),
+                geometry_column: "geometry".into(),
+                with: GeometryLiteral { wkt: tri.into(), crs: Crs::OgcCrs84 },
+            })),
+        ),
+        (
+            "ov_aggregate_version_small",
+            Plan::new(Node::Sort {
+                input: Box::new(Node::Aggregate {
+                    input: Box::new(bbox84(small())),
+                    group_by: vec!["version".into()],
+                    aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }],
+                }),
+                keys: vec![SortKey { column: "version".into(), descending: false }],
+            }),
+        ),
+        (
+            "ov_spatial_join_small",
+            Plan::new(cnt(Node::SpatialJoin {
+                left: Box::new(Node::BboxFilter { input: Box::new(src.clone()), geometry_column: "geometry".into(), bbox: bb84(106.700, 10.770, 106.710, 10.780) }),
+                right: Box::new(Node::BboxFilter { input: Box::new(src.clone()), geometry_column: "geometry".into(), bbox: bb84(106.705, 10.775, 106.715, 10.785) }),
+                left_column: "geometry".into(),
+                right_column: "geometry".into(),
+                predicate: SpatialPredicate::Intersects,
+                join_type: JoinType::Inner,
+                right_prefix: "r_".into(),
+            })),
+        ),
+        (
+            "ov_return_rows_small(id,version)",
+            Plan::new(Node::Project { input: Box::new(bbox84(bb84(106.690, 10.760, 106.730, 10.800))), columns: vec!["id".into(), "version".into()] }),
+        ),
+    ]
+}
+
 fn arg(args: &[String], name: &str, default: &str) -> String {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned().unwrap_or_else(|| default.to_string())
 }
@@ -174,6 +193,7 @@ fn main() {
     let sizes: Vec<String> = arg(&args, "--sizes", "10mb,100mb").split(',').map(String::from).collect();
     let reps: usize = arg(&args, "--reps", "3").parse().expect("--reps");
     let tag = arg(&args, "--tag", "run");
+    let suite = arg(&args, "--suite", "synthetic"); // synthetic | overture
 
     let rt = Runtime::with_duckdb();
     let mut ctx = ExecutionContext::new(vec![data.clone()]);
@@ -184,7 +204,8 @@ fn main() {
     let mut failures = 0usize;
 
     let mut expected: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
-    for size in &sizes {
+    let expected_keys: Vec<String> = if suite == "overture" { vec!["overture".to_string()] } else { sizes.clone() };
+    for size in &expected_keys {
         let p = out.join(format!("expected-{size}.json"));
         match std::fs::read_to_string(&p).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()) {
             Some(serde_json::Value::Object(m)) => expected.extend(m),
@@ -192,10 +213,35 @@ fn main() {
         }
     }
 
-    for size in &sizes {
-        for dist in ["clustered", "uniform"] {
-            for ordering in ["spatial", "shuffled"] {
-                let name = format!("{dist}_{size}_{ordering}");
+    // (name, distribution, ordering, size-label) for each dataset of the chosen suite
+    let mut jobs: Vec<(String, String, String)> = Vec::new();
+    if suite == "overture" {
+        if let Ok(rd) = std::fs::read_dir(&data) {
+            let mut names: Vec<String> = rd
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|x| x == "parquet"))
+                .filter_map(|p| p.file_stem().map(|s| s.to_string_lossy().into_owned()))
+                .filter(|n| n.starts_with("overture_"))
+                .collect();
+            names.sort();
+            for n in names {
+                jobs.push((n, "real".into(), "overture-order".into()));
+            }
+        }
+    } else {
+        for size in &sizes {
+            for dist in ["clustered", "uniform"] {
+                for ordering in ["spatial", "shuffled"] {
+                    jobs.push((format!("{dist}_{size}_{ordering}"), dist.to_string(), ordering.to_string()));
+                }
+            }
+        }
+    }
+    {
+        for (name, dist, ordering) in &jobs {
+            {
+                let (dist, ordering) = (dist.as_str(), ordering.as_str());
                 let path = data.join(format!("{name}.parquet"));
                 if !path.exists() {
                     eprintln!("skip {name}: missing");
@@ -207,7 +253,8 @@ fn main() {
                     Node::Source { statistics, .. } => statistics.row_count.unwrap_or(0),
                     _ => 0,
                 };
-                for (qname, plan) in queries(&src) {
+                let qs = if suite == "overture" { overture_queries(&src) } else { queries(&src) };
+                for (qname, plan) in qs {
                     let mut times = Vec::new();
                     let mut last = None;
                     for _ in 0..(reps + 1) {
@@ -231,7 +278,7 @@ fn main() {
                     t.sort_by(|a, b| a.partial_cmp(b).unwrap());
                     let m = &o.result.metrics;
                     let (count, hash) = result_digest(&o.result.batches);
-                    let exp = expected.get(&name).and_then(|d| d.get(qname));
+                    let exp = expected.get(name).and_then(|d| d.get(qname));
                     let exp_count = exp.and_then(|e| e["count"].as_u64());
                     let validation = match exp {
                         None => "no-oracle",

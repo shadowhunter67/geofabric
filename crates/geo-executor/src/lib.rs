@@ -264,10 +264,23 @@ pub trait ExecutionEngine: EngineDescriptor {
 }
 
 /// Canonical result digest shared by the test-suite, benchmarks, gateway and the browser
-/// executor: one string per row (cells joined by `|`; Int64 decimal, Utf8 raw, Binary
+/// executor: one string per row (cells joined by `|`; integers decimal, Boolean true/false, Utf8 raw, Binary
 /// lowercase hex, null `NULL`), rows sorted, SHA-256 over them joined by a newline.
 /// `count` is the value of a scalar `count(*)`-style result (1 row x 1 Int64 column),
 /// otherwise the number of rows.
+/// Floats are rendered with Rust's shortest round-trip `Display` (`4.0` -> "4", `0.1` -> "0.1"),
+/// which equals JavaScript's `Number#toString` for magnitudes in [1e-6, 1e21); NaN/inf map to the
+/// JavaScript spellings. Outside that range Rust and JS differ: do not digest such floats.
+fn float_cell(v: f64) -> String {
+    if v.is_nan() {
+        "NaN".into()
+    } else if v.is_infinite() {
+        if v > 0.0 { "Infinity".into() } else { "-Infinity".into() }
+    } else {
+        format!("{v}")
+    }
+}
+
 pub fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
     use arrow_array::cast::AsArray;
     use arrow_array::Array;
@@ -285,6 +298,14 @@ pub fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
                     } else {
                         match c.data_type() {
                             DataType::Int64 => c.as_primitive::<arrow_array::types::Int64Type>().value(r).to_string(),
+                            DataType::Int32 => c.as_primitive::<arrow_array::types::Int32Type>().value(r).to_string(),
+                            DataType::Int16 => c.as_primitive::<arrow_array::types::Int16Type>().value(r).to_string(),
+                            DataType::Int8 => c.as_primitive::<arrow_array::types::Int8Type>().value(r).to_string(),
+                            DataType::UInt64 => c.as_primitive::<arrow_array::types::UInt64Type>().value(r).to_string(),
+                            DataType::UInt32 => c.as_primitive::<arrow_array::types::UInt32Type>().value(r).to_string(),
+                            DataType::Boolean => c.as_boolean().value(r).to_string(),
+                            DataType::Float64 => float_cell(c.as_primitive::<arrow_array::types::Float64Type>().value(r)),
+                            DataType::Float32 => float_cell(c.as_primitive::<arrow_array::types::Float32Type>().value(r) as f64),
                             DataType::Utf8 => c.as_string::<i32>().value(r).to_string(),
                             DataType::Binary => c.as_binary::<i32>().value(r).iter().map(|x| format!("{x:02x}")).collect(),
                             other => format!("<unsupported {other}>"),
@@ -303,4 +324,46 @@ pub fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
     let mut h = Sha256::new();
     h.update(rows.join("\n").as_bytes());
     (count, h.finalize().iter().map(|b| format!("{b:02x}")).collect())
+}
+
+#[cfg(test)]
+mod digest_tests {
+    use super::*;
+    use arrow_array::{ArrayRef, BooleanArray, Float64Array, Int32Array, Int64Array, StringArray};
+    use arrow_schema::{Field, Schema};
+    use std::sync::Arc;
+
+    fn batch(cols: Vec<(&str, ArrayRef)>) -> RecordBatch {
+        let schema = Arc::new(Schema::new(cols.iter().map(|(n, a)| Field::new(*n, a.data_type().clone(), true)).collect::<Vec<_>>()));
+        RecordBatch::try_new(schema, cols.into_iter().map(|(_, a)| a).collect()).unwrap()
+    }
+
+    // expected hashes computed independently with python hashlib over the sorted row strings
+    #[test]
+    fn mixed_columns_with_nulls_match_the_python_digest() {
+        let b = batch(vec![
+            ("id", Arc::new(Int64Array::from(vec![2, 1, 10])) as ArrayRef),
+            ("name", Arc::new(StringArray::from(vec!["c", "a", "b"])) as ArrayRef),
+            ("flag", Arc::new(BooleanArray::from(vec![Some(true), Some(false), None])) as ArrayRef),
+        ]);
+        let (count, hash) = result_digest(&[b]);
+        assert_eq!(count, 3);
+        assert_eq!(hash, "bd88b34dca3530c0e765d9589773fb219bd551f3c64782051de10e7f3489f455");
+    }
+
+    #[test]
+    fn floats_use_the_shortest_round_trip_spelling() {
+        let b = batch(vec![("h", Arc::new(Float64Array::from(vec![1.5, 4.0, 0.1])) as ArrayRef)]);
+        assert_eq!(result_digest(&[b]).1, "1607ef75523fb4893a4bf4aa248381a9b62595e6a987d6bf06f517c1182811c8");
+    }
+
+    #[test]
+    fn scalar_integer_result_is_a_count_and_int32_is_supported() {
+        let c = batch(vec![("n", Arc::new(Int64Array::from(vec![7])) as ArrayRef)]);
+        assert_eq!(result_digest(&[c]), (7, "7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451".to_string()));
+        let v = batch(vec![("version", Arc::new(Int32Array::from(vec![3, -5])) as ArrayRef)]);
+        let (count, hash) = result_digest(&[v]);
+        assert_eq!(count, 2, "two rows, not a scalar count");
+        assert_eq!(hash, "51e37fe8c8a5befb8bb7865806599206d250b1e721383f11f58190104aec07c2");
+    }
 }

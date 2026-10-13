@@ -251,6 +251,14 @@ impl Planner {
                 ),
             ));
         }
+        for s in scans.iter().filter(|s| s.covering_inferred) {
+            log.push(dec(
+                "covering",
+                s.uri.clone(),
+                Outcome::Warning,
+                "bbox covering column inferred by naming convention (struct `bbox`), not declared in the GeoParquet metadata; pruning relies on that column really covering the geometry",
+            ));
+        }
         let result_rows = result_rows_estimate(plan, input_rows, &cfg.cost);
         let result_bytes = result_rows.saturating_mul(cfg.cost.avg_result_row_bytes);
         let has_bbox_filter = plan.required_ops().contains(&OpKind::BboxFilter);

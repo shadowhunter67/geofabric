@@ -12,7 +12,7 @@
 //! all paths of (the intersection of that path's constraints); a path without
 //! applicable constraints needs everything.
 
-use crate::{GeoParquetSource, PruneMethod, PruneReport, SourceError};
+use crate::{Covering, GeoParquetSource, PruneMethod, PruneReport, SourceError};
 use geo_ir::{NodeId, Plan, PlanNode};
 use geo_types::{BoundingBox, Crs, SourceAccessGuard};
 use serde::Serialize;
@@ -31,6 +31,10 @@ pub struct SourceScan {
     pub access_paths: usize,
     /// The source has a bbox covering column (needed by engines without a spatial extension).
     pub has_covering: bool,
+    /// The covering was inferred by naming convention, not declared in the file metadata.
+    pub covering_inferred: bool,
+    /// Column paths of the covering (for engines that prune through it, e.g. the browser engine).
+    pub covering: Option<Covering>,
     pub prune: PruneReport,
 }
 
@@ -128,6 +132,8 @@ pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<So
             constraints_skipped: skipped,
             access_paths: path_sets.len(),
             has_covering: info.covering.is_some(),
+            covering_inferred: info.covering.as_ref().is_some_and(|c| !c.declared),
+            covering: info.covering.clone(),
             prune: PruneReport {
                 method: if has_stats && applied > 0 { PruneMethod::CoveringStats } else { PruneMethod::NoStatistics },
                 total_row_groups: info.row_groups.len(),
