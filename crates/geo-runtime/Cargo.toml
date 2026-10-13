@@ -5,13 +5,18 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+# bundled (default) compiles DuckDB; --no-default-features + DUCKDB_LIB_DIR links the verified prebuilt (tools/duckdb_prebuilt.py)
+default = ["bundled"]
+bundled = ["geo-engine-duckdb/bundled"]
+
 [dependencies]
 geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-planner = { path = "../geo-planner" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
-geo-engine-duckdb = { path = "../geo-engine-duckdb" }
+geo-engine-duckdb = { path = "../geo-engine-duckdb", default-features = false }
 thiserror.workspace = true
 serde.workspace = true
 

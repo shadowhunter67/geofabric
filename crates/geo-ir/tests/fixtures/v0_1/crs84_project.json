@@ -1,0 +1,51 @@
+{
+  "ir_version": "0.1",
+  "root": {
+    "op": "project",
+    "input": {
+      "op": "source",
+      "uri": "c.parquet",
+      "format": "geo_parquet",
+      "schema": {
+        "fields": [
+          {
+            "name": "id",
+            "data_type": "int64"
+          },
+          {
+            "name": "category",
+            "data_type": "utf8"
+          },
+          {
+            "name": "height",
+            "data_type": "float64"
+          },
+          {
+            "name": "geometry",
+            "data_type": {
+              "other": "geometry"
+            }
+          }
+        ],
+        "geometry_columns": [
+          {
+            "name": "geometry",
+            "geometry_type": "polygon",
+            "crs": "ogc_crs84"
+          }
+        ]
+      },
+      "statistics": {
+        "row_count": null,
+        "total_bytes": null,
+        "row_groups": null,
+        "bbox": null
+      }
+    },
+    "columns": [
+      "id",
+      "geometry"
+    ]
+  },
+  "hints": {}
+}

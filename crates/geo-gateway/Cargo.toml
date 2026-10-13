@@ -5,12 +5,16 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+default = ["bundled"]
+bundled = ["geo-runtime/bundled"]
+
 [dependencies]
 geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-planner = { path = "../geo-planner" }
-geo-runtime = { path = "../geo-runtime" }
+geo-runtime = { path = "../geo-runtime", default-features = false }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 serde.workspace = true
 serde_json.workspace = true

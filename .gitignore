@@ -15,3 +15,4 @@ web/dist/
 web/node_modules/
 !benchmarks/results/expected-*.json
 !benchmarks/results/bench-h-*.json
+tools/.cache/

@@ -1,0 +1,72 @@
+{
+  "ir_version": "0.1",
+  "root": {
+    "op": "intersects",
+    "input": {
+      "op": "buffer",
+      "input": {
+        "op": "source",
+        "uri": "b.parquet",
+        "format": "geo_parquet",
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "data_type": "int64"
+            },
+            {
+              "name": "category",
+              "data_type": "utf8"
+            },
+            {
+              "name": "height",
+              "data_type": "float64"
+            },
+            {
+              "name": "geometry",
+              "data_type": {
+                "other": "geometry"
+              }
+            }
+          ],
+          "geometry_columns": [
+            {
+              "name": "geometry",
+              "geometry_type": "polygon",
+              "crs": {
+                "epsg": 3857
+              }
+            }
+          ]
+        },
+        "statistics": {
+          "row_count": null,
+          "total_bytes": null,
+          "row_groups": null,
+          "bbox": null
+        }
+      },
+      "geometry_column": "geometry",
+      "distance": {
+        "value": 100.0,
+        "unit": "meter"
+      },
+      "input_crs": {
+        "epsg": 3857
+      },
+      "output_crs": {
+        "epsg": 3857
+      },
+      "error_tolerance": null,
+      "output_column": "geometry"
+    },
+    "geometry_column": "geometry",
+    "with": {
+      "wkt": "POINT(0 0)",
+      "crs": {
+        "epsg": 3857
+      }
+    }
+  },
+  "hints": {}
+}
