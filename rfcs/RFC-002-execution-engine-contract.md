@@ -1,16 +1,20 @@
 # RFC-002 — Execution Engine Contract
 
-Status: Proposed (revised 2026-10-13 during hardening: metric provenance, authorization, timeout)
+Status: Proposed (revised 2026-10-13: metric provenance, authorization, timeout; multi-engine split into descriptor + executor)
 
 ```
-trait ExecutionEngine: Send + Sync {
+trait EngineDescriptor: Send + Sync {          // what the PLANNER needs
   fn id() -> EngineId
-  fn capabilities() -> Capabilities
-  fn estimate(plan, ctx) -> Estimate          // metadata-based upper bounds, each with provenance
-  fn explain(plan, ctx)  -> Vec<ExplainStep>  // what will actually run
-  fn execute(plan, ctx)  -> ArrowBatches + ExecutionMetrics
+  fn capabilities() -> Capabilities            // kind (Server|Browser), ops, sources, limits, bbox_filter_requires_covering
+  fn estimate(plan, ctx) -> Estimate           // metadata-based upper bounds, each with provenance
+  fn explain(plan, ctx)  -> Vec<ExplainStep>   // what will actually run
+}
+trait ExecutionEngine: EngineDescriptor {      // engines that run IN-PROCESS
+  fn execute(plan, ctx) -> ArrowBatches + ExecutionMetrics
 }
 ```
+
+A client engine (DuckDB-Wasm in the browser) is described to the planner by an `EngineDescriptor` implemented in Rust (`geo-engine-browser`) and executed by a TypeScript implementation of the same contract (`web/src/engine/`): same PlanGraph in, same canonical result digest out (`result_digest`: Rust, TS and the Python oracles agree). The planner can select it; the runtime then returns `Dispatch::Client` instead of executing.
 
 ## Rules
 
@@ -47,4 +51,4 @@ UIs must show the provenance next to the value (Observed / Estimated / Derived /
 
 ## Engine #2 check
 
-A `MockEngine` in the planner tests runs the same plans without any change to IR or planner. No second *real* engine exists yet.
+Two real engines now exist (DuckDB server, DuckDB-Wasm browser). Cross-engine correctness is tested in `web/e2e/engines.spec.ts` (same plan, same digest); engine limits (browser memory guard) are enforced by the planner as hard feasibility constraints.

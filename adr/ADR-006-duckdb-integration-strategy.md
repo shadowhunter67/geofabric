@@ -47,3 +47,13 @@ Use the Rust `duckdb` crate with the `bundled` feature (DuckDB 1.5.6 via `libduc
 | status | used for **all** tests and benchmarks so far | works for the adapter + probe (loads, spatial=true); **not run against the full suite**; features are not yet forwarded through runtime/gateway/bench |
 
 **Strategy (Proposed):** development → prebuilt/dynamic once feature forwarding is added and the suite passes with it; CI and release → bundled with pinned versions (reproducible, no download at build time). Python DuckDB stays tooling-only (dataset generation, never on the execution path; the benchmark oracle does not use it at all). Other 2026-10-13 findings: with debug info, test binaries linking bundled DuckDB exceed the MSVC PDB limit (LNK1140) → `[profile.dev] debug = 0`; a debug+release `target/` reached 59.6 GB and filled the disk.
+
+## Update 2026-10-13 (multi-engine phase): prebuilt validated for development
+
+**Decision (still Proposed for CI/release):** development default = the verified prebuilt `libduckdb` linked dynamically; CI/release = bundled with pinned versions.
+
+How it works: `python tools/duckdb_prebuilt.py` derives the DuckDB version from `Cargo.lock` (`libduckdb-sys 1.10506.0` -> v1.5.6), downloads `libduckdb-windows-amd64.zip`, verifies its **sha256 against the digest GitHub publishes for the asset *and* against `tools/duckdb-prebuilt.lock.json`** (`44cf5958…fe96a`), refuses path-traversing archive entries, and extracts to `tools/.cache/` (git-ignored). Then `export DUCKDB_LIB_DIR=…; export PATH="$DUCKDB_LIB_DIR:$PATH"; cargo test --workspace --no-default-features` (features are forwarded through runtime/gateway/bench; `bundled` stays the default). The spatial extension is still `INSTALL`/`LOAD`ed at runtime and must be v1.5.6 as well.
+
+Evidence on the prebuilt library: full Rust suite passes (clean build + all tests ≈ 61 s versus ≈ 10 min bundled); gateway tests incl. timeout/cancel pass; benchmark validation against the independent oracles passes for 10 MB, 100 MB, **1 GB and the real Overture subset** (all 91 runs `pass`); a release `geo-bench`+`geo-gateway` build takes ≈ 2 min; `target/` stays small (hundreds of MB instead of tens of GB). The prebuilt library is an optimized official build, which also makes debug-profile timings meaningful.
+
+Not verified this round: the **bundled** path (CI/release) was not rebuilt or re-run, so "CI/release = bundled" is still the intended strategy, not an exercised one. Version pinning is by `Cargo.lock` + the lock file; the DLL must be on `PATH` (or next to the executable) when running.

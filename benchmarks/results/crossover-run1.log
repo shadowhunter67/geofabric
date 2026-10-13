@@ -1,0 +1,369 @@
+[WebServer] geo-gateway listening on http://127.0.0.1:8798 (data: benchmarks/data, web: web/dist, query timeout: 30s)
+
+Running 1 test using 1 worker
+
+(node:34696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"dataset":"clustered_10mb_spatial","fraction":0.002,"kind":"count_by","limit":null,"input_bytes_est":1137198,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":41.49869680404663,"duckdb-wasm":43.07527542114258},"server_ms":74,"server_rows":2,"browser_ms":66,"browser_rows":2,"digest_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.002,"kind":"features","limit":2000,"input_bytes_est":1137198,"result_rows_est":2000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":47.07769155502319,"duckdb-wasm":43.07527542114258},"server_ms":84.19999998807907,"server_rows":2,"browser_ms":55,"browser_rows":2,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.002,"kind":"features","limit":50000,"input_bytes_est":1137198,"result_rows_est":15000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":84.27098989486694,"duckdb-wasm":43.07527542114258},"server_ms":77.70000004768372,"server_rows":2,"browser_ms":35,"browser_rows":2,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.01,"kind":"count_by","limit":null,"input_bytes_est":1516065,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":41.95034146308899,"duckdb-wasm":49.09720420837402},"server_ms":73.60000002384186,"server_rows":8,"browser_ms":33,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.01,"kind":"features","limit":2000,"input_bytes_est":1516065,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":47.52933621406555,"duckdb-wasm":49.09720420837402},"server_ms":77.39999997615814,"server_rows":66,"browser_ms":76,"browser_rows":66,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.01,"kind":"features","limit":50000,"input_bytes_est":1516065,"result_rows_est":20000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":99.02774930000305,"duckdb-wasm":49.09720420837402},"server_ms":80,"server_rows":66,"browser_ms":43,"browser_rows":66,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":2272692,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":42.85231113433838,"duckdb-wasm":61.12346649169922},"server_ms":73.80000001192093,"server_rows":8,"browser_ms":38,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":2272692,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":48.43130588531494,"duckdb-wasm":61.12346649169922},"server_ms":113.59999996423721,"server_rows":2000,"browser_ms":292,"browser_rows":2000,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":2272692,"result_rows_est":30000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":128.53994846343994,"duckdb-wasm":61.12346649169922},"server_ms":135.30000001192093,"server_rows":4238,"browser_ms":462,"browser_rows":4238,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.25,"kind":"count_by","limit":null,"input_bytes_est":4155658,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":45.09698152542114,"duckdb-wasm":91.05240503946939},"server_ms":73.80000001192093,"server_rows":8,"browser_ms":119,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.25,"kind":"features","limit":2000,"input_bytes_est":4155658,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":50.675976276397705,"duckdb-wasm":91.05240503946939},"server_ms":99.89999997615814,"server_rows":2000,"browser_ms":268,"browser_rows":2000,"rows_match":true}
+{"dataset":"clustered_10mb_spatial","fraction":0.25,"kind":"features","limit":50000,"input_bytes_est":4155658,"result_rows_est":50000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":188.0050778388977,"duckdb-wasm":91.05240503946939},"server_ms":352.5,"server_rows":19475,"browser_ms":1799,"browser_rows":19475,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.002,"kind":"count_by","limit":null,"input_bytes_est":4569632,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":45.590476989746094,"duckdb-wasm":97.63234456380208},"server_ms":78.80000001192093,"server_rows":8,"browser_ms":310,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.002,"kind":"features","limit":2000,"input_bytes_est":4569632,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":51.169471740722656,"duckdb-wasm":97.63234456380208},"server_ms":92.70000004768372,"server_rows":18,"browser_ms":335,"browser_rows":18,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.002,"kind":"features","limit":50000,"input_bytes_est":4569632,"result_rows_est":50000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":188.49857330322266,"duckdb-wasm":97.63234456380208},"server_ms":126.19999998807907,"server_rows":18,"browser_ms":240,"browser_rows":18,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.01,"kind":"count_by","limit":null,"input_bytes_est":7621277,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":49.22832131385803,"duckdb-wasm":146.13693555196127},"server_ms":77.39999997615814,"server_rows":8,"browser_ms":294,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.01,"kind":"features","limit":2000,"input_bytes_est":7621277,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":54.807316064834595,"duckdb-wasm":146.13693555196127},"server_ms":87.39999997615814,"server_rows":615,"browser_ms":286,"browser_rows":615,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.01,"kind":"features","limit":50000,"input_bytes_est":7621277,"result_rows_est":50000,"planner_selected":"duckdb-wasm","planner_scores":{"duckdb":192.1364176273346,"duckdb-wasm":146.13693555196127},"server_ms":96.5,"server_rows":615,"browser_ms":247,"browser_rows":615,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":12172141,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":54.6533739566803,"duckdb-wasm":218.4709707895915},"server_ms":83.10000002384186,"server_rows":8,"browser_ms":261,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":12172141,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":60.23236870765686,"duckdb-wasm":218.4709707895915},"server_ms":112.40000003576279,"server_rows":2000,"browser_ms":374,"browser_rows":2000,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":12172141,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":197.56147027015686,"duckdb-wasm":218.4709707895915},"server_ms":700.7000000476837,"server_rows":40961,"browser_ms":4137,"browser_rows":40961,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.25,"kind":"count_by","limit":null,"input_bytes_est":36433042,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":83.57462167739868,"duckdb-wasm":604.0876070658366},"server_ms":81.30000001192093,"server_rows":8,"browser_ms":204,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.25,"kind":"features","limit":2000,"input_bytes_est":36433042,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":89.15361642837524,"duckdb-wasm":604.0876070658366},"server_ms":105.5,"server_rows":2000,"browser_ms":360,"browser_rows":2000,"rows_match":true}
+{"dataset":"clustered_100mb_spatial","fraction":0.25,"kind":"features","limit":50000,"input_bytes_est":36433042,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":226.48271799087524,"duckdb-wasm":604.0876070658366},"server_ms":772.5,"server_rows":50000,"browser_ms":4957,"browser_rows":50000,"rows_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.002,"kind":"count_by","limit":null,"input_bytes_est":22572370,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":67.05141305923462,"duckdb-wasm":383.7781588236491},"server_ms":84.5,"server_rows":8,"browser_ms":2618,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.002,"kind":"features","limit":2000,"input_bytes_est":22572370,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":72.63040781021118,"duckdb-wasm":383.7781588236491},"server_ms":104.89999997615814,"server_rows":323,"browser_ms":2158,"browser_rows":323,"rows_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.002,"kind":"features","limit":50000,"input_bytes_est":22572370,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":209.95950937271118,"duckdb-wasm":383.7781588236491},"server_ms":115.30000001192093,"server_rows":323,"browser_ms":2165,"browser_rows":323,"rows_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.01,"kind":"count_by","limit":null,"input_bytes_est":37553215,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":84.90997195243835,"duckdb-wasm":621.8922773996989},"server_ms":95,"server_rows":8,"browser_ms":2146,"browser_rows":8,"digest_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.01,"kind":"features","limit":2000,"input_bytes_est":37553215,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":90.48896670341492,"duckdb-wasm":621.8922773996989},"server_ms":117.89999997615814,"server_rows":2000,"browser_ms":2319,"browser_rows":2000,"rows_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.01,"kind":"features","limit":50000,"input_bytes_est":37553215,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":227.81806826591492,"duckdb-wasm":621.8922773996989},"server_ms":204.5,"server_rows":6268,"browser_ms":2819,"browser_rows":6268,"rows_match":true}
+{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":97456287,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":156.31999850273132,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":109.69999998807907,"server_rows":8,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false}
+{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":97456287,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":161.89899325370789,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":120.20000004768372,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":97456287,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":299.2280948162079,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":815.1000000238419,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"count_by","limit":null,"input_bytes_est":284359885,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":379.1264498233795,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":165.80000001192093,"server_rows":8,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false}
+{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"features","limit":2000,"input_bytes_est":284359885,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":384.7054445743561,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":143.20000004768372,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"features","limit":50000,"input_bytes_est":284359885,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":522.0345461368561,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":1546.800000011921,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"count_by","limit":null,"input_bytes_est":112532440,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":174.29217338562012,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":201.29999995231628,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"features","limit":2000,"input_bytes_est":112532440,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":179.87116813659668,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":342.5,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"features","limit":50000,"input_bytes_est":112532440,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":317.2002696990967,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":2548.5,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"count_by","limit":null,"input_bytes_est":264643727,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":355.62295794487,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":235.30000001192093,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"features","limit":2000,"input_bytes_est":264643727,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":361.20195269584656,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":333.39999997615814,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"features","limit":50000,"input_bytes_est":264643727,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":498.53105425834656,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":2588.5,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":540200889,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":684.1126930713654,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":174.70000004768372,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":540200889,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":689.6916878223419,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":194,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":540200889,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":827.0207893848419,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":1346.5999999642372,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}
+{"dataset":"overture_buildings_vn_south","fraction":0.25,"kind":"count_by","limit":null,"input_bytes_est":993667328,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":1224.6868133544922,"duckdb-wasm":"rejected: estimated input 947.6 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":447.10000002384186,"server_rows":10,"browser_skipped":"estimated input 993667328 bytes > 734003200"}
+{"dataset":"overture_buildings_vn_south","fraction":0.25,"kind":"features","limit":2000,"input_bytes_est":993667328,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":1230.2658081054688,"duckdb-wasm":"rejected: estimated input 947.6 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":343.60000002384186,"server_rows":2000,"browser_skipped":"estimated input 993667328 bytes > 734003200"}
+{"dataset":"overture_buildings_vn_south","fraction":0.25,"kind":"features","limit":50000,"input_bytes_est":993667328,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":1367.5949096679688,"duckdb-wasm":"rejected: estimated input 947.6 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":2526.300000011921,"server_rows":50000,"browser_skipped":"estimated input 993667328 bytes > 734003200"}
+  x  1 e2e\crossover.spec.ts:55:1 › server vs browser: time, planner prediction and result agreement (10.0m)
+
+
+  1) e2e\crossover.spec.ts:55:1 › server vs browser: time, planner prediction and result agreement ─
+
+    Error: cross-engine mismatches: [{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":97456287,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":156.31999850273132,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":109.69999998807907,"server_rows":8,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false},{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":97456287,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":161.89899325370789,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":120.20000004768372,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"clustered_1gb_spatial","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":97456287,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":299.2280948162079,"duckdb-wasm":"rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":815.1000000238419,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"count_by","limit":null,"input_bytes_est":284359885,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":379.1264498233795,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":165.80000001192093,"server_rows":8,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false},{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"features","limit":2000,"input_bytes_est":284359885,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":384.7054445743561,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":143.20000004768372,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"clustered_1gb_spatial","fraction":0.25,"kind":"features","limit":50000,"input_bytes_est":284359885,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":522.0345461368561,"duckdb-wasm":"rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":1546.800000011921,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"count_by","limit":null,"input_bytes_est":112532440,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":174.29217338562012,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":201.29999995231628,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"features","limit":2000,"input_bytes_est":112532440,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":179.87116813659668,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":342.5,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.002,"kind":"features","limit":50000,"input_bytes_est":112532440,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":317.2002696990967,"duckdb-wasm":"rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":2548.5,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"count_by","limit":null,"input_bytes_est":264643727,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":355.62295794487,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":235.30000001192093,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"features","limit":2000,"input_bytes_est":264643727,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":361.20195269584656,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":333.39999997615814,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.01,"kind":"features","limit":50000,"input_bytes_est":264643727,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":498.53105425834656,"duckdb-wasm":"rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":2588.5,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"count_by","limit":null,"input_bytes_est":540200889,"result_rows_est":50,"planner_selected":"duckdb","planner_scores":{"duckdb":684.1126930713654,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":174.70000004768372,"server_rows":10,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin","browser_ms":null,"browser_rows":0,"digest_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"features","limit":2000,"input_bytes_est":540200889,"result_rows_est":2000,"planner_selected":"duckdb","planner_scores":{"duckdb":689.6916878223419,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":194,"server_rows":2000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false},{"dataset":"overture_buildings_vn_south","fraction":0.05,"kind":"features","limit":50000,"input_bytes_est":540200889,"result_rows_est":50000,"planner_selected":"duckdb","planner_scores":{"duckdb":827.0207893848419,"duckdb-wasm":"rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)"},"server_ms":1346.5999999642372,"server_rows":50000,"browser_error":"not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na","browser_ms":null,"browser_rows":0,"rows_match":false}]
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -   1
+    + Received  + 287
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "digest_match": false,
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 97456287,
+    +     "kind": "count_by",
+    +     "limit": null,
+    +     "planner_scores": Object {
+    +       "duckdb": 156.31999850273132,
+    +       "duckdb-wasm": "rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50,
+    +     "server_ms": 109.69999998807907,
+    +     "server_rows": 8,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 97456287,
+    +     "kind": "features",
+    +     "limit": 2000,
+    +     "planner_scores": Object {
+    +       "duckdb": 161.89899325370789,
+    +       "duckdb-wasm": "rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 2000,
+    +     "rows_match": false,
+    +     "server_ms": 120.20000004768372,
+    +     "server_rows": 2000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 97456287,
+    +     "kind": "features",
+    +     "limit": 50000,
+    +     "planner_scores": Object {
+    +       "duckdb": 299.2280948162079,
+    +       "duckdb-wasm": "rejected: estimated input 92.9 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50000,
+    +     "rows_match": false,
+    +     "server_ms": 815.1000000238419,
+    +     "server_rows": 50000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "digest_match": false,
+    +     "fraction": 0.25,
+    +     "input_bytes_est": 284359885,
+    +     "kind": "count_by",
+    +     "limit": null,
+    +     "planner_scores": Object {
+    +       "duckdb": 379.1264498233795,
+    +       "duckdb-wasm": "rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50,
+    +     "server_ms": 165.80000001192093,
+    +     "server_rows": 8,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "fraction": 0.25,
+    +     "input_bytes_est": 284359885,
+    +     "kind": "features",
+    +     "limit": 2000,
+    +     "planner_scores": Object {
+    +       "duckdb": 384.7054445743561,
+    +       "duckdb-wasm": "rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 2000,
+    +     "rows_match": false,
+    +     "server_ms": 143.20000004768372,
+    +     "server_rows": 2000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Int64\"},{\"crs\":null,\"geometry\":false,\"name\":\"category\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "clustered_1gb_spatial",
+    +     "fraction": 0.25,
+    +     "input_bytes_est": 284359885,
+    +     "kind": "features",
+    +     "limit": 50000,
+    +     "planner_scores": Object {
+    +       "duckdb": 522.0345461368561,
+    +       "duckdb-wasm": "rejected: estimated input 271.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50000,
+    +     "rows_match": false,
+    +     "server_ms": 1546.800000011921,
+    +     "server_rows": 50000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "digest_match": false,
+    +     "fraction": 0.002,
+    +     "input_bytes_est": 112532440,
+    +     "kind": "count_by",
+    +     "limit": null,
+    +     "planner_scores": Object {
+    +       "duckdb": 174.29217338562012,
+    +       "duckdb-wasm": "rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50,
+    +     "server_ms": 201.29999995231628,
+    +     "server_rows": 10,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.002,
+    +     "input_bytes_est": 112532440,
+    +     "kind": "features",
+    +     "limit": 2000,
+    +     "planner_scores": Object {
+    +       "duckdb": 179.87116813659668,
+    +       "duckdb-wasm": "rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 2000,
+    +     "rows_match": false,
+    +     "server_ms": 342.5,
+    +     "server_rows": 2000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.002,
+    +     "input_bytes_est": 112532440,
+    +     "kind": "features",
+    +     "limit": 50000,
+    +     "planner_scores": Object {
+    +       "duckdb": 317.2002696990967,
+    +       "duckdb-wasm": "rejected: estimated input 107.3 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50000,
+    +     "rows_match": false,
+    +     "server_ms": 2548.5,
+    +     "server_rows": 50000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "digest_match": false,
+    +     "fraction": 0.01,
+    +     "input_bytes_est": 264643727,
+    +     "kind": "count_by",
+    +     "limit": null,
+    +     "planner_scores": Object {
+    +       "duckdb": 355.62295794487,
+    +       "duckdb-wasm": "rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50,
+    +     "server_ms": 235.30000001192093,
+    +     "server_rows": 10,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.01,
+    +     "input_bytes_est": 264643727,
+    +     "kind": "features",
+    +     "limit": 2000,
+    +     "planner_scores": Object {
+    +       "duckdb": 361.20195269584656,
+    +       "duckdb-wasm": "rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 2000,
+    +     "rows_match": false,
+    +     "server_ms": 333.39999997615814,
+    +     "server_rows": 2000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.01,
+    +     "input_bytes_est": 264643727,
+    +     "kind": "features",
+    +     "limit": 50000,
+    +     "planner_scores": Object {
+    +       "duckdb": 498.53105425834656,
+    +       "duckdb-wasm": "rejected: estimated input 252.4 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50000,
+    +     "rows_match": false,
+    +     "server_ms": 2588.5,
+    +     "server_rows": 50000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"version\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"name\":\"count\",\"type\":\"Int64\"}],\"geojson\":null,\"ir\":{\"hin",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "digest_match": false,
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 540200889,
+    +     "kind": "count_by",
+    +     "limit": null,
+    +     "planner_scores": Object {
+    +       "duckdb": 684.1126930713654,
+    +       "duckdb-wasm": "rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50,
+    +     "server_ms": 174.70000004768372,
+    +     "server_rows": 10,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 540200889,
+    +     "kind": "features",
+    +     "limit": 2000,
+    +     "planner_scores": Object {
+    +       "duckdb": 689.6916878223419,
+    +       "duckdb-wasm": "rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 2000,
+    +     "rows_match": false,
+    +     "server_ms": 194,
+    +     "server_rows": 2000,
+    +   },
+    +   Object {
+    +     "browser_error": "not placed in the browser: {\"columns\":[{\"crs\":null,\"geometry\":false,\"name\":\"id\",\"type\":\"Utf8\"},{\"crs\":null,\"geometry\":false,\"name\":\"level\",\"type\":\"Int32\"},{\"crs\":null,\"geometry\":false,\"na",
+    +     "browser_ms": null,
+    +     "browser_rows": 0,
+    +     "dataset": "overture_buildings_vn_south",
+    +     "fraction": 0.05,
+    +     "input_bytes_est": 540200889,
+    +     "kind": "features",
+    +     "limit": 50000,
+    +     "planner_scores": Object {
+    +       "duckdb": 827.0207893848419,
+    +       "duckdb-wasm": "rejected: estimated input 515.2 MB exceeds the engine limit 50.0 MB (memory guard)",
+    +     },
+    +     "planner_selected": "duckdb",
+    +     "result_rows_est": 50000,
+    +     "rows_match": false,
+    +     "server_ms": 1346.5999999642372,
+    +     "server_rows": 50000,
+    +   },
+    + ]
+
+      128 |   fs.writeFileSync(out, JSON.stringify({ wasm_cold_start_ms: wasmColdMs, rows }, null, 2));
+      129 |   const bad = rows.filter((r) => r.digest_match === false || r.rows_match === false);
+    > 130 |   expect(bad, `cross-engine mismatches: ${JSON.stringify(bad)}`).toEqual([]);
+          |                                                                  ^
+      131 | });
+      132 |
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\crossover.spec.ts:130:66
+
+    Error Context: test-results\crossover-server-vs-browse-e17a7-iction-and-result-agreement\error-context.md
+
+  Slow test file: e2e\crossover.spec.ts (10.0m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    e2e\crossover.spec.ts:55:1 › server vs browser: time, planner prediction and result agreement ──

@@ -14,7 +14,10 @@ export default defineConfig({
   use: { baseURL: `http://127.0.0.1:${PORT}`, channel: "chrome", headless: true, viewport: { width: 1500, height: 900 } },
   webServer: {
     // run from the repo root; builds the gateway on first use
-    command: `cargo run -p geo-gateway --no-default-features -- --data benchmarks/data --web web/dist --port ${PORT}`,
+    // GATEWAY_BIN=target/release/geo-gateway.exe for timing runs (release build, no cargo)
+    command: process.env.GATEWAY_BIN
+      ? `${process.env.GATEWAY_BIN} --data benchmarks/data --web web/dist --port ${PORT}`
+      : `cargo run -p geo-gateway --no-default-features -- --data benchmarks/data --web web/dist --port ${PORT}`,
     cwd: "..",
     url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: true,

@@ -7,3 +7,7 @@ Lý do: nhúng được, đọc Parquet/HTTP/S3, extension spatial, xuất Arrow
 ## Evidence review (hardening, 2026-10-13)
 
 Evidence: works end to end, timeout/cancel via `InterruptHandle` verified, sandbox verified. Open: no second real engine (replaceability only shown with a mock), DuckDB reports no trustworthy scan metrics, build cost (ADR-006). **Stays Proposed.**
+
+## Update 2026-10-13 (multi-engine phase)
+
+A second *real* executor now exists (DuckDB-Wasm in the browser, behind the same contract; the planner chooses between the two, same plan -> same canonical digest). That proves the contract and planner are not DuckDB-server-shaped, **not** that engines of different families are interchangeable: both executors are DuckDB builds. **Stays Proposed.**

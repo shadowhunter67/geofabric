@@ -28,15 +28,23 @@ async function post(page: import("@playwright/test").Page, path: string, body: u
   }, [path, body] as const);
 }
 
+const recorded: { query: string; duckdb: unknown; wasm: unknown; match: boolean; rows: number }[] = [];
+test.afterAll(async () => {
+  // evidence for the report: HASHES_OUT=<file> npx playwright test engines
+  if (process.env.HASHES_OUT) (await import("node:fs")).writeFileSync(process.env.HASHES_OUT, JSON.stringify(recorded, null, 2));
+});
+
 /** Run one query template on both engines; return both digests (browser one computed in the page). */
-async function both(page: import("@playwright/test").Page, req: Record<string, unknown>) {
+async function both(page: import("@playwright/test").Page, req: Record<string, unknown>, label = "") {
   const server = await post(page, "/api/query", { ...req, engine: "duckdb", browser: false });
   expect(server.status, JSON.stringify(server.json).slice(0, 300)).toBe(200);
   const planned = await post(page, "/api/query", { ...req, engine: "duckdb-wasm" });
   expect(planned.status, JSON.stringify(planned.json).slice(0, 300)).toBe(200);
   expect(planned.json.placement).toBe("browser");
   const browser = await page.evaluate((r) => window.__gf.resolvePlacement(r), planned.json);
-  return { server: server.json as Resp, browser: browser as Resp };
+  const sr = server.json as Resp, br = browser as Resp;
+  recorded.push({ query: label, duckdb: sr.result_digest, wasm: br.result_digest, match: JSON.stringify(sr.result_digest) === JSON.stringify(br.result_digest), rows: br.rows_total });
+  return { server: sr, browser: br };
 }
 
 test.beforeEach(async ({ page }) => {
@@ -45,7 +53,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("same plan, two engines, same result: features in a viewport", async ({ page }) => {
-  const { server, browser } = await both(page, q({}));
+  const { server, browser } = await both(page, q({}), "features in viewport (bbox, limit 100000)");
   expect(browser.placement).toBe("browser");
   expect(server.placement).toBe("server");
   expect(browser.rows_total).toBeGreaterThan(0);
@@ -54,13 +62,13 @@ test("same plan, two engines, same result: features in a viewport", async ({ pag
 });
 
 test("same plan, two engines, same result: aggregate (count by category)", async ({ page }) => {
-  const { server, browser } = await both(page, q({ kind: "count_by", group_by: "category", limit: undefined }));
+  const { server, browser } = await both(page, q({ kind: "count_by", group_by: "category", limit: undefined }), "count by category in viewport (aggregate)");
   expect(browser.result_digest).toEqual(server.result_digest);
   expect(browser.rows_total).toBe(server.rows_total);
 });
 
 test("same plan, two engines, same result: attribute filter + features", async ({ page }) => {
-  const { server, browser } = await both(page, q({ filter: { column: "category", op: "eq", value: "school" } }));
+  const { server, browser } = await both(page, q({ filter: { column: "category", op: "eq", value: "school" } }), "features, category = school (attribute filter)");
   expect(browser.result_digest).toEqual(server.result_digest);
 });
 
@@ -78,4 +86,47 @@ test("browser disabled -> DuckDB", async ({ page }) => {
   expect(r.json.placement).toBe("server");
   const wasm = r.json.physical.candidates.find((c: { engine: string }) => c.engine === "duckdb-wasm");
   expect(wasm.rejected_because.join(" ")).toContain("disabled");
+});
+
+test("UI: choosing the browser engine runs the query locally and shows the planner decision", async ({ page }) => {
+  await page.getByRole("tab", { name: "SQL / Ask" }).click();
+  await page.getByLabel("Engine").selectOption("duckdb-wasm");
+  await page.getByRole("button", { name: "Run viewport query" }).click();
+  await expect(page.locator("header .status")).toContainText("duckdb-wasm", { timeout: 60_000 });
+  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  const panel = page.getByTestId("planner-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb-wasm");
+  await expect(panel).toContainText("Local (browser)");
+  await expect(panel.getByTestId("engine-alternative")).toHaveAttribute("data-engine", "duckdb");
+  await expect(panel).toContainText("Estimated transfer to the browser");
+  // results are real: table rows and a digest line
+  await page.getByRole("tab", { name: "Results" }).click();
+  expect(await page.locator(".tabbody table tbody tr").count()).toBeGreaterThan(0);
+});
+
+test("UI: auto mode shows the server engine, the browser alternative and the reason", async ({ page }) => {
+  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  const panel = page.getByTestId("planner-panel");
+  await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
+  await expect(panel).toContainText("Server");
+  await expect(panel.getByTestId("engine-alternative")).toHaveAttribute("data-engine", "duckdb-wasm");
+  await expect(panel).toContainText("Estimated input");
+});
+
+test("UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected)", async ({ page }) => {
+  // inject a failure into the browser engine (the real-world triggers are exercised by the crossover run: unsupported
+  // Parquet geometry types, tab crashes); this test covers the fallback mechanics and the honesty of the UI
+  await page.evaluate(() => {
+    (window as unknown as { __gf: { wasm: { execute: () => Promise<never> } } }).__gf.wasm.execute = () => Promise.reject(new Error("injected browser failure"));
+  });
+  await page.getByRole("tab", { name: "SQL / Ask" }).click();
+  await page.getByLabel("Engine").selectOption("duckdb-wasm");
+  await page.getByRole("button", { name: "Run viewport query" }).click();
+  await expect(page.locator("header .status")).toContainText("duckdb", { timeout: 30_000 });
+  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  const panel = page.getByTestId("planner-panel");
+  await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
+  await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure");
+  await expect(panel.getByTestId("engine-fallback")).toContainText("re-run on the server");
 });

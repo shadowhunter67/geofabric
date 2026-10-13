@@ -1,0 +1,1 @@
+geo-gateway listening on http://127.0.0.1:8800 (data: benchmarks/data, web: web/dist, query timeout: 30s)

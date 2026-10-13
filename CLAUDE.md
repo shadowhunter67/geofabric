@@ -1,6 +1,6 @@
 # GEOFABRIC
 
-Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP + hardening xong 2026-10-13 (REPORT-GEOFABRIC-CORE-MVP.md, REPORT-GEOFABRIC-HARDENING.md); Principal Architect đã Conditional Approve MVP, hardening đề xuất APPROVE — chờ review, KHÔNG mở rộng feature (real data, engine 2, WASM, AI) khi chưa được duyệt.
+Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP + hardening + multi-engine validation xong 2026-10-13 (REPORT-GEOFABRIC-CORE-MVP.md, REPORT-GEOFABRIC-HARDENING.md); Principal Architect đã Conditional Approve MVP, hardening đề xuất APPROVE — chờ review, KHÔNG mở rộng feature (real data, engine 2, WASM, AI) khi chưa được duyệt.
 
 ## Rules bắt buộc
 
@@ -11,7 +11,9 @@ Dự án kết nối và sử dụng các thành phần liên quan đến GIS (n
 
 ## Stack & môi trường
 
+- **Dev mặc định: DuckDB prebuilt đã kiểm sha256** (`python tools/duckdb_prebuilt.py`, rồi `export DUCKDB_LIB_DIR=...; export PATH="$DUCKDB_LIB_DIR:$PATH"`, `cargo ... --no-default-features`). Bundled (feature mặc định) chỉ cho CI/release và CHƯA chạy lại vòng này. Test Playwright cần `GATEWAY_BIN` (bản release) khi đo thời gian; trong cmd.exe dùng dấu `\` trong đường dẫn.
 - Rust 1.99 workspace (`crates/*`): geo-types → geo-ir → geo-executor/source-geoparquet → planner → engine-duckdb → runtime → gateway (axum). Web: TypeScript + Vite + MapLibre (không React) trong `web/`.
+- **Đã cài thêm (phase multi-engine, 2026-10-13)**: `tools/.cache/duckdb-1.5.6/lib` (libduckdb prebuilt, sha256 đã kiểm); npm `@duckdb/duckdb-wasm`, `@playwright/test` (dùng Chrome cài sẵn, KHÔNG tải browser); venv: `shapely` (chỉ cho oracle Overture); dữ liệu Overture 1.45 GB `benchmarks/data/overture_buildings_vn_south.parquet` (gitignored, ODbL/attribution Overture).
 - **Đã cài (2026-10-13)**: `benchmarks/.venv` (pyarrow, duckdb 1.5.6, numpy — chỉ để sinh dữ liệu/đối chiếu, KHÔNG nằm trên execution path); `web/node_modules` (maplibre-gl 6, vite 8, typescript 7, @types/geojson); DuckDB `spatial` extension tải về `~/.duckdb/extensions/v1.5.6/` (lần đầu cần mạng ~1 phút). Crate `duckdb` bundled build 3–5 phút, `target/` rất lớn (xem ADR-006) → dùng `CARGO_BUILD_JOBS=3` khi đang làm việc, build/bench nặng chạy mức ưu tiên BelowNormal.
 - Dữ liệu synthetic: `benchmarks/data/` (gitignored) sinh bằng `benchmarks/gen_synthetic.py --size 10mb|100mb|1gb` (seed 42, tái lập được). KHÔNG tải 10 GB / Overture khi chưa báo user.
 

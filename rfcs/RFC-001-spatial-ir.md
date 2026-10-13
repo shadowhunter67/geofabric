@@ -1,6 +1,6 @@
 # RFC-001 — Spatial IR
 
-Status: Proposed (revised 2026-10-13: CRS variants, tree vs DAG)
+Status: Accepted for IR 0.2 (PlanGraph implemented 2026-10-13, see ADR-007; CRS variants as of the hardening round)
 
 ## Mục tiêu
 
@@ -14,9 +14,9 @@ MVP cài: Source, Filter, BBoxFilter, Intersects, Aggregate, Project, Limit, Sor
 ## Metadata mỗi node
 
 `operation, inputs, schema, geometry_type, crs, units, statistics, lineage, capability_requirements, hints`.
-**Current representation: tree** (`Node` owns its inputs; a shared sub-plan is duplicated). **Target representation: DAG / `PlanGraph`** — accepted as P1 architecture debt, *not* implemented. Content hashes (`node_id`) already exist so the move to a graph does not change node semantics.
+**Representation (IR 0.2): DAG / `PlanGraph`**, implemented. IR 0.1 (nested tree) is still readable: `Plan::from_json` migrates it deterministically (equal sub-trees become one shared node); the tree `Node` type remains a builder. Node ids from the builder are content hashes; `plan_id()` hashes content so it never depends on id spelling.
 
-Target (not implemented):
+Shape:
 
 ```
 PlanGraph { nodes: NodeId -> Node, edges, root: NodeId }

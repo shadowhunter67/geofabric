@@ -73,6 +73,8 @@ export interface ExecutionContext {
   sources: Record<string, SourceBinding>; // keyed by the plan's source uri
   timeoutMs: number;
   maxRows: number;
+  /** Planner's input estimate; lets the engine recycle its instance before memory accumulates. */
+  estimatedInputBytes?: number;
   signal?: AbortSignal;
 }
 

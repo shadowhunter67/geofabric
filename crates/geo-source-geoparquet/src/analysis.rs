@@ -35,6 +35,13 @@ pub struct SourceScan {
     pub covering_inferred: bool,
     /// Column paths of the covering (for engines that prune through it, e.g. the browser engine).
     pub covering: Option<Covering>,
+    /// Compressed bytes of the covering columns over **all** row groups. Engines that cannot prune
+    /// through struct-field statistics (measured: DuckDB-Wasm) have to read all of it.
+    pub covering_bytes_total: u64,
+    /// Heuristic row estimate after the spatial constraints: per kept row group, rows x overlap
+    /// fraction of the query window with the row group's bbox (uniform-density assumption).
+    /// An estimate (`SourceEstimated`), not a bound: dense clusters make it optimistic, sparse ones pessimistic.
+    pub selected_rows_estimate: u64,
     pub prune: PruneReport,
 }
 
@@ -117,6 +124,30 @@ pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<So
         if path_sets.len() > 1 {
             skipped.push(format!("shared source: union of {} access paths", path_sets.len()));
         }
+        // selectivity estimate: for each kept row group the best (max) path fraction; a path's fraction is
+        // the min over its constraints of overlap_area / row-group area
+        let mut selected_rows = 0.0f64;
+        for g in &kept {
+            let rg = &info.row_groups[*g];
+            let mut best = 0.0f64;
+            for set in path_sets {
+                let mut frac = 1.0f64;
+                for c in set {
+                    if c.column != info.geometry_column {
+                        continue;
+                    }
+                    if let Some(b) = rg.bbox {
+                        let ow = (b[2].min(c.bbox.max_x()) - b[0].max(c.bbox.min_x())).max(0.0);
+                        let oh = (b[3].min(c.bbox.max_y()) - b[1].max(c.bbox.min_y())).max(0.0);
+                        let area = (b[2] - b[0]) * (b[3] - b[1]);
+                        let f = if area > 0.0 { (ow * oh / area).min(1.0) } else { 1.0 };
+                        frac = frac.min(f);
+                    }
+                }
+                best = best.max(frac);
+            }
+            selected_rows += rg.rows as f64 * best;
+        }
         let kept: Vec<usize> = kept.into_iter().collect();
         let total_bytes: u64 = info.row_groups.iter().map(|r| r.compressed_bytes).sum();
         let kept_rows: u64 = kept.iter().map(|i| info.row_groups[*i].rows).sum();
@@ -134,6 +165,11 @@ pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<So
             has_covering: info.covering.is_some(),
             covering_inferred: info.covering.as_ref().is_some_and(|c| !c.declared),
             covering: info.covering.clone(),
+            selected_rows_estimate: selected_rows.ceil() as u64,
+            covering_bytes_total: info.covering.as_ref().map_or(0, |c| {
+                let top = c.xmin.split('.').next().unwrap_or("");
+                info.row_groups.iter().map(|r| r.column_bytes.get(top).copied().unwrap_or(0)).sum()
+            }),
             prune: PruneReport {
                 method: if has_stats && applied > 0 { PruneMethod::CoveringStats } else { PruneMethod::NoStatistics },
                 total_row_groups: info.row_groups.len(),

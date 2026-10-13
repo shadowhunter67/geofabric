@@ -2,7 +2,7 @@
 
 > A spatial runtime for cloud-native geospatial computing: a logical Spatial IR, a planner, and replaceable execution engines.
 
-Status: **core MVP, hardening round done** (see REPORT-GEOFABRIC-HARDENING.md) (vertical slice GeoParquet → Spatial IR → planner → DuckDB → Arrow → MapLibre). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
+Status: **multi-engine architecture validation done** (PlanGraph DAG, planner v1 choosing between DuckDB on the server and DuckDB-Wasm in the browser, validated on a real 1.45 GB Overture subset). Reports: [core MVP](REPORT-GEOFABRIC-CORE-MVP.md) · [hardening](REPORT-GEOFABRIC-HARDENING.md) · [multi-engine](REPORT-GEOFABRIC-MULTI-ENGINE.md). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
 
 Read first: [CONSTITUTION.md](CONSTITUTION.md) · [AGENTS.md](AGENTS.md) · [docs/vision.md](docs/vision.md) · [rfcs/](rfcs/) · [adr/](adr/)
 
@@ -43,8 +43,18 @@ benchmarks/.venv/Scripts/python benchmarks/oracle.py --size 100mb --data benchma
 cd web && npm install && npm run build && cd ..
 ```
 
-First run of the DuckDB adapter downloads the `spatial` extension (needs network once, ~1 min).
-The first DuckDB-bundled build takes 3–5 minutes and `target/` becomes large (ADR-006). Use `CARGO_BUILD_JOBS=3` to keep the machine responsive.
+**Development (default): verified prebuilt DuckDB** — fast and small (ADR-006):
+
+```
+python tools/duckdb_prebuilt.py        # downloads libduckdb v1.5.6, checks sha256 (GitHub digest + lock file)
+export DUCKDB_LIB_DIR="<printed dir>"; export PATH="$DUCKDB_LIB_DIR:$PATH"
+cargo test --workspace --no-default-features        # ~1 min clean
+```
+
+`--no-default-features` selects the prebuilt library; the **default features compile DuckDB from source** (bundled: 10 min, tens of GB — intended for CI/release, not exercised in the last round).
+The first run of the DuckDB adapter downloads the `spatial` extension (needs network once, ~1 min).
+
+Real data (optional, ~1.5 GB, public Overture release, not committed): `benchmarks/.venv/Scripts/python benchmarks/overture_fetch.py --name vn_south --bbox 105 8.5 108 12 --out benchmarks/data` then `oracle_overture.py` for the independent expected results.
 
 ## Demo (exact steps)
 
@@ -64,9 +74,9 @@ UI development: `cargo run -p geo-gateway` + `cd web && npm run dev` (proxy to :
 ## Checks
 
 ```
-cargo test --workspace                 # needs benchmarks/data (tests skip with a message if absent)
+cargo test --workspace --no-default-features   # needs benchmarks/data (tests skip with a message if absent)
 python tools/arch_check.py             # dependency-boundary rules from the Constitution
-cd web && npm run typecheck
+cd web && npm run typecheck && npm test        # TS unit tests (sqlgen, digest, wkb) via node --test
 cd web && npm run build && npx playwright test   # browser smoke (uses the installed Chrome, starts the gateway)
 cargo build --release -p geo-bench
 target/release/geo-bench.exe --data benchmarks/data --out benchmarks/results --sizes 10mb,100mb --reps 3 --tag run

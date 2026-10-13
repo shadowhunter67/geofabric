@@ -18,9 +18,35 @@ const BUNDLES: duckdb.DuckDBBundles = {
   eh: { mainModule: ehWasm, mainWorker: ehWorker },
 };
 
+/**
+ * A long-lived DuckDB-Wasm instance accumulates file metadata and cached ranges. Measured on real
+ * data: after queries over several large files in one tab the tab crashed ("Target crashed"), while
+ * the very same query in a fresh page worked. So the instance is recycled (worker terminated,
+ * new one created) once the cumulative planner-estimated input exceeds this budget.
+ */
+export const RECYCLE_AFTER_INPUT_BYTES = 192 * 1024 * 1024;
+
 export class DuckDbWasmEngine implements ExecutionEngine {
   private db: duckdb.AsyncDuckDB | null = null;
   private starting: Promise<duckdb.AsyncDuckDB> | null = null;
+  private cumulativeInput = 0;
+  recycles = 0;
+  /** Cumulative estimated input after which the instance is recycled (tests/benchmarks may change it). */
+  recycleBudget = RECYCLE_AFTER_INPUT_BYTES;
+
+  /** Terminate the worker and forget the instance (next query starts a fresh one). */
+  async recycle(): Promise<void> {
+    const db = this.db ?? (await this.starting?.catch(() => null)) ?? null;
+    this.db = null;
+    this.starting = null;
+    this.cumulativeInput = 0;
+    this.recycles++;
+    try {
+      await db?.terminate();
+    } catch {
+      /* worker already gone */
+    }
+  }
 
   id(): string {
     return ENGINE_ID;
@@ -30,7 +56,7 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     return { id: ENGINE_ID, kind: "browser", ops: SUPPORTED_OPS };
   }
 
-  private async instance(): Promise<duckdb.AsyncDuckDB> {
+  async instance(): Promise<duckdb.AsyncDuckDB> {
     if (this.db) return this.db;
     if (!this.starting) {
       this.starting = (async () => {
@@ -48,6 +74,9 @@ export class DuckDbWasmEngine implements ExecutionEngine {
   async execute(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
     const t0 = performance.now();
     const { sql, files } = compile(plan, ctx.sources, ctx.maxRows); // throws "unsupported"/"invalid" before any I/O
+    const est = ctx.estimatedInputBytes ?? 0;
+    if (this.cumulativeInput > 0 && this.cumulativeInput + est > this.recycleBudget) await this.recycle();
+    this.cumulativeInput += est;
     const db = await this.instance();
     for (const f of files) {
       try {

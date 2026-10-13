@@ -6,16 +6,16 @@
 //! decision log. The planner never executes anything and never names an engine
 //! concretely: engines arrive only through [`EngineDescriptor`].
 //!
-//! Cost model (deliberately simple, all numbers configurable, calibrated from
-//! benchmarks — see the multi-engine report):
+//! Cost model (deliberately simple, all numbers configurable and **fitted on measurements**, see
+//! [`CostModel`]):
 //!
 //! ```text
-//! score_ms(server)  = server_fixed_ms  + input_bytes / server_scan_rate  + result_bytes / network_rate
-//! score_ms(browser) = browser_fixed_ms + input_bytes / browser_scan_rate + input_bytes  / network_rate
+//! score_ms(server)  = fixed + a_s*input_MB + r_s*result_rows + result_bytes/network
+//! score_ms(browser) = fixed + a_b*covering_MB + b_b*input_MB + r_b*result_rows + (covering+input)_bytes/network
 //! ```
 //!
 //! i.e. a server engine scans next to the data and ships the *result*; a
-//! browser engine must first pull the *input* it needs across the network.
+//! browser engine must first pull the data it needs across the network.
 //! Hard limits (browser memory, result rows, operations, covering column) make a
 //! candidate infeasible — they are never traded against score.
 
@@ -43,14 +43,28 @@ pub struct Decision {
     pub reason: String,
 }
 
-/// Linear cost model parameters (ms, MB/s, bytes). Defaults are placeholders that
-/// the benchmark calibration step replaces with measured values.
+/// Linear cost model (ms, MB, µs). Defaults were **fitted on measurements** (crossover benchmark,
+/// 65 samples over synthetic 10 MB / 100 MB / 1 GB files and a real 1.45 GB Overture subset, one
+/// machine, browser and gateway on the same host, so local transfer is ~free). `network_mb_per_s` is
+/// therefore an *assumption* (a LAN), never a measurement.
+///
+/// Fitted (non-negative least squares on *relative* error, so small queries are not drowned out by
+/// the large ones; the first fit minimised absolute error and mis-ranked every small case):
+///   server  = 83 ms + 0.199 ms/MB(kept input) + 17.8 µs/result row                    (median relative error 14 %)
+///   browser = 19 ms + 5.38 ms/MB(covering columns of the whole file) + 0.58 ms/MB(kept) + 96 µs/result row
+///                                                                                      (median relative error 17.5 %)
+/// The browser term on the *whole file's* covering columns exists because DuckDB-Wasm (this build) does
+/// not prune row groups through struct-field statistics: it reads every bbox column chunk.
 #[derive(Debug, Clone, Serialize)]
 pub struct CostModel {
     pub server_fixed_ms: f64,
+    pub server_ms_per_input_mb: f64,
+    pub server_us_per_result_row: f64,
     pub browser_fixed_ms: f64,
-    pub server_scan_mb_per_s: f64,
-    pub browser_scan_mb_per_s: f64,
+    pub browser_ms_per_covering_mb: f64,
+    pub browser_ms_per_input_mb: f64,
+    pub browser_us_per_result_row: f64,
+    /// Assumed bandwidth between the user and the data/server (added on top of the fitted local costs).
     pub network_mb_per_s: f64,
     pub avg_result_row_bytes: u64,
     /// Result rows assumed for a grouped aggregate (ungrouped = 1).
@@ -60,11 +74,17 @@ pub struct CostModel {
 impl Default for CostModel {
     fn default() -> Self {
         CostModel {
-            server_fixed_ms: 40.0,
-            browser_fixed_ms: 25.0,
-            server_scan_mb_per_s: 800.0,
-            browser_scan_mb_per_s: 150.0,
-            network_mb_per_s: 100.0,
+            server_fixed_ms: 83.0,
+            server_ms_per_input_mb: 0.199,
+            server_us_per_result_row: 17.8,
+            browser_fixed_ms: 19.0,
+            browser_ms_per_covering_mb: 5.38,
+            browser_ms_per_input_mb: 0.58,
+            browser_us_per_result_row: 96.0,
+            // The measurements ran with browser and gateway on one host (loopback), so the fitted terms
+            // contain no real network. 1000 MB/s keeps the network term negligible for that setup;
+            // set it to the real user<->data bandwidth in a deployment (the browser then loses earlier).
+            network_mb_per_s: 1000.0,
             avg_result_row_bytes: 300,
             aggregate_result_rows: 1000,
         }
@@ -102,7 +122,11 @@ impl Default for PlannerConfig {
 #[derive(Debug, Clone, Serialize)]
 pub struct CostBreakdown {
     pub fixed_ms: f64,
+    /// Reading/scanning (server: kept input; browser: covering columns + kept input).
     pub scan_ms: f64,
+    /// Producing/converting the result rows.
+    pub result_ms: f64,
+    /// Assumed-network transfer (server: result; browser: bytes pulled into the tab).
     pub transfer_ms: f64,
     pub scan_bytes: u64,
     pub transfer_bytes: u64,
@@ -228,7 +252,8 @@ impl Planner {
             other => PlanError::Other(other.to_string()),
         })?;
         let input_bytes: u64 = scans.iter().map(|s| s.prune.kept_bytes).sum();
-        let input_rows: u64 = scans.iter().map(|s| s.prune.kept_rows).sum();
+        // result rows are estimated from the selectivity heuristic, not from the (much larger) kept row groups
+        let input_rows: u64 = scans.iter().map(|s| s.selected_rows_estimate).sum();
         for s in &scans {
             log.push(dec(
                 "spatial_prune",
@@ -259,6 +284,7 @@ impl Planner {
                 "bbox covering column inferred by naming convention (struct `bbox`), not declared in the GeoParquet metadata; pruning relies on that column really covering the geometry",
             ));
         }
+        let covering_total: u64 = scans.iter().map(|s| s.covering_bytes_total).sum();
         let result_rows = result_rows_estimate(plan, input_rows, &cfg.cost);
         let result_bytes = result_rows.saturating_mul(cfg.cost.avg_result_row_bytes);
         let has_bbox_filter = plan.required_ops().contains(&OpKind::BboxFilter);
@@ -287,11 +313,19 @@ impl Planner {
                 input_limit = Some(input_limit.map_or(cfg.browser_max_input_bytes, |l| l.min(cfg.browser_max_input_bytes)));
                 rows_limit = Some(rows_limit.map_or(cfg.browser_max_result_rows, |l| l.min(cfg.browser_max_result_rows)));
             }
+            // A browser engine reads the covering columns of the whole file (no struct-stat pruning) on top
+            // of the kept data: both count against its memory guard.
+            let engine_input = if caps.kind == EngineKind::Browser { input_bytes + covering_total } else { input_bytes };
             if let Some(l) = input_limit {
-                if input_bytes > l {
-                    why_not.push(format!("estimated input {:.1} MB exceeds the engine limit {:.1} MB (memory guard)", mb(input_bytes), mb(l)));
+                if engine_input > l {
+                    why_not.push(format!(
+                        "estimated input {:.1} MB{} exceeds the engine limit {:.1} MB (memory guard)",
+                        mb(engine_input),
+                        if caps.kind == EngineKind::Browser { " (kept data + covering columns of the whole file)" } else { "" },
+                        mb(l)
+                    ));
                 } else {
-                    why.push(format!("estimated input {:.1} MB within the engine limit {:.1} MB", mb(input_bytes), mb(l)));
+                    why.push(format!("estimated input {:.1} MB within the engine limit {:.1} MB", mb(engine_input), mb(l)));
                 }
             }
             if let Some(l) = rows_limit {
@@ -307,24 +341,27 @@ impl Planner {
             let feasible = why_not.is_empty();
             let cost = feasible.then(|| {
                 let c = &cfg.cost;
+                let net = |bytes: u64| mb(bytes) / c.network_mb_per_s * 1000.0;
                 match caps.kind {
                     EngineKind::Server => CostBreakdown {
                         fixed_ms: c.server_fixed_ms,
-                        scan_ms: mb(input_bytes) / c.server_scan_mb_per_s * 1000.0,
-                        transfer_ms: mb(result_bytes) / c.network_mb_per_s * 1000.0,
+                        scan_ms: mb(input_bytes) * c.server_ms_per_input_mb,
+                        result_ms: result_rows as f64 * c.server_us_per_result_row / 1000.0,
+                        transfer_ms: net(result_bytes),
                         scan_bytes: input_bytes,
                         transfer_bytes: result_bytes,
                     },
                     EngineKind::Browser => CostBreakdown {
                         fixed_ms: c.browser_fixed_ms,
-                        scan_ms: mb(input_bytes) / c.browser_scan_mb_per_s * 1000.0,
-                        transfer_ms: mb(input_bytes) / c.network_mb_per_s * 1000.0,
-                        scan_bytes: input_bytes,
-                        transfer_bytes: input_bytes,
+                        scan_ms: mb(covering_total) * c.browser_ms_per_covering_mb + mb(input_bytes) * c.browser_ms_per_input_mb,
+                        result_ms: result_rows as f64 * c.browser_us_per_result_row / 1000.0,
+                        transfer_ms: net(input_bytes + covering_total),
+                        scan_bytes: input_bytes + covering_total,
+                        transfer_bytes: input_bytes + covering_total,
                     },
                 }
             });
-            let score = cost.as_ref().map(|c| c.fixed_ms + c.scan_ms + c.transfer_ms);
+            let score = cost.as_ref().map(|c| c.fixed_ms + c.scan_ms + c.result_ms + c.transfer_ms);
             if let (Some(c), Some(sc)) = (&cost, score) {
                 match caps.kind {
                     EngineKind::Server => why.push(format!(

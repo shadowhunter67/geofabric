@@ -35,6 +35,7 @@ interface Metrics {
   notes: string[];
 }
 interface RunResp {
+  fallback?: { from: string; reason: string };
   placement?: "server" | "browser"; result_digest?: { count: number; sha256: string };
   source_urls?: Record<string, string>; limits?: { max_rows: number; timeout_ms: number };
   plan_id: string; ir: unknown; physical: Physical; lineage: { id: string; op: string }[];
@@ -233,6 +234,24 @@ function bindSources(r: RunResp): Record<string, SourceBinding> {
   return out;
 }
 
+/**
+ * Browser execution can fail for reasons the planner cannot see from metadata (measured: DuckDB-Wasm
+ * cannot read natively-typed Parquet GEOMETRY columns written by DuckDB >= 1.5, e.g. an Overture
+ * subset; very large inputs crash the tab). The failure is never hidden: the same request is re-planned
+ * with the browser disabled, and the response carries `fallback` so the UI says what happened.
+ */
+async function placeWithFallback(first: RunResp, retry: () => Promise<RunResp>): Promise<RunResp> {
+  try {
+    return await resolvePlacement(first);
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    log(`browser engine failed, falling back to the server engine: ${reason}`, true);
+    await wasm.recycle();
+    const second = await retry();
+    return { ...second, fallback: { from: first.physical.engine, reason } };
+  }
+}
+
 /** If the planner placed the plan in the browser, run it there and return a server-shaped response. */
 async function resolvePlacement(r: RunResp): Promise<RunResp> {
   if (r.placement !== "browser") return r;
@@ -240,7 +259,7 @@ async function resolvePlacement(r: RunResp): Promise<RunResp> {
   const plan = r.ir as PlanGraph;
   let res;
   try {
-    res = await wasm.execute(plan, { sources: bindSources(r), timeoutMs: r.limits?.timeout_ms ?? 30000, maxRows: r.limits?.max_rows ?? 100000 });
+    res = await wasm.execute(plan, { sources: bindSources(r), timeoutMs: r.limits?.timeout_ms ?? 30000, maxRows: r.limits?.max_rows ?? 100000, estimatedInputBytes: r.physical.input_bytes_upper_bound });
   } catch (e) {
     const k = e instanceof EngineError ? `${e.kind}: ` : "";
     throw new Error(`browser engine failed (${k}${e instanceof Error ? e.message : String(e)})`);
@@ -294,7 +313,11 @@ async function run() {
   }
   S.busy = true; runBtn.disabled = true; statusEl.textContent = "running…";
   try {
-    await handle(await resolvePlacement(await api<RunResp>("/api/query", currentRequest())), `${S.kind} @ ${S.cur.id}`);
+    const req = currentRequest();
+    await handle(
+      await placeWithFallback(await api<RunResp>("/api/query", req), () => api<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
+      `${S.kind} @ ${S.cur.id}`,
+    );
   } catch (e) {
     log(String(e), true); statusEl.textContent = "error";
     setTab("logs");
@@ -435,7 +458,10 @@ async function runIr(text: string, explainOnly: boolean) {
       const r = await api<{ physical: Physical }>("/api/ir/explain", { ir });
       S.last = { ...(S.last as RunResp), physical: r.physical, metrics: { ...(S.last?.metrics as Metrics) } };
       setTab("execution");
-    } else await handle(await resolvePlacement(await api<RunResp>("/api/ir/run", { ir, engine: S.engine === "auto" ? undefined : S.engine, browser: S.allowBrowser })), "IR run");
+    } else {
+      const body = { ir, engine: S.engine === "auto" ? undefined : S.engine, browser: S.allowBrowser };
+      await handle(await placeWithFallback(await api<RunResp>("/api/ir/run", body), () => api<RunResp>("/api/ir/run", { ir, engine: "duckdb", browser: false })), "IR run");
+    }
   } catch (e) { log(String(e), true); setTab("logs"); }
 }
 
@@ -520,6 +546,7 @@ function plannerPanel(r: RunResp): HTMLElement {
     ...alts.map((c) => el("div", { class: "alt", "data-testid": "engine-alternative", "data-engine": c.engine },
       el("b", {}, `Alternative: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
       c.feasible ? `score ${c.score_ms?.toFixed(1)} ms` : "not feasible", c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),
+    r.fallback ? el("div", { class: "dec", "data-testid": "engine-fallback" }, el("span", { class: "o-warning" }, "[fallback] "), `the browser engine failed (${r.fallback.reason.slice(0, 160)}); the query was re-run on the server`) : null,
     r.result_digest ? el("div", { class: "note" }, `result digest ${r.result_digest.sha256.slice(0, 12)} · count ${r.result_digest.count}`) : null);
   return box;
 }

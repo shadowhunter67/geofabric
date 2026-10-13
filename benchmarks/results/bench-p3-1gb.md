@@ -1,0 +1,30 @@
+| dataset | size MB | dist | order | query | result count | result hash | validation | rg skipped (est.) / total (obs.) | rows scanned <= (est.) | bytes <= (est.) | bytes read | median ms (obs.) | peak buf MB (obs.) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| clustered_1gb_spatial | 968.6 | clustered | spatial | bbox_count_small(0.6%) | 3507 | 736eb54066e3 | pass | 126/130 | 400000 | 30091685 | unknown | 19.3 | 7.6 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | bbox_count_large(25%) | 2611339 | 8aae96d082ed | pass | 97/130 | 3300000 | 246435628 | unknown | 88.4 | 18.7 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | attr_filter_fullscan | 248893 | 66877cb8d61e | pass | 0/130 | 13000000 | 968453486 | unknown | 36.9 | 14.2 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | intersects_count_small | 3507 | 736eb54066e3 | pass | 126/130 | 400000 | 30091685 | unknown | 26.7 | 21.0 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | aggregate_by_category_small | 8 | 819840015694 | pass | 126/130 | 400000 | 30091685 | unknown | 18.4 | 10.0 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | spatial_join_small | 132 | dbb1ded63bc7 | pass | 126/130 | 400000 | 30091685 | unknown | 52.4 | 41.5 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | return_rows_small(id,geometry) | 3507 | aa53d54635e0 | pass | 126/130 | 400000 | 30091685 | unknown | 49.7 | 10.8 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | bbox_count_small(0.6%) | 3507 | 736eb54066e3 | pass | 0/130 | 13000000 | 1004946251 | unknown | 271.2 | 35.2 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | bbox_count_large(25%) | 2611339 | 8aae96d082ed | pass | 0/130 | 13000000 | 1004946251 | unknown | 273.6 | 36.5 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | attr_filter_fullscan | 248893 | 66877cb8d61e | pass | 0/130 | 13000000 | 1004946251 | unknown | 34.0 | 13.1 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | intersects_count_small | 3507 | 736eb54066e3 | pass | 0/130 | 13000000 | 1004946251 | unknown | 652.9 | 78.8 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | aggregate_by_category_small | 8 | 819840015694 | pass | 0/130 | 13000000 | 1004946251 | unknown | 269.2 | 51.5 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | spatial_join_small | 132 | dbb1ded63bc7 | pass | 0/130 | 13000000 | 1004946251 | unknown | 1154.3 | 94.5 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | return_rows_small(id,geometry) | 3507 | aa53d54635e0 | pass | 0/130 | 13000000 | 1004946251 | unknown | 2327.1 | 38.0 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | bbox_count_small(0.6%) | 81698 | 57ce9c7f6da4 | pass | 118/130 | 1200000 | 90301397 | unknown | 33.1 | 16.1 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | bbox_count_large(25%) | 3251942 | 7a2a8bdc46d9 | pass | 81/130 | 4900000 | 368686466 | unknown | 107.7 | 19.7 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | attr_filter_fullscan | 249412 | f07223a53368 | pass | 0/130 | 13000000 | 977597896 | unknown | 34.1 | 13.2 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | intersects_count_small | 81698 | 57ce9c7f6da4 | pass | 118/130 | 1200000 | 90301397 | unknown | 56.7 | 36.5 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | aggregate_by_category_small | 8 | 67ead429829a | pass | 118/130 | 1200000 | 90301397 | unknown | 31.6 | 23.6 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | spatial_join_small | 1989 | 9113b98df80f | pass | 124/130 | 600000 | 45155149 | unknown | 61.9 | 53.0 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | return_rows_small(id,geometry) | 81698 | 564221253a14 | pass | 118/130 | 1200000 | 90301397 | unknown | 146.3 | 14.7 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | bbox_count_small(0.6%) | 81698 | 57ce9c7f6da4 | pass | 0/130 | 13000000 | 1007234518 | unknown | 253.4 | 34.9 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | bbox_count_large(25%) | 3251942 | 7a2a8bdc46d9 | pass | 0/130 | 13000000 | 1007234518 | unknown | 266.1 | 39.4 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | attr_filter_fullscan | 249412 | f07223a53368 | pass | 0/130 | 13000000 | 1007234518 | unknown | 34.5 | 13.5 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | intersects_count_small | 81698 | 57ce9c7f6da4 | pass | 0/130 | 13000000 | 1007234518 | unknown | 725.0 | 84.7 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | aggregate_by_category_small | 8 | 67ead429829a | pass | 0/130 | 13000000 | 1007234518 | unknown | 281.1 | 56.6 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | spatial_join_small | 1989 | 9113b98df80f | pass | 0/130 | 13000000 | 1007234518 | unknown | 1535.5 | 93.6 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | return_rows_small(id,geometry) | 81698 | 564221253a14 | pass | 0/130 | 13000000 | 1007234518 | unknown | 2723.7 | 34.5 |
