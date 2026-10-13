@@ -20,7 +20,7 @@ Remaining blockers / limits (none is a release-gate item, all are honest limitat
 
 ## 2. Repository State
 
-- Branch `main`; head {{COMMIT}}; previous `385a7a0` (hardening code), before that `03aaca8` (MVP report), `e49c4da` (MVP code), `d66684a` (architecture bootstrap).
+- Branch `main`; head `cbcd124`; previous `385a7a0` (hardening code), before that `03aaca8` (MVP report), `e49c4da` (MVP code), `d66684a` (architecture bootstrap).
 - Tests: **66 passing** (was 44) + 1 browser smoke test. `tools/arch_check.py` passing (now also two source-text rules).
 
 ## 3. CRS Semantics
