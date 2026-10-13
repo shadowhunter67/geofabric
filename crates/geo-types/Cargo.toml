@@ -1,0 +1,13 @@
+[package]
+name = "geo-types"
+description = "Explicit CRS, unit and schema value types for GeoFabric (no engine/UI dependencies)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
