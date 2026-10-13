@@ -35,6 +35,11 @@ def match(pat, name):
 
 
 def main() -> int:
+    # self-test hook: --extra-forbid <crate>=<dep> proves the checker catches violations
+    for a in sys.argv[1:]:
+        if a.startswith('--extra-forbid='):
+            c, d = a.split('=', 2)[1:]
+            RULES.setdefault(c, []).append(d)
     out = subprocess.run(
         ["cargo", "metadata", "--format-version", "1", "--locked"],
         cwd=ROOT, capture_output=True, text=True,

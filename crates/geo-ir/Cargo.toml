@@ -1,0 +1,15 @@
+[package]
+name = "geo-ir"
+description = "Engine-neutral logical Spatial IR for GeoFabric (RFC-001)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+sha2 = "0.10"
+
+[dev-dependencies]
