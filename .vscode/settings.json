@@ -1,0 +1,15 @@
+{
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/web/node_modules/**": true,
+    "**/benchmarks/data/**": true,
+    "**/benchmarks/.venv/**": true
+  },
+  "search.exclude": {
+    "**/target/**": true,
+    "**/web/node_modules/**": true,
+    "**/benchmarks/data/**": true,
+    "**/benchmarks/.venv/**": true
+  },
+  "rust-analyzer.files.excludeDirs": ["target", "web/node_modules", "benchmarks/data", "benchmarks/.venv"]
+}

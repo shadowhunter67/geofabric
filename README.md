@@ -2,7 +2,7 @@
 
 > A spatial runtime for cloud-native geospatial computing: a logical Spatial IR, a planner, and replaceable execution engines.
 
-Status: **core MVP** (vertical slice GeoParquet → Spatial IR → planner → DuckDB → Arrow → MapLibre). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) for what works, what does not, and the measurements.
+Status: **core MVP, hardening round done** (see REPORT-GEOFABRIC-HARDENING.md) (vertical slice GeoParquet → Spatial IR → planner → DuckDB → Arrow → MapLibre). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
 
 Read first: [CONSTITUTION.md](CONSTITUTION.md) · [AGENTS.md](AGENTS.md) · [docs/vision.md](docs/vision.md) · [rfcs/](rfcs/) · [adr/](adr/)
 
@@ -35,6 +35,9 @@ python -m venv benchmarks/.venv
 benchmarks/.venv/Scripts/python -m pip install pyarrow duckdb numpy
 benchmarks/.venv/Scripts/python benchmarks/gen_synthetic.py --size 10mb  --out benchmarks/data
 benchmarks/.venv/Scripts/python benchmarks/gen_synthetic.py --size 100mb --out benchmarks/data
+# independent expected results (pyarrow + numpy only) for the benchmark correctness gate
+benchmarks/.venv/Scripts/python benchmarks/oracle.py --size 10mb  --data benchmarks/data --out benchmarks/results
+benchmarks/.venv/Scripts/python benchmarks/oracle.py --size 100mb --data benchmarks/data --out benchmarks/results
 
 # web UI
 cd web && npm install && npm run build && cd ..
@@ -64,10 +67,15 @@ UI development: `cargo run -p geo-gateway` + `cd web && npm run dev` (proxy to :
 cargo test --workspace                 # needs benchmarks/data (tests skip with a message if absent)
 python tools/arch_check.py             # dependency-boundary rules from the Constitution
 cd web && npm run typecheck
+cd web && npm run build && npx playwright test   # browser smoke (uses the installed Chrome, starts the gateway)
 cargo build --release -p geo-bench
 target/release/geo-bench.exe --data benchmarks/data --out benchmarks/results --sizes 10mb,100mb --reps 3 --tag run
 ```
 
 ## Trust model (v0)
 
-The gateway binds to 127.0.0.1, has no authentication, and accepts **only logical IR or structured query templates — never SQL**. Source files must live under `--data`; remote URLs are refused; result rows, request size and concurrency are capped. Not yet enforced: per-query timeout (see report, technical debt).
+The gateway binds to 127.0.0.1, has no authentication, and accepts **only logical IR or structured query templates — never SQL**. Source files must live under `--data`; remote URLs are refused; result rows, request size and concurrency are capped. Every query has an execution timeout (default 30 s, `--timeout-secs`) enforced *inside* DuckDB via `interrupt()`, and a client disconnect cancels the running query. Sources are authorized by a `SourceAccessGuard` before any file I/O; denials are opaque.
+
+## Disk / editor tips
+
+`target/` gets large (DuckDB bundled). Dev profile has no debug info (`debug = 0`). Optionally put it outside the workspace with `CARGO_TARGET_DIR=<dir outside the repo>` (not committed). `.vscode/settings.json` excludes `target/`, `node_modules/`, benchmark data from the watcher/search.

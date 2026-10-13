@@ -1,0 +1,122 @@
+{
+  "clustered_100mb_spatial": {
+    "bbox_count_small(0.6%)": {
+      "count": 350,
+      "hash": "deeeb5df3f2cee6bf4e597a8a3a878a6ce49b932b9e90b416922d4499f54fae6"
+    },
+    "bbox_count_large(25%)": {
+      "count": 260786,
+      "hash": "b70e48e814d10584a9609b87466264918617535c1671b79d661faafb171b11c5"
+    },
+    "attr_filter_fullscan": {
+      "count": 24839,
+      "hash": "3c6b965a43b720f55a213cc8d99ecfc14cece78b0733f8918c5f22725e0cfece"
+    },
+    "intersects_count_small": {
+      "count": 350,
+      "hash": "deeeb5df3f2cee6bf4e597a8a3a878a6ce49b932b9e90b416922d4499f54fae6"
+    },
+    "aggregate_by_category_small": {
+      "count": 8,
+      "hash": "133341cdf27e6b765848c41e74f821abb2d675c07521e4b11cdf4f42e713e8d5"
+    },
+    "spatial_join_small": {
+      "count": 11,
+      "hash": "4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8"
+    },
+    "return_rows_small(id,geometry)": {
+      "count": 350,
+      "hash": "a72a60e96ef6aa5f5299d321162e3bc829a3aab5a182cc1549dd264672c732ad"
+    }
+  },
+  "clustered_100mb_shuffled": {
+    "bbox_count_small(0.6%)": {
+      "count": 350,
+      "hash": "deeeb5df3f2cee6bf4e597a8a3a878a6ce49b932b9e90b416922d4499f54fae6"
+    },
+    "bbox_count_large(25%)": {
+      "count": 260786,
+      "hash": "b70e48e814d10584a9609b87466264918617535c1671b79d661faafb171b11c5"
+    },
+    "attr_filter_fullscan": {
+      "count": 24839,
+      "hash": "3c6b965a43b720f55a213cc8d99ecfc14cece78b0733f8918c5f22725e0cfece"
+    },
+    "intersects_count_small": {
+      "count": 350,
+      "hash": "deeeb5df3f2cee6bf4e597a8a3a878a6ce49b932b9e90b416922d4499f54fae6"
+    },
+    "aggregate_by_category_small": {
+      "count": 8,
+      "hash": "133341cdf27e6b765848c41e74f821abb2d675c07521e4b11cdf4f42e713e8d5"
+    },
+    "spatial_join_small": {
+      "count": 11,
+      "hash": "4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8"
+    },
+    "return_rows_small(id,geometry)": {
+      "count": 350,
+      "hash": "a72a60e96ef6aa5f5299d321162e3bc829a3aab5a182cc1549dd264672c732ad"
+    }
+  },
+  "uniform_100mb_spatial": {
+    "bbox_count_small(0.6%)": {
+      "count": 8184,
+      "hash": "0e5275f34e63038d1fb8a9ef94dce7e7dade73d03bd7b6125a73fcc43e9bdfc0"
+    },
+    "bbox_count_large(25%)": {
+      "count": 324751,
+      "hash": "1d54b73bb6b1b4fb4cdb97474100f7cc485c07f6a4bc674bfad09825374507cc"
+    },
+    "attr_filter_fullscan": {
+      "count": 24933,
+      "hash": "382bb35d59bd470df13d4df9325a6a7095bd912465c4aad072857114a9fb97e6"
+    },
+    "intersects_count_small": {
+      "count": 8184,
+      "hash": "0e5275f34e63038d1fb8a9ef94dce7e7dade73d03bd7b6125a73fcc43e9bdfc0"
+    },
+    "aggregate_by_category_small": {
+      "count": 8,
+      "hash": "5774f92579c1b2a972fa1a45728c6552cc206be3e50ed551bb4d78a6a2bb4dea"
+    },
+    "spatial_join_small": {
+      "count": 90,
+      "hash": "69f59c273b6e669ac32a6dd5e1b2cb63333d8b004f9696447aee2d422ce63763"
+    },
+    "return_rows_small(id,geometry)": {
+      "count": 8184,
+      "hash": "9a4dffbc988c5ae64a569ba2067fbb43a27de169b5bd97a0a3e6129598e5f06a"
+    }
+  },
+  "uniform_100mb_shuffled": {
+    "bbox_count_small(0.6%)": {
+      "count": 8184,
+      "hash": "0e5275f34e63038d1fb8a9ef94dce7e7dade73d03bd7b6125a73fcc43e9bdfc0"
+    },
+    "bbox_count_large(25%)": {
+      "count": 324751,
+      "hash": "1d54b73bb6b1b4fb4cdb97474100f7cc485c07f6a4bc674bfad09825374507cc"
+    },
+    "attr_filter_fullscan": {
+      "count": 24933,
+      "hash": "382bb35d59bd470df13d4df9325a6a7095bd912465c4aad072857114a9fb97e6"
+    },
+    "intersects_count_small": {
+      "count": 8184,
+      "hash": "0e5275f34e63038d1fb8a9ef94dce7e7dade73d03bd7b6125a73fcc43e9bdfc0"
+    },
+    "aggregate_by_category_small": {
+      "count": 8,
+      "hash": "5774f92579c1b2a972fa1a45728c6552cc206be3e50ed551bb4d78a6a2bb4dea"
+    },
+    "spatial_join_small": {
+      "count": 90,
+      "hash": "69f59c273b6e669ac32a6dd5e1b2cb63333d8b004f9696447aee2d422ce63763"
+    },
+    "return_rows_small(id,geometry)": {
+      "count": 8184,
+      "hash": "9a4dffbc988c5ae64a569ba2067fbb43a27de169b5bd97a0a3e6129598e5f06a"
+    }
+  }
+}

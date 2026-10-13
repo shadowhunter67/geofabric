@@ -5,10 +5,16 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+# bundled (default): compile DuckDB from source (reproducible, slow, huge target/).
+# no default features + env DUCKDB_DOWNLOAD_LIB=1: link the official prebuilt libduckdb (ADR-006).
+default = ["bundled"]
+bundled = ["duckdb/bundled", "duckdb/parquet"]
+
 [dependencies]
 geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
-duckdb = { version = "1", features = ["bundled", "parquet"] }
+duckdb = { version = "1", default-features = false }
 serde_json.workspace = true

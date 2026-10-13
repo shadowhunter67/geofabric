@@ -1,6 +1,6 @@
 # GEOFABRIC
 
-Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP xong 2026-10-13, chờ Principal Architect review (REPORT-GEOFABRIC-CORE-MVP.md) trước khi mở rộng.
+Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP + hardening xong 2026-10-13 (REPORT-GEOFABRIC-CORE-MVP.md, REPORT-GEOFABRIC-HARDENING.md); Principal Architect đã Conditional Approve MVP, hardening đề xuất APPROVE — chờ review, KHÔNG mở rộng feature (real data, engine 2, WASM, AI) khi chưa được duyệt.
 
 ## Rules bắt buộc
 
@@ -21,20 +21,24 @@ Dự án kết nối và sử dụng các thành phần liên quan đến GIS (n
 cargo test --workspace                       # cần benchmarks/data (thiếu thì test tự skip)
 python tools/arch_check.py                   # luật phụ thuộc (đồ thị cargo metadata)
 cargo run -p geo-gateway -- --data benchmarks/data --port 8787   # API + web/dist
-cd web && npm run build | npm run typecheck | npm run dev
+cd web && npm run build | npm run typecheck | npm run dev | npx playwright test   # smoke dùng Chrome cài sẵn, tự chạy gateway
+python benchmarks/oracle.py --size 10mb ...   # kết quả kỳ vọng độc lập trước khi chạy geo-bench
 cargo build --release -p geo-bench && target/release/geo-bench.exe --data benchmarks/data --sizes 10mb,100mb --reps 3
 ```
 
 ## Kiến trúc (tóm tắt)
 
 - `geo-ir` = IR logic, KHÔNG biết DuckDB/SQL; SQL chỉ sinh trong `geo-engine-duckdb/src/sql.rs`. Planner chỉ biết engine qua trait `ExecutionEngine`. UI chỉ gọi `geo-gateway`; GeoJSON chỉ tạo ở gateway.
-- Gateway không nhận SQL, chỉ IR hoặc template; nguồn phải nằm trong `--data`.
+- Gateway không nhận SQL, chỉ IR hoặc template. Mọi nguồn qua `SourceAccessGuard.authorize` TRƯỚC khi đọc bất kỳ metadata (production code cấm `GeoParquetSource::open`, arch_check chặn). Query có timeout thật (DuckDB `interrupt()`, mặc định 30 s trong `geo_executor::limits`), client ngắt kết nối thì cancel.
+- Metrics có provenance (`Metric<T>{value,source}`): `bytes_read` luôn Unknown; `row_groups_skipped`/`rows_scanned` là SourceEstimated. UI phải hiện badge, không hiện estimate như số đo.
+- Benchmark chỉ hợp lệ khi qua oracle độc lập (`benchmarks/oracle.py`, pyarrow+numpy): chạy oracle trước, `geo-bench` fail nếu hash lệch.
 - `docs/claude/` — lịch sử & quyết định.
 
 ## Bẫy đã biết (gotchas)
 
 - DuckDB profiler `total_bytes_read` ĐẾM THIẾU rất nhiều và `operator_rows_scanned` không đáng tin → số liệu quét lấy từ phân tích stats Parquet (`analyze_plan`), DuckDB chỉ để so sánh tương đối.
 - Xuất cột GEOMETRY native qua `query_arrow` của binding Rust bị lỗi → adapter dùng `ST_AsWKB` + tự gắn metadata GeoArrow/CRS từ IR.
+- Ổ đĩa: `target/` từng lên 59,6 GB làm đầy ổ E: (đã `cargo clean`); dev profile `debug = 0` (có debug info thì link test bị LNK1140). Cân nhắc `CARGO_TARGET_DIR` ngoài repo. DuckDB prebuilt: `--no-default-features` + `DUCKDB_DOWNLOAD_LIB=1` (ADR-006), build 54 s / 747 MB nhưng chưa chạy full test.
 - Heredoc dài có dấu nháy đơn làm tool Bash lỗi parse → ghi file bằng công cụ Write. Hook chặn lệnh xóa đệ quy (kể cả khi chuỗi đó chỉ nằm trong nội dung lệnh).
 - MapLibre 6 cần `setWorkerUrl(import ...-worker.mjs?url)` khi dùng Vite, nếu không bản đồ trống ("Worker failed to load").
 - Codex (openai-bridge) làm sai spec ở task geo-types (đổi CRS/Unit thành String) và sandbox không có mạng để chạy cargo → đã loại bỏ, tự viết lại; chỉ giao Codex việc nhỏ có thể kiểm chứng.
