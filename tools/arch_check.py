@@ -94,6 +94,16 @@ def main() -> int:
                     dn = pkgs[dep]["name"]
                     if any(match(p, dn) for p in forb):
                         violations.append(f"{name} -> {dn} (direct dependency forbidden; use geo-runtime)")
+    # source-text rules (cheap, complement the graph rules)
+    import re
+    for f in sorted((ROOT / "crates").glob("*/src/**/*.rs")):
+        crate = f.relative_to(ROOT / "crates").parts[0]
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        # unchecked opens bypass the authorization boundary (only the source crate itself may define it)
+        if crate != "geo-source-geoparquet" and re.search(r"GeoParquetSource::open\(", text):
+            violations.append(f"{crate}: {f.name} uses GeoParquetSource::open (unchecked); use open_authorized with an AuthorizedSource")
+        if crate in ("geo-planner", "geo-ir", "geo-executor") and re.search(r"(duckdb|DuckDb|ST_[A-Z][A-Za-z]+)", re.sub(r"//.*", "", text)):
+            violations.append(f"{crate}: {f.name} names DuckDB/SQL spatial functions outside comments")
     # web package.json
     pj = ROOT / "web" / "package.json"
     if pj.exists():

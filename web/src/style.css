@@ -73,3 +73,8 @@ textarea.ir { width: 100%; height: 130px; font-family: var(--mono); font-size: 1
 .empty { color: var(--muted); padding: 10px; }
 .legend { position: absolute; left: 8px; bottom: 8px; z-index: 2; background: color-mix(in srgb, var(--panel) 90%, transparent); border: 1px solid var(--line); padding: 5px 8px; border-radius: 4px; font-size: 11.5px; pointer-events: none; }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.badge { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; border: 1px solid var(--line); vertical-align: 1px; }
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.badge.est { color: var(--accent-2); border-color: var(--accent-2); }
+.badge.der { color: var(--accent); border-color: var(--accent); }
+.badge.na { color: var(--muted); border-style: dashed; }

@@ -1,0 +1,4 @@
+clustered_10mb_spatial {'bbox_count_small(0.6%)': 33, 'bbox_count_large(25%)': 26255, 'attr_filter_fullscan': 2479, 'intersects_count_small': 33, 'aggregate_by_category_small': 8, 'spatial_join_small': 0, 'return_rows_small(id,geometry)': 33}
+clustered_10mb_shuffled {'bbox_count_small(0.6%)': 33, 'bbox_count_large(25%)': 26255, 'attr_filter_fullscan': 2479, 'intersects_count_small': 33, 'aggregate_by_category_small': 8, 'spatial_join_small': 0, 'return_rows_small(id,geometry)': 33}
+uniform_10mb_spatial {'bbox_count_small(0.6%)': 844, 'bbox_count_large(25%)': 32389, 'attr_filter_fullscan': 2530, 'intersects_count_small': 844, 'aggregate_by_category_small': 8, 'spatial_join_small': 8, 'return_rows_small(id,geometry)': 844}
+uniform_10mb_shuffled {'bbox_count_small(0.6%)': 844, 'bbox_count_large(25%)': 32389, 'attr_filter_fullscan': 2530, 'intersects_count_small': 844, 'aggregate_by_category_small': 8, 'spatial_join_small': 8, 'return_rows_small(id,geometry)': 844}

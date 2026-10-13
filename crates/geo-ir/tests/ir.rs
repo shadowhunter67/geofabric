@@ -186,3 +186,26 @@ fn ir_json_has_no_engine_artifacts() {
         assert!(!j.contains(w), "IR must stay engine-neutral: found {w}");
     }
 }
+
+#[test]
+fn undefined_crs_rejects_metric_buffer_and_bbox() {
+    let d = Distance::new(100.0, DistanceUnit::Meter).unwrap();
+    let plan = Plan::new(buffer(source(Crs::Undefined), d, Crs::Undefined));
+    assert!(validate(&plan).has_code("unknown_crs"), "metric op on Undefined CRS must be a validation error");
+    let bb = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap();
+    let plan = Plan::new(Node::BboxFilter { input: Box::new(source(Crs::Undefined)), geometry_column: "geometry".into(), bbox: bb });
+    assert!(validate(&plan).has_code("unknown_crs"));
+}
+
+#[test]
+fn crs84_is_known_but_never_implicitly_epsg4326() {
+    let bb = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap();
+    let plan = Plan::new(Node::BboxFilter { input: Box::new(source(Crs::OgcCrs84)), geometry_column: "geometry".into(), bbox: bb });
+    assert!(validate(&plan).has_code("crs_mismatch"));
+    let bb84 = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::OgcCrs84).unwrap();
+    let plan = Plan::new(Node::BboxFilter { input: Box::new(source(Crs::OgcCrs84)), geometry_column: "geometry".into(), bbox: bb84 });
+    assert!(validate(&plan).is_ok());
+    // degree buffer on CRS84 is geographic -> allowed with a warning; metric is rejected
+    let d = Distance::new(100.0, DistanceUnit::Meter).unwrap();
+    assert!(validate(&Plan::new(buffer(source(Crs::OgcCrs84), d, Crs::OgcCrs84))).has_code("metric_on_geographic"));
+}

@@ -634,12 +634,15 @@ dependencies = [
 name = "geo-bench"
 version = "0.1.0"
 dependencies = [
+ "arrow-array",
+ "arrow-schema",
  "geo-executor",
  "geo-ir",
  "geo-runtime",
  "geo-types",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]
@@ -680,10 +683,12 @@ dependencies = [
  "geo-runtime",
  "geo-source-geoparquet",
  "geo-types",
+ "http-body-util",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "tower",
  "tower-http",
 ]
 
@@ -715,12 +720,14 @@ name = "geo-runtime"
 version = "0.1.0"
 dependencies = [
  "arrow-array",
+ "arrow-schema",
  "geo-engine-duckdb",
  "geo-executor",
  "geo-ir",
  "geo-planner",
  "geo-source-geoparquet",
  "geo-types",
+ "parquet",
  "serde",
  "serde_json",
  "thiserror",

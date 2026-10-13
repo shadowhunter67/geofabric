@@ -13,5 +13,6 @@ serde_json = "1"
 thiserror = "1"
 
 [profile.dev]
-# DuckDB bundled produced a 26 GB debug target/ (ADR-006); keep line tables only
-debug = "line-tables-only"
+# DuckDB bundled made a 26 GB debug target/ (ADR-006) and, with debug info, the test
+# binaries that link it exceed the MSVC PDB limit (LNK1140). No debug info in dev builds.
+debug = 0

@@ -3,6 +3,9 @@
 //! Invariants (CONSTITUTION 2, 3): there are no `Default` impls for CRS or
 //! units, and quantities cannot be built without a unit.
 
+mod access;
+pub use access::{AccessDenied, AuthorizedSource, RootedAccessGuard, SourceAccessGuard};
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -25,24 +28,34 @@ pub enum TypeError {
 }
 
 /// A coordinate reference system. Always explicit; never defaulted.
+///
+/// `OgcCrs84` (lon/lat WGS 84) is deliberately **not** equal to `Epsg(4326)`
+/// (lat/lon axis order in the EPSG definition): converting between them is an
+/// explicit decision, never implicit.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Crs {
     Epsg(u32),
-    /// A CRS we cannot interpret (WKT, PROJJSON, custom string...). May be
-    /// carried around, but CRS-sensitive operations must reject it.
+    /// OGC:CRS84. GeoParquet's meaning of an *absent* `crs` key.
+    OgcCrs84,
+    /// The data declares that its CRS is undefined (GeoParquet `"crs": null`).
+    /// CRS-sensitive operations must reject it.
+    Undefined,
+    /// A CRS we cannot interpret (WKT, PROJJSON without a usable id, custom
+    /// string...). May be carried around; CRS-sensitive operations reject it.
     Unknown(String),
 }
 
 impl Crs {
+    /// Known = we can reason about it (EPSG code or CRS84).
     pub fn is_known(&self) -> bool {
-        matches!(self, Crs::Epsg(_))
+        matches!(self, Crs::Epsg(_) | Crs::OgcCrs84)
     }
 
     pub fn epsg(&self) -> Option<u32> {
         match self {
             Crs::Epsg(c) => Some(*c),
-            Crs::Unknown(_) => None,
+            _ => None,
         }
     }
 
@@ -50,9 +63,13 @@ impl Crs {
     /// (linear units), `None` when we do not know. v0 uses a tiny built-in
     /// table; real lookup belongs to a PROJ-backed layer later.
     pub fn is_geographic(&self) -> Option<bool> {
-        match self.epsg()? {
-            4326 | 4269 | 4258 | 4490 => Some(true),
-            3857 | 3405 | 32648 | 32649 => Some(false),
+        match self {
+            Crs::OgcCrs84 => Some(true),
+            Crs::Epsg(c) => match c {
+                4326 | 4269 | 4258 | 4490 => Some(true),
+                3857 | 3405 | 32648 | 32649 => Some(false),
+                _ => None,
+            },
             _ => None,
         }
     }
@@ -62,6 +79,8 @@ impl fmt::Display for Crs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Crs::Epsg(c) => write!(f, "EPSG:{c}"),
+            Crs::OgcCrs84 => f.write_str("OGC:CRS84"),
+            Crs::Undefined => f.write_str("undefined"),
             Crs::Unknown(s) => f.write_str(s),
         }
     }
@@ -73,6 +92,13 @@ impl FromStr for Crs {
         let t = s.trim();
         if t.is_empty() {
             return Err(TypeError::EmptyCrs);
+        }
+        let lower = t.to_ascii_lowercase();
+        if matches!(lower.as_str(), "ogc:crs84" | "crs84" | "urn:ogc:def:crs:ogc:1.3:crs84" | "http://www.opengis.net/def/crs/ogc/1.3/crs84") {
+            return Ok(Crs::OgcCrs84);
+        }
+        if lower == "undefined" {
+            return Ok(Crs::Undefined);
         }
         if let Some((prefix, code)) = t.split_once(':') {
             if prefix.eq_ignore_ascii_case("epsg") {
@@ -375,6 +401,16 @@ mod tests {
         assert_eq!("EPSG:abc".parse::<Crs>().unwrap(), Crs::Unknown("EPSG:abc".into()));
         assert_eq!("".parse::<Crs>(), Err(TypeError::EmptyCrs));
         assert!(!Crs::Unknown("x".into()).is_known());
+        assert_eq!("OGC:CRS84".parse::<Crs>().unwrap(), Crs::OgcCrs84);
+        assert_eq!("urn:ogc:def:crs:OGC:1.3:CRS84".parse::<Crs>().unwrap(), Crs::OgcCrs84);
+        assert_eq!("undefined".parse::<Crs>().unwrap(), Crs::Undefined);
+        assert!(Crs::OgcCrs84.is_known() && !Crs::Undefined.is_known());
+        assert_ne!(Crs::OgcCrs84, Crs::Epsg(4326), "axis order differs; never implicitly equal");
+        assert_eq!(Crs::OgcCrs84.is_geographic(), Some(true));
+        assert_eq!(Crs::Undefined.is_geographic(), None);
+        for c in [Crs::OgcCrs84, Crs::Undefined, Crs::Epsg(4326)] {
+            assert_eq!(c.to_string().parse::<Crs>().unwrap(), c, "display/parse roundtrip");
+        }
         assert_eq!(Crs::Epsg(4326).is_geographic(), Some(true));
         assert_eq!(Crs::Epsg(3857).is_geographic(), Some(false));
         assert_eq!(Crs::Epsg(99999).is_geographic(), None);
@@ -449,6 +485,8 @@ mod tests {
     fn serde_roundtrips() {
         rt(Crs::Epsg(4326));
         rt(Crs::Unknown("x".into()));
+        rt(Crs::OgcCrs84);
+        rt(Crs::Undefined);
         rt(GeometryType::MultiPolygon);
         rt(Distance::new(3.5, DistanceUnit::Foot).unwrap());
         rt(Area::new(3.5, AreaUnit::Hectare).unwrap());

@@ -106,19 +106,58 @@ fn bbox_prunes_row_groups_and_is_conservative() {
 }
 
 #[test]
-fn prune_requires_matching_known_crs() {
+fn crs_missing_key_is_ogc_crs84_not_epsg4326() {
+    let p = tmp("fx_missing_crs.parquet");
+    write_fixture(&p, ""); // no "crs" key at all
+    let s = GeoParquetSource::open(&p).unwrap();
+    assert_eq!(s.info().crs, Crs::OgcCrs84);
+    assert_ne!(s.info().crs, Crs::Epsg(4326), "must not silently become EPSG:4326");
+    // the IR source carries the same CRS
+    if let geo_ir::Node::Source { schema, .. } = s.to_ir_source() {
+        assert_eq!(schema.geometry_columns[0].crs, Crs::OgcCrs84);
+    }
+    // a query in EPSG:4326 does not match CRS84 implicitly ...
+    let q4326 = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap();
+    assert!(matches!(s.prune(&q4326), Err(SourceError::CrsMismatch { .. })));
+    // ... but a CRS84 query prunes fine
+    let q84 = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::OgcCrs84).unwrap();
+    assert_eq!(s.prune(&q84).unwrap().kept, vec![0]);
+}
+
+#[test]
+fn crs_null_is_undefined_and_blocks_spatial_pruning() {
+    let p = tmp("fx_null_crs.parquet");
+    write_fixture(&p, r#""crs":null,"#);
+    let s = GeoParquetSource::open(&p).unwrap();
+    assert_eq!(s.info().crs, Crs::Undefined);
+    assert!(!s.info().crs.is_known());
+    let q = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap();
+    assert!(matches!(s.prune(&q), Err(SourceError::UnknownCrs(_))));
+}
+
+#[test]
+fn crs_explicit_objects_are_parsed() {
+    let p = tmp("fx_explicit_epsg.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":3857}},"#);
+    assert_eq!(GeoParquetSource::open(&p).unwrap().info().crs, Crs::Epsg(3857));
+    let p = tmp("fx_explicit_crs84.parquet");
+    write_fixture(&p, r#""crs":{"id":{"authority":"OGC","code":"CRS84"}},"#);
+    assert_eq!(GeoParquetSource::open(&p).unwrap().info().crs, Crs::OgcCrs84);
+    let p = tmp("fx_explicit_other.parquet");
+    write_fixture(&p, r#""crs":{"type":"ProjectedCRS","name":"custom"},"#);
+    assert!(matches!(GeoParquetSource::open(&p).unwrap().info().crs, Crs::Unknown(_)));
+    let p = tmp("fx_crs_string.parquet");
+    write_fixture(&p, r#""crs":"EPSG:4326","#);
+    assert_eq!(GeoParquetSource::open(&p).unwrap().info().crs, Crs::Epsg(4326));
+}
+
+#[test]
+fn prune_requires_matching_crs() {
     let p = tmp("fx_crs.parquet");
     write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"#);
     let s = GeoParquetSource::open(&p).unwrap();
     let q = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(3857)).unwrap();
     assert!(matches!(s.prune(&q), Err(SourceError::CrsMismatch { .. })));
-
-    let p2 = tmp("fx_nocrs.parquet");
-    write_fixture(&p2, "");
-    let s2 = GeoParquetSource::open(&p2).unwrap();
-    assert!(!s2.info().crs.is_known(), "absent CRS must not default to 4326");
-    let q = BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap();
-    assert!(matches!(s2.prune(&q), Err(SourceError::UnknownCrs(_))));
 }
 
 #[test]

@@ -1,0 +1,417 @@
+   Compiling cfg-if v1.0.5
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling bytes v1.12.1
+   Compiling windows-link v0.2.1
+   Compiling itoa v1.0.18
+   Compiling version_check v0.9.5
+   Compiling autocfg v1.5.1
+   Compiling syn v2.0.119
+   Compiling libm v0.2.16
+   Compiling num-traits v0.2.19
+   Compiling syn v3.0.9
+   Compiling memchr v2.8.3
+   Compiling getrandom v0.4.3
+   Compiling zerocopy v0.8.62
+   Compiling bitflags v2.13.2
+   Compiling once_cell v1.21.4
+   Compiling jobserver v0.1.35
+   Compiling zerocopy-derive v0.8.62
+   Compiling shlex v2.0.1
+   Compiling serde v1.0.229
+   Compiling find-msvc-tools v0.1.14
+   Compiling hashbrown v0.17.1
+   Compiling cc v1.8.0
+   Compiling serde_derive v1.0.229
+   Compiling zmij v1.0.23
+   Compiling num-integer v0.1.47
+   Compiling serde_core v1.0.229
+   Compiling getrandom v0.3.4
+   Compiling num-bigint v0.4.8
+   Compiling ahash v0.8.12
+   Compiling half v2.7.1
+   Compiling arrow-buffer v58.4.0
+   Compiling arrow-schema v58.4.0
+   Compiling arrow-data v58.4.0
+   Compiling num-complex v0.4.6
+   Compiling chrono v0.4.45
+   Compiling generic-array v0.14.7
+   Compiling arrow-array v58.4.0
+   Compiling serde_json v1.0.154
+   Compiling typenum v1.20.1
+   Compiling thiserror v1.0.69
+   Compiling thiserror-impl v1.0.69
+   Compiling pkg-config v0.3.34
+   Compiling adler2 v2.0.1
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling digest v0.10.7
+   Compiling geo-types v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-types)
+   Compiling cpufeatures v0.2.17
+   Compiling sha2 v0.10.9
+   Compiling arrow-select v58.4.0
+   Compiling zstd-sys v2.1.1+zstd.1.5.7
+   Compiling semver v1.0.28
+   Compiling rustc_version v0.4.1
+   Compiling geo-ir v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-ir)
+   Compiling flatbuffers v25.12.19
+   Compiling base64 v0.22.1
+   Compiling log v0.4.34
+   Compiling crc32fast v1.5.2
+   Compiling zstd-safe v7.3.0
+   Compiling paste v1.0.15
+   Compiling simd-adler32 v0.3.10
+   Compiling snap v1.1.2
+   Compiling miniz_oxide v0.9.1
+   Compiling ordered-float v2.10.1
+   Compiling byteorder v1.5.0
+   Compiling integer-encoding v3.0.4
+   Compiling twox-hash v2.1.5
+   Compiling thrift v0.17.0
+   Compiling arrow-ipc v58.4.0
+   Compiling lz4_flex v0.13.1
+   Compiling flate2 v1.1.10
+   Compiling zstd v0.13.3
+   Compiling ring v0.17.14
+   Compiling seq-macro v0.3.6
+   Compiling smallvec v1.16.3
+   Compiling parquet v58.4.0
+   Compiling zeroize v1.9.1
+   Compiling percent-encoding v2.3.2
+   Compiling rustls-pki-types v1.15.1
+   Compiling getrandom v0.2.17
+   Compiling httparse v1.10.1
+   Compiling winapi v0.3.9
+   Compiling parking_lot_core v0.9.12
+   Compiling untrusted v0.9.0
+   Compiling lexical-util v1.0.7
+   Compiling scopeguard v1.2.0
+   Compiling rustls v0.23.45
+   Compiling lock_api v0.4.14
+   Compiling rustls-webpki v0.103.15
+   Compiling geo-source-geoparquet v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-source-geoparquet)
+   Compiling http v1.5.0
+   Compiling subtle v2.6.1
+   Compiling bumpalo v3.20.3
+   Compiling equivalent v1.0.2
+   Compiling zlib-rs v0.6.8
+   Compiling base64 v0.23.1
+   Compiling ureq-proto v0.6.4
+   Compiling indexmap v2.14.2
+   Compiling zopfli v0.8.4
+   Compiling crossterm_winapi v0.9.1
+   Compiling parking_lot v0.12.5
+   Compiling lexical-parse-integer v1.0.6
+   Compiling lexical-write-integer v1.0.6
+   Compiling webpki-roots v1.0.9
+   Compiling geo-executor v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-executor)
+   Compiling aho-corasick v1.1.5
+   Compiling filetime v0.2.29
+   Compiling ryu v1.0.23
+   Compiling regex-syntax v0.8.11
+   Compiling utf8-zero v0.8.1
+   Compiling ureq v3.4.2
+   Compiling regex-automata v0.4.18
+   Compiling tar v0.4.46
+   Compiling lexical-write-float v1.0.6
+   Compiling lexical-parse-float v1.0.6
+   Compiling crossterm v0.28.1
+   Compiling zip v6.0.0
+   Compiling unicode-segmentation v1.13.3
+   Compiling vcpkg v0.2.15
+   Compiling unicode-width v0.2.2
+   Compiling comfy-table v7.1.4
+   Compiling regex v1.13.1
+   Compiling libduckdb-sys v1.10506.0
+   Compiling lexical-core v1.0.6
+   Compiling arrow-ord v58.4.0
+   Compiling atoi v2.0.0
+   Compiling heck v0.5.0
+   Compiling foldhash v0.1.5
+   Compiling hashbrown v0.15.5
+   Compiling strum_macros v0.27.2
+   Compiling arrow-cast v58.4.0
+   Compiling arrow-string v58.4.0
+   Compiling arrow-row v58.4.0
+   Compiling arrow-arith v58.4.0
+   Compiling strum v0.27.2
+   Compiling hashlink v0.10.0
+   Compiling cast v0.3.0
+   Compiling arrow v58.4.0
+   Compiling pin-project-lite v0.2.17
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling geo-planner v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-planner)
+   Compiling windows-sys v0.61.2
+   Compiling futures-core v0.3.34
+   Compiling tokio-macros v2.7.2
+   Compiling mio v1.2.4
+   Compiling socket2 v0.6.5
+   Compiling tokio v1.53.2
+   Compiling http-body v1.1.0
+   Compiling tower-service v0.3.3
+   Compiling tracing-core v0.1.36
+   Compiling unicase v2.10.0
+   Compiling httpdate v1.0.3
+   Compiling futures-task v0.3.34
+   Compiling mime v0.3.17
+   Compiling tower-layer v0.3.3
+   Compiling slab v0.4.12
+   Compiling futures-util v0.3.34
+   Compiling mime_guess v2.0.5
+   Compiling tracing v0.1.44
+   Compiling http-body-util v0.1.5
+   Compiling atomic-waker v1.1.2
+   Compiling sync_wrapper v1.0.2
+   Compiling hyper v1.12.0
+   Compiling form_urlencoded v1.2.2
+   Compiling futures-sink v0.3.34
+   Compiling tokio-util v0.7.20
+   Compiling hyper-util v0.1.21
+   Compiling serde_urlencoded v0.7.1
+   Compiling tower v0.5.3
+   Compiling axum-core v0.5.6
+   Compiling serde_path_to_error v0.1.20
+   Compiling matchit v0.8.4
+   Compiling http-range-header v0.4.2
+   Compiling tower-http v0.6.11
+   Compiling axum v0.8.9
+   Compiling duckdb v1.10506.0
+   Compiling geo-engine-duckdb v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-engine-duckdb)
+   Compiling geo-runtime v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-runtime)
+   Compiling geo-gateway v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-gateway)
+   Compiling geo-bench v0.1.0 (E:\Lập trình\lập trình\6-du-an-khac\geofabric\crates\geo-bench)
+warning: unused import: `geo_types::*`
+ --> crates\geo-gateway\tests\api.rs:9:5
+  |
+9 | use geo_types::*;
+  |     ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `geo-gateway` (test "api") generated 1 warning (run `cargo fix --test "api" -p geo-gateway` to apply 1 suggestion)
+    Finished `test` profile [unoptimized] target(s) in 3m 55s
+     Running unittests src\main.rs (target\debug\deps\geo_bench-0b887142ac609cfb.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_engine_duckdb-da05b030d9932183.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_executor-d662786ef4c66ee0.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_gateway-0fc5873082d476ef.exe)
+
+running 3 tests
+test wkb::tests::hostile_counts_do_not_allocate_or_panic ... ok
+test wkb::tests::polygon_roundtrip ... ok
+test wkb::tests::rejects_truncated_and_unsupported ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\geo_gateway-b249f75dd2cd3b50.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\api.rs (target\debug\deps\api-eddf47a6a5abfb49.exe)
+
+running 7 tests
+test unauthorized_source_is_denied_without_an_existence_oracle ... ok
+test health_and_sources ... ok
+test invalid_and_malformed_requests ... ok
+test valid_query_response_schema_and_metric_provenance ... ok
+test execution_error_is_controlled_and_runtime_stays_usable ... ok
+test client_disconnect_cancels_the_running_query ... ok
+test execution_timeout_really_interrupts_and_runtime_recovers ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.37s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_ir-2c6a93456708ab33.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\ir.rs (target\debug\deps\ir-be82fa4f2a7a40f6.exe)
+
+running 12 tests
+test declared_input_crs_must_match_column ... ok
+test node_ids_are_content_hashes_and_lineage_is_post_order ... ok
+test bbox_and_intersects_require_matching_crs ... ok
+test schema_derivation_aggregate_and_project ... ok
+test crs84_is_known_but_never_implicitly_epsg4326 ... ok
+test undefined_crs_rejects_metric_buffer_and_bbox ... ok
+test metric_buffer_on_geographic_rejected_projected_ok ... ok
+test ir_json_has_no_engine_artifacts ... ok
+test rejects_bad_input ... ok
+test roundtrip_and_version ... ok
+test unknown_crs_parses_but_metric_buffer_rejected ... ok
+test spatial_join_requires_explicit_prefix_and_same_crs ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_planner-99cac9f97239ce17.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\planner.rs (target\debug\deps\planner-4ac0291be979b7ea.exe)
+
+running 6 tests
+test invalid_plan_is_rejected_before_engines_are_consulted ... ok
+test cost_guard_refuses_expensive_scans ... ok
+test no_capable_engine_is_an_error_with_reasons ... ok
+test first_registered_wins_tie_and_hint_overrides ... ok
+test picks_only_capable_engine_and_logs_rejections ... ok
+test unauthorized_source_fails_before_any_metadata_io_with_opaque_error ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_runtime-47123de9a692eea2.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\join.rs (target\debug\deps\join-0661e814e6a1f27b.exe)
+
+running 4 tests
+test inner_join_returns_exactly_the_known_pairs ... ok
+test left_join_keeps_unmatched_left_rows_with_null ... ok
+test join_result_is_deterministic_across_runs ... ok
+test intersects_literal_and_bbox_without_covering_column_are_exact ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests\timeout.rs (target\debug\deps\timeout-008b4dce6ae80cc0.exe)
+
+running 3 tests
+test already_cancelled_context_does_not_start ... ok
+test cancel_token_interrupts_the_query ... ok
+test timeout_interrupts_the_query_and_the_runtime_stays_usable ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+
+     Running tests\vertical.rs (target\debug\deps\vertical-d30095f1d9f9a7d7.exe)
+
+running 10 tests
+test unknown_crs_source_cannot_be_bbox_filtered ... ok
+test metric_buffer_on_geographic_data_is_rejected_by_planner ... ok
+test max_rows_limit_enforced ... ok
+test security_path_and_injection ... ok
+test result_geometry_carries_crs_metadata ... ok
+test attribute_filter_matches_oracle ... ok
+test bbox_count_matches_oracle_and_prunes ... ok
+test aggregate_group_by_matches_oracle_totals ... ok
+test intersects_with_matching_rectangle_equals_bbox_count ... ok
+test row_order_does_not_change_results_but_changes_pruning ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_source_geoparquet-23e9ee4e1880cd7d.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\analysis.rs (target\debug\deps\analysis-dd69693cb7020b04.exe)
+
+running 2 tests
+test wkt_envelope_refuses_what_it_cannot_parse_safely ... ok
+test wkt_envelope_basic ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\source.rs (target\debug\deps\source-b55b657daadfb736.exe)
+
+running 9 tests
+test benchmark_dataset_pruning_if_present ... ok
+test crs_missing_key_is_ogc_crs84_not_epsg4326 ... ok
+test crs_null_is_undefined_and_blocks_spatial_pruning ... ok
+test reads_metadata_crs_and_row_groups ... ok
+test rejects_non_geoparquet ... ok
+test projection_and_row_group_selection_are_arrow_native ... ok
+test bbox_prunes_row_groups_and_is_conservative ... ok
+test prune_requires_matching_crs ... ok
+test crs_explicit_objects_are_parsed ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src\lib.rs (target\debug\deps\geo_types-464bdb19ad8f165c.exe)
+
+running 10 tests
+test tests::area_conversion ... ok
+test tests::crs_parse_and_display ... ok
+test tests::distance_validation ... ok
+test tests::serde_roundtrips ... ok
+test tests::bbox_rules ... ok
+test tests::deserialization_is_validated_and_unit_required ... ok
+test tests::schema_validation ... ok
+test access::tests::missing_file_inside_root_is_denied ... ok
+test access::tests::dotdot_escape_and_urls_are_denied ... ok
+test access::tests::allows_inside_denies_outside_with_identical_errors ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_engine_duckdb
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_executor
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_gateway
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_ir
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_planner
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_runtime
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_source_geoparquet
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geo_types
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+FINISHED

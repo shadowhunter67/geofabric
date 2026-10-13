@@ -26,8 +26,8 @@ impl ExecutionEngine for Mock {
             notes: vec![],
         }
     }
-    fn estimate(&self, _: &Plan) -> Result<Estimate, EngineError> {
-        Ok(Estimate { rows_upper_bound: Some(1), bytes_to_read: Some(1), confidence: Confidence::Heuristic })
+    fn estimate(&self, _: &Plan, _: &ExecutionContext) -> Result<Estimate, EngineError> {
+        Ok(Estimate { rows_upper_bound: Metric::planner_estimated(1), bytes_upper_bound: Metric::planner_estimated(1) })
     }
     fn explain(&self, _: &Plan, _: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError> {
         Ok(vec![ExplainStep { label: "mock".into(), detail: self.id.into() }])
@@ -66,7 +66,7 @@ fn plan_for(p: &PathBuf, with_intersects: bool) -> Plan {
 }
 
 fn ctx() -> ExecutionContext {
-    ExecutionContext::new(vec![])
+    ExecutionContext::new(vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../benchmarks/data")])
 }
 
 #[test]
@@ -124,8 +124,8 @@ fn cost_guard_refuses_expensive_scans() {
         fn capabilities(&self) -> Capabilities {
             self.0.capabilities()
         }
-        fn estimate(&self, _: &Plan) -> Result<Estimate, EngineError> {
-            Ok(Estimate { rows_upper_bound: None, bytes_to_read: Some(u64::MAX), confidence: Confidence::Heuristic })
+        fn estimate(&self, _: &Plan, _: &ExecutionContext) -> Result<Estimate, EngineError> {
+            Ok(Estimate { rows_upper_bound: Metric::unknown(), bytes_upper_bound: Metric::planner_estimated(u64::MAX) })
         }
         fn explain(&self, p: &Plan, c: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError> {
             self.0.explain(p, c)
@@ -157,4 +157,28 @@ fn invalid_plan_is_rejected_before_engines_are_consulted() {
     let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
     let engines: Vec<&dyn ExecutionEngine> = vec![&m];
     assert!(matches!(Planner::default().plan(&plan, &engines, &ctx()), Err(PlanError::Invalid(_))));
+}
+
+#[test]
+fn unauthorized_source_fails_before_any_metadata_io_with_opaque_error() {
+    let Some(p) = data() else { return };
+    // guard whose only root is an unrelated, empty directory
+    let root = std::env::temp_dir().join(format!("gf-planner-root-{}", std::process::id()));
+    std::fs::create_dir_all(&root).unwrap();
+    let ctx = ExecutionContext::new(vec![root]);
+    let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
+    let engines: Vec<&dyn ExecutionEngine> = vec![&m];
+    // existing valid GeoParquet outside the root ...
+    let e1 = Planner::default().plan(&plan_for(&p, false), &engines, &ctx).unwrap_err();
+    // ... and a path that does not exist at all must be indistinguishable
+    let mut ghost = plan_for(&p, false);
+    if let Node::BboxFilter { input, .. } = &mut ghost.root {
+        if let Node::Source { uri, .. } = input.as_mut() {
+            *uri = "Z:/definitely/not/here.parquet".into();
+        }
+    }
+    let e2 = Planner::default().plan(&ghost, &engines, &ctx).unwrap_err();
+    assert!(matches!(e1, PlanError::AccessDenied), "{e1:?}");
+    assert!(matches!(e2, PlanError::AccessDenied), "{e2:?}");
+    assert_eq!(e1.to_string(), e2.to_string());
 }

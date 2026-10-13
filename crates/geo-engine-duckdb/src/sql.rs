@@ -7,8 +7,8 @@
 use geo_executor::{EngineError, ExecutionContext};
 use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, Node};
 use geo_source_geoparquet::{wkt_envelope, GeoParquetSource};
-use geo_types::{Crs, SpatialSchema};
-use std::path::{Path, PathBuf};
+use geo_types::{AuthorizedSource, Crs, SpatialSchema};
+use std::path::Path;
 
 pub(crate) fn q_ident(s: &str) -> String {
     format!("\"{}\"", s.replace('"', "\"\""))
@@ -93,6 +93,8 @@ struct Out {
 
 pub(crate) struct Compiled {
     pub sql: String,
+    /// Sources that passed the guard while compiling (used to sandbox DuckDB).
+    pub sources: Vec<AuthorizedSource>,
     /// Geometry output columns and their CRS (from the IR schema), for Arrow metadata.
     pub geometry_columns: Vec<(String, Crs)>,
 }
@@ -101,10 +103,11 @@ struct Translator<'a> {
     ctx: &'a ExecutionContext,
     spatial: bool,
     ctes: Vec<(String, String)>,
+    sources: Vec<AuthorizedSource>,
 }
 
 pub(crate) fn compile(root: &Node, ctx: &ExecutionContext, spatial: bool) -> Result<Compiled, EngineError> {
-    let mut t = Translator { ctx, spatial, ctes: Vec::new() };
+    let mut t = Translator { ctx, spatial, ctes: Vec::new(), sources: Vec::new() };
     let out = t.node(root)?;
     let with = t.ctes.iter().map(|(n, s)| format!("{} AS ({})", q_ident(n), s)).collect::<Vec<_>>().join(",\n");
     let geometry_columns: Vec<(String, Crs)> =
@@ -125,23 +128,7 @@ pub(crate) fn compile(root: &Node, ctx: &ExecutionContext, spatial: bool) -> Res
         format!("* REPLACE ({r})")
     };
     let sql = format!("WITH {with}\nSELECT {select} FROM {} LIMIT {}", q_ident(&out.name), ctx.max_rows.saturating_add(1));
-    Ok(Compiled { sql, geometry_columns })
-}
-
-pub(crate) fn validated_path(uri: &str, ctx: &ExecutionContext) -> Result<PathBuf, EngineError> {
-    if uri.contains("://") {
-        return Err(EngineError::AccessDenied(format!("remote source '{uri}' not enabled in this build")));
-    }
-    let p = std::fs::canonicalize(Path::new(uri))
-        .map_err(|e| EngineError::AccessDenied(format!("cannot access '{uri}': {e}")))?;
-    for r in &ctx.allowed_roots {
-        if let Ok(root) = std::fs::canonicalize(r) {
-            if p.starts_with(&root) {
-                return Ok(p);
-            }
-        }
-    }
-    Err(EngineError::AccessDenied(format!("'{uri}' is outside the allowed source roots")))
+    Ok(Compiled { sql, sources: t.sources, geometry_columns })
 }
 
 pub(crate) fn sql_path(p: &Path) -> String {
@@ -176,8 +163,10 @@ impl Translator<'_> {
     fn node(&mut self, n: &Node) -> Result<Out, EngineError> {
         match n {
             Node::Source { uri, .. } => {
-                let p = validated_path(uri, self.ctx)?;
-                let src = GeoParquetSource::open(&p).map_err(|e| EngineError::Engine(e.to_string()))?;
+                let authorized = self.ctx.guard.authorize(uri).map_err(|_| EngineError::AccessDenied)?;
+                let src = GeoParquetSource::open_authorized(&authorized).map_err(|e| EngineError::Engine(e.to_string()))?;
+                let p = authorized.path().to_path_buf();
+                self.sources.push(authorized);
                 let info = src.info();
                 let covering = info.covering.as_ref().map(|c| {
                     let sqlcol = |path: &str| path.split('.').map(q_ident).collect::<Vec<_>>().join(".");

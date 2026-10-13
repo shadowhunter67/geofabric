@@ -4,16 +4,23 @@
 //! statistics); data is read as Arrow record batches with column projection and
 //! row-group selection. Nothing here converts to GeoJSON.
 //!
-//! CRS policy (CONSTITUTION 2): an absent/unparseable `crs` is **not** silently
-//! mapped to EPSG:4326. It becomes `Crs::Unknown(..)` so CRS-sensitive IR
-//! operations are rejected by the validator until the user supplies a CRS.
+//! CRS policy (CONSTITUTION 2), following the GeoParquet specification:
+//! * `crs` key **absent**  -> `Crs::OgcCrs84` (the spec default; lon/lat),
+//!   never silently EPSG:4326;
+//! * `"crs": null`         -> `Crs::Undefined` (CRS-sensitive ops are rejected);
+//! * `crs` object/string   -> parsed (`EPSG` id -> `Epsg`, `OGC:CRS84` -> `OgcCrs84`,
+//!   anything else -> `Unknown`).
+//!
+//! Authorization: production code opens sources only through
+//! [`GeoParquetSource::open_authorized`]; the [`geo_types::AuthorizedSource`]
+//! argument proves the access guard ran before any I/O on the file.
 
 mod analysis;
 pub use analysis::{analyze_plan, wkt_envelope, SourceScan};
 
 use arrow_schema::DataType;
 use geo_ir::{Node, SourceFormat, SourceStats};
-use geo_types::{BoundingBox, Crs, Field, FieldType, GeometryColumn, GeometryType, SpatialSchema};
+use geo_types::{AuthorizedSource, BoundingBox, Crs, Field, FieldType, GeometryColumn, GeometryType, SpatialSchema};
 use parquet::arrow::arrow_reader::{ParquetRecordBatchReader, ParquetRecordBatchReaderBuilder};
 use parquet::arrow::ProjectionMask;
 use parquet::file::reader::{FileReader, SerializedFileReader};
@@ -39,6 +46,9 @@ pub enum SourceError {
     CrsMismatch { query: String, source_crs: String },
     #[error("source CRS is unknown ({0}); cannot prune spatially")]
     UnknownCrs(String),
+    /// Opaque on purpose (no path, no reason): see `geo_types::AccessDenied`.
+    #[error("source not permitted")]
+    AccessDenied,
 }
 
 /// Where the per-row-group bbox comes from.
@@ -103,6 +113,14 @@ pub struct GeoParquetSource {
 }
 
 impl GeoParquetSource {
+    /// Open a source that has passed the access guard.
+    pub fn open_authorized(src: &AuthorizedSource) -> Result<Self, SourceError> {
+        Self::open(src.path())
+    }
+
+    /// Unchecked open: for tests and offline tooling only. Production code
+    /// (planner, engines, gateway) must use [`Self::open_authorized`];
+    /// `tools/arch_check.py` enforces this.
     pub fn open(path: impl AsRef<Path>) -> Result<Self, SourceError> {
         let path = path.as_ref().to_path_buf();
         let file = File::open(&path)?;
@@ -130,7 +148,10 @@ impl GeoParquetSource {
         if !encoding.eq_ignore_ascii_case("wkb") {
             return Err(SourceError::UnsupportedEncoding(encoding.to_string()));
         }
-        let crs = parse_crs(&col["crs"]);
+        let crs = match col.get("crs") {
+            None => Crs::OgcCrs84,
+            Some(v) => parse_crs(v),
+        };
         let geometry_type = parse_geometry_types(&col["geometry_types"]);
         let file_bbox = col["bbox"].as_array().and_then(|a| {
             let v: Vec<f64> = a.iter().filter_map(|x| x.as_f64()).collect();
@@ -333,9 +354,8 @@ fn map_type(t: &DataType) -> FieldType {
 }
 
 fn parse_crs(v: &serde_json::Value) -> Crs {
-    const IMPLIED: &str = "OGC:CRS84 (crs absent in GeoParquet metadata)";
     if v.is_null() {
-        return Crs::Unknown(IMPLIED.into());
+        return Crs::Undefined;
     }
     if let Some(s) = v.as_str() {
         return s.parse().unwrap_or_else(|_| Crs::Unknown(s.to_string()));
@@ -350,6 +370,9 @@ fn parse_crs(v: &serde_json::Value) -> Crs {
                 if let Ok(n) = c.parse::<u32>() {
                     return Crs::Epsg(n);
                 }
+            }
+            if auth.eq_ignore_ascii_case("OGC") && c.eq_ignore_ascii_case("CRS84") {
+                return Crs::OgcCrs84;
             }
             return Crs::Unknown(format!("{auth}:{c}"));
         }

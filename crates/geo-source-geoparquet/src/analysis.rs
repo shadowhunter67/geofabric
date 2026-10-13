@@ -9,7 +9,7 @@
 
 use crate::{GeoParquetSource, PruneMethod, PruneReport, SourceError};
 use geo_ir::{Node, Plan};
-use geo_types::{BoundingBox, Crs};
+use geo_types::{BoundingBox, Crs, SourceAccessGuard};
 use serde::Serialize;
 use std::collections::BTreeSet;
 
@@ -55,16 +55,19 @@ pub fn wkt_envelope(wkt: &str, crs: &Crs) -> Option<BoundingBox> {
     BoundingBox::new(x0, y0, x1, y1, crs.clone()).ok()
 }
 
-pub fn analyze_plan(plan: &Plan) -> Result<Vec<SourceScan>, SourceError> {
+/// Scan analysis reads source metadata, so every source is authorized by
+/// `guard` **before** it is opened.
+pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<SourceScan>, SourceError> {
     let mut out = Vec::new();
-    walk(&plan.root, &[], &mut out)?;
+    walk(&plan.root, &[], guard, &mut out)?;
     Ok(out)
 }
 
-fn walk(node: &Node, constraints: &[Constraint], out: &mut Vec<SourceScan>) -> Result<(), SourceError> {
+fn walk(node: &Node, constraints: &[Constraint], guard: &dyn SourceAccessGuard, out: &mut Vec<SourceScan>) -> Result<(), SourceError> {
     match node {
         Node::Source { uri, .. } => {
-            let src = GeoParquetSource::open(uri)?;
+            let authorized = guard.authorize(uri).map_err(|_| SourceError::AccessDenied)?;
+            let src = GeoParquetSource::open_authorized(&authorized)?;
             let info = src.info();
             let mut kept: Option<BTreeSet<usize>> = None;
             let mut applied = 0;
@@ -116,25 +119,25 @@ fn walk(node: &Node, constraints: &[Constraint], out: &mut Vec<SourceScan>) -> R
         Node::BboxFilter { input, geometry_column, bbox } => {
             let mut c: Vec<Constraint> = constraints.iter().map(clone_c).collect();
             c.push(Constraint { column: geometry_column.clone(), bbox: bbox.clone() });
-            walk(input, &c, out)?;
+            walk(input, &c, guard, out)?;
         }
         Node::Intersects { input, geometry_column, with } => {
             let mut c: Vec<Constraint> = constraints.iter().map(clone_c).collect();
             if let Some(b) = wkt_envelope(&with.wkt, &with.crs) {
                 c.push(Constraint { column: geometry_column.clone(), bbox: b });
             }
-            walk(input, &c, out)?;
+            walk(input, &c, guard, out)?;
         }
         Node::Filter { input, .. } | Node::Sort { input, .. } | Node::Project { input, .. } => {
             let c: Vec<Constraint> = constraints.iter().map(clone_c).collect();
-            walk(input, &c, out)?;
+            walk(input, &c, guard, out)?;
         }
         Node::Limit { input, .. } | Node::Aggregate { input, .. } | Node::Buffer { input, .. } => {
-            walk(input, &[], out)?;
+            walk(input, &[], guard, out)?;
         }
         Node::SpatialJoin { left, right, .. } => {
-            walk(left, &[], out)?;
-            walk(right, &[], out)?;
+            walk(left, &[], guard, out)?;
+            walk(right, &[], guard, out)?;
         }
     }
     Ok(())

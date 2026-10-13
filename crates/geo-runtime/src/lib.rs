@@ -6,16 +6,30 @@ use geo_executor::{ExecutionContext, ExecutionEngine, ExecutionResult};
 use geo_ir::{Node, Plan};
 use geo_planner::{PhysicalPlan, PlanError, Planner};
 use geo_source_geoparquet::{GeoParquetSource, SourceError};
-use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
     #[error(transparent)]
     Plan(#[from] PlanError),
     #[error(transparent)]
-    Source(#[from] SourceError),
+    Source(SourceError),
     #[error("execution failed: {0}")]
     Execution(#[from] geo_executor::EngineError),
+    /// Opaque on purpose (no path, no reason).
+    #[error("source not permitted")]
+    AccessDenied,
+}
+
+/// Authorization happens first, for every source of the plan, before any
+/// metadata I/O (planning reads Parquet footers).
+fn authorize_all(n: &Node, ctx: &ExecutionContext) -> Result<(), RuntimeError> {
+    if let Node::Source { uri, .. } = n {
+        ctx.guard.authorize(uri).map_err(|_| RuntimeError::AccessDenied)?;
+    }
+    for i in n.inputs() {
+        authorize_all(i, ctx)?;
+    }
+    Ok(())
 }
 
 pub struct RunOutput {
@@ -26,6 +40,15 @@ pub struct RunOutput {
 pub struct Runtime {
     engines: Vec<Box<dyn ExecutionEngine>>,
     planner: Planner,
+}
+
+impl From<SourceError> for RuntimeError {
+    fn from(e: SourceError) -> Self {
+        match e {
+            SourceError::AccessDenied => RuntimeError::AccessDenied,
+            other => RuntimeError::Source(other),
+        }
+    }
 }
 
 impl Runtime {
@@ -49,39 +72,14 @@ impl Runtime {
     }
 
     /// IR `Source` node for a GeoParquet file (schema + CRS + stats from the footer).
-    pub fn open_source(&self, path: impl AsRef<Path>) -> Result<Node, RuntimeError> {
-        Ok(GeoParquetSource::open(path)?.to_ir_source())
-    }
-
-    /// Every Source URI must resolve inside `ctx.allowed_roots` *before* any file
-    /// is opened for planning (planning reads Parquet footers).
-    pub fn check_source_access(plan: &Plan, ctx: &ExecutionContext) -> Result<(), RuntimeError> {
-        fn walk(n: &Node, ctx: &ExecutionContext) -> Result<(), geo_executor::EngineError> {
-            if let Node::Source { uri, .. } = n {
-                if uri.contains("://") {
-                    return Err(geo_executor::EngineError::AccessDenied(format!("remote source '{uri}' not enabled")));
-                }
-                let p = std::fs::canonicalize(uri)
-                    .map_err(|_| geo_executor::EngineError::AccessDenied(format!("cannot access '{uri}'")))?;
-                let ok = ctx
-                    .allowed_roots
-                    .iter()
-                    .filter_map(|r| std::fs::canonicalize(r).ok())
-                    .any(|r| p.starts_with(r));
-                if !ok {
-                    return Err(geo_executor::EngineError::AccessDenied(format!("'{uri}' is outside the allowed roots")));
-                }
-            }
-            for i in n.inputs() {
-                walk(i, ctx)?;
-            }
-            Ok(())
-        }
-        Ok(walk(&plan.root, ctx)?)
+    /// The URI is authorized through the context's guard **before** the file is opened.
+    pub fn open_source(&self, uri: &str, ctx: &ExecutionContext) -> Result<Node, RuntimeError> {
+        let a = ctx.guard.authorize(uri).map_err(|_| RuntimeError::AccessDenied)?;
+        Ok(GeoParquetSource::open_authorized(&a)?.to_ir_source())
     }
 
     pub fn plan(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<PhysicalPlan, RuntimeError> {
-        Self::check_source_access(plan, ctx)?;
+        authorize_all(&plan.root, ctx)?;
         let refs: Vec<&dyn ExecutionEngine> = self.engines.iter().map(|e| e.as_ref()).collect();
         Ok(self.planner.plan(plan, &refs, ctx)?)
     }

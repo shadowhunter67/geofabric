@@ -61,6 +61,9 @@ pub enum PlanError {
     NoEngine(String),
     #[error("plan too expensive: {0}")]
     TooExpensive(String),
+    /// Opaque on purpose (no path, no reason).
+    #[error("source not permitted")]
+    AccessDenied,
     #[error("planning failed: {0}")]
     Other(String),
 }
@@ -105,7 +108,10 @@ impl Planner {
         }
 
         // R2 scan analysis (source metadata only; no data read)
-        let scans = analyze_plan(plan).map_err(|e| PlanError::Other(e.to_string()))?;
+        let scans = analyze_plan(plan, ctx.guard.as_ref()).map_err(|e| match e {
+            geo_source_geoparquet::SourceError::AccessDenied => PlanError::AccessDenied,
+            other => PlanError::Other(other.to_string()),
+        })?;
         for s in &scans {
             log.push(dec(
                 "spatial_prune",
@@ -190,8 +196,8 @@ impl Planner {
         let (engine, _) = &capable[chosen];
 
         // R5 cost guard from metadata
-        let estimate = engine.estimate(plan).map_err(|e| PlanError::Other(e.to_string()))?;
-        if let Some(b) = estimate.bytes_to_read {
+        let estimate = engine.estimate(plan, ctx).map_err(|e| PlanError::Other(e.to_string()))?;
+        if let Some(b) = estimate.bytes_upper_bound.value {
             if b > self.config.max_scan_bytes {
                 return Err(PlanError::TooExpensive(format!(
                     "estimated {b} bytes to read exceeds max_scan_bytes={}",
@@ -209,10 +215,10 @@ impl Planner {
             engine.id().to_string(),
             Outcome::Chosen,
             format!(
-                "capable{}; estimated rows<={} bytes~{}",
+                "capable{}; upper bounds from statistics: rows<={} bytes<={}",
                 if capable.len() > 1 { " (first of several)" } else { " (only candidate)" },
-                estimate.rows_upper_bound.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
-                estimate.bytes_to_read.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
+                estimate.rows_upper_bound.value.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
+                estimate.bytes_upper_bound.value.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
             ),
         ));
 

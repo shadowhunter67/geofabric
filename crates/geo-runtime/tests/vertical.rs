@@ -85,19 +85,19 @@ const Q: (f64, f64, f64, f64) = (104.0, 12.0, 105.0, 13.0);
 #[test]
 fn bbox_count_matches_oracle_and_prunes() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let plan = Plan::new(count_agg(bbox_plan(src, Q)));
     let (n, m) = scalar_count(&plan);
     assert_eq!(n, oracle(&p, Q, |_, _| true));
     assert!(n > 0);
-    assert!(m.row_groups_skipped.unwrap() > 0, "{m:?}");
+    assert!(m.row_groups_skipped.value.unwrap() > 0, "{m:?}");
     eprintln!("bbox: n={n} metrics={m:?}");
 }
 
 #[test]
 fn attribute_filter_matches_oracle() {
     let Some(p) = file("uniform_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let f = Node::Filter {
         input: Box::new(bbox_plan(src, Q)),
         predicate: Expr::And {
@@ -114,7 +114,7 @@ fn attribute_filter_matches_oracle() {
 #[test]
 fn intersects_with_matching_rectangle_equals_bbox_count() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let plan = Plan::new(count_agg(Node::Intersects {
         input: Box::new(src),
         geometry_column: "geometry".into(),
@@ -124,13 +124,13 @@ fn intersects_with_matching_rectangle_equals_bbox_count() {
     assert!(phys.scans[0].prune.skipped > 0, "intersects literal should prune row groups");
     let (n, m) = scalar_count(&plan);
     assert_eq!(n, oracle(&p, Q, |_, _| true));
-    assert!(m.row_groups_skipped.unwrap() > 0);
+    assert!(m.row_groups_skipped.value.unwrap() > 0);
 }
 
 #[test]
 fn aggregate_group_by_matches_oracle_totals() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let agg = Node::Sort {
         input: Box::new(Node::Aggregate {
             input: Box::new(bbox_plan(src, Q)),
@@ -158,42 +158,26 @@ fn aggregate_group_by_matches_oracle_totals() {
 fn row_order_does_not_change_results_but_changes_pruning() {
     let (Some(a), Some(b)) = (file("clustered_10mb_spatial"), file("clustered_10mb_shuffled")) else { return };
     let run = |p: &PathBuf| {
-        let src = rt().open_source(p).unwrap();
+        let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
         scalar_count(&Plan::new(count_agg(bbox_plan(src, Q))))
     };
     let (na, ma) = run(&a);
     let (nb, mb) = run(&b);
     assert_eq!(na, nb, "same content, different order => same answer");
     assert!(
-        ma.row_groups_skipped.unwrap() > mb.row_groups_skipped.unwrap(),
+        ma.row_groups_skipped.value.unwrap() > mb.row_groups_skipped.value.unwrap(),
         "spatial {:?} vs shuffled {:?}",
-        ma.row_groups_skipped,
-        mb.row_groups_skipped
+        ma.row_groups_skipped.value,
+        mb.row_groups_skipped.value
     );
 }
 
-#[test]
-fn spatial_join_self_join_runs() {
-    let Some(p) = file("clustered_10mb_spatial") else { return };
-    let l = bbox_plan(rt().open_source(&p).unwrap(), (104.0, 12.0, 104.2, 12.2));
-    let r = bbox_plan(rt().open_source(&p).unwrap(), (104.1, 12.1, 104.3, 12.3));
-    let j = Node::SpatialJoin {
-        left: Box::new(l),
-        right: Box::new(r),
-        left_column: "geometry".into(),
-        right_column: "geometry".into(),
-        predicate: SpatialPredicate::Intersects,
-        join_type: JoinType::Inner,
-        right_prefix: "r_".into(),
-    };
-    let (n, _) = scalar_count(&Plan::new(count_agg(j)));
-    assert!(n >= 0);
-}
+// spatial join correctness: see tests/join.rs (exact pair sets on a tiny deterministic dataset)
 
 #[test]
 fn result_geometry_carries_crs_metadata() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let plan = Plan::new(Node::Limit {
         input: Box::new(Node::Project { input: Box::new(bbox_plan(src, Q)), columns: vec!["id".into(), "geometry".into()] }),
         n: 5,
@@ -209,7 +193,7 @@ fn result_geometry_carries_crs_metadata() {
 #[test]
 fn metric_buffer_on_geographic_data_is_rejected_by_planner() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let plan = Plan::new(Node::Buffer {
         input: Box::new(src),
         geometry_column: "geometry".into(),
@@ -228,12 +212,12 @@ fn metric_buffer_on_geographic_data_is_rejected_by_planner() {
 #[test]
 fn security_path_and_injection() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     // 1. source outside allowed roots
     let outside = ExecutionContext::new(vec![std::env::temp_dir().join("geofabric-nothing-here")]);
+    std::fs::create_dir_all(std::env::temp_dir().join("geofabric-nothing-here")).unwrap();
     match rt().run(&Plan::new(count_agg(src.clone())), &outside) {
-        Err(RuntimeError::Execution(EngineError::AccessDenied(_))) => {}
-        Err(RuntimeError::Plan(_)) => {}
+        Err(RuntimeError::AccessDenied) => {}
         other => panic!("expected access denied, got {:?}", other.map(|_| ())),
     }
     // 2. quote in a string literal is data, not SQL
@@ -248,7 +232,7 @@ fn security_path_and_injection() {
 #[test]
 fn max_rows_limit_enforced() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let src = rt().open_source(&p).unwrap();
+    let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     let mut c = ctx();
     c.max_rows = 10;
     match rt().run(&Plan::new(Node::Project { input: Box::new(src), columns: vec!["id".into()] }), &c) {
@@ -260,7 +244,7 @@ fn max_rows_limit_enforced() {
 #[test]
 fn unknown_crs_source_cannot_be_bbox_filtered() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
-    let mut src = rt().open_source(&p).unwrap();
+    let mut src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     if let Node::Source { schema, .. } = &mut src {
         schema.geometry_columns[0].crs = Crs::Unknown("mystery".into());
     }

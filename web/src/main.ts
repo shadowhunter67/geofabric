@@ -15,16 +15,18 @@ interface Physical {
   engine: string; decisions: Decision[]; steps: { label: string; detail: string }[];
   scans: { uri: string; prune: { kept: number[]; skipped: number; total_row_groups: number; kept_bytes: number; total_bytes: number } }[];
 }
+interface Metric<T> { value: T | null; source: string }
 interface Metrics {
-  elapsed_ms: number; rows_returned: number; rows_scanned: number | null; bytes_read: number | null;
-  row_groups_total: number | null; row_groups_skipped: number | null; peak_memory_bytes: number | null;
-  scan_metrics_source: string; notes: string[];
+  elapsed_ms: Metric<number>; rows_returned: Metric<number>; row_groups_total: Metric<number>;
+  row_groups_skipped: Metric<number>; rows_scanned_upper_bound: Metric<number>;
+  estimated_bytes_upper_bound: Metric<number>; bytes_read: Metric<number>; peak_memory_bytes: Metric<number>;
+  notes: string[];
 }
 interface RunResp {
   plan_id: string; ir: unknown; physical: Physical; lineage: { id: string; op: string }[];
   columns: { name: string; type: string; geometry: boolean }[]; rows: Record<string, unknown>[]; rows_total: number;
   geojson: GeoJSON.FeatureCollection | null; metrics: Metrics;
-  timing: { plan_and_overhead_ms: number; total_ms: number; boundary_conversion_ms: number };
+  timing: { plan_and_overhead_ms: Metric<number>; total_ms: Metric<number>; boundary_conversion_ms: Metric<number> };
 }
 
 // ---------- tiny DOM helper (text only: file contents are untrusted) ----------
@@ -202,8 +204,8 @@ function currentRequest() {
 
 async function run() {
   if (!S.cur || S.busy) return;
-  if (!S.cur.crs_known || S.cur.crs !== "EPSG:4326") {
-    log(`viewport queries need an EPSG:4326 source in v0 (source CRS: ${S.cur.crs})`, true);
+  if (!["EPSG:4326", "OGC:CRS84"].includes(S.cur.crs)) {
+    log(`viewport queries need a lon/lat source (EPSG:4326 or OGC:CRS84) in v0; source CRS: ${S.cur.crs}`, true);
     statusEl.textContent = "unsupported CRS";
     return;
   }
@@ -234,8 +236,8 @@ async function handle(r: RunResp, label: string, record = true) {
     for (const f of data.features) f.properties!.state = kept.has(f.properties!.index as number) ? "kept" : "skipped";
     rg.setData(data);
   }
-  statusEl.textContent = `${r.rows_total} rows · ${fmtMs(r.timing.total_ms)} · ${r.physical.engine}`;
-  log(`plan ${r.plan_id.slice(0, 10)} engine=${r.physical.engine} rows=${r.rows_total} skipped=${r.metrics.row_groups_skipped}/${r.metrics.row_groups_total}`);
+  statusEl.textContent = `${r.rows_total} rows · ${fmtMs(r.timing.total_ms.value ?? 0)} · ${r.physical.engine}`;
+  log(`plan ${r.plan_id.slice(0, 10)} engine=${r.physical.engine} rows=${r.rows_total} skipped(est.)=${r.metrics.row_groups_skipped.value}/${r.metrics.row_groups_total.value}`);
   renderLeft(); renderRight();
   setTab(S.tab === "query" ? "execution" : S.tab);
 }
@@ -269,7 +271,7 @@ function renderRight() {
     add("geometry type", f.geometry.type);
     add("source", S.cur?.id ?? "—");
     add("CRS", S.cur?.crs ?? "—");
-    const m = S.cur?.crs === "EPSG:4326" ? measure(f.geometry) : null;
+    const m = ["EPSG:4326", "OGC:CRS84"].includes(S.cur?.crs ?? "") ? measure(f.geometry) : null;
     if (m) { add("area ≈", `${m.area.toFixed(1)} m²`); add("perimeter ≈", `${m.perim.toFixed(1)} m`); }
     right.append(el("h3", {}, "Properties"), t);
     if (m) right.append(el("div", { class: "note", style: "padding:0 10px" }, `≈ spherical model, WGS84 sphere R=${R} m (not ellipsoidal).`));
@@ -299,7 +301,7 @@ function renderLeft() {
   if (!S.derived.length) left.append(el("div", { class: "empty" }, "Results of queries appear here."));
   S.derived.forEach((d, i) => left.append(el("div", { class: `item${i === 0 ? " sel" : ""}`, onclick: () => void handle(d.resp, d.label, false) },
     el("div", { class: "name" }, d.label),
-    el("div", { class: "meta" }, `${d.resp.rows_total} rows · ${fmtMs(d.resp.timing.total_ms)}`),
+    el("div", { class: "meta" }, `${d.resp.rows_total} rows · ${fmtMs(d.resp.timing.total_ms.value ?? 0)}`),
   )));
 }
 
@@ -363,18 +365,37 @@ function resultsTab(): HTMLElement {
   return el("div", {}, el("div", { class: "note", style: "margin:0 0 6px" }, `${r.rows_total} rows returned${r.rows.length < r.rows_total ? ` (table shows first ${r.rows.length}; map shows all)` : ""}. Geometry columns are drawn on the map.`), t);
 }
 
-function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
-  const c = (v: string, l: string) => el("div", { class: "card" }, el("div", { class: "v" }, v), el("div", { class: "l" }, l));
-  return el("div", { class: "cards" },
-    c(fmtMs(tm.total_ms), "total (plan + execute + boundary)"),
-    c(fmtMs(m.elapsed_ms), "engine execution"),
-    c(m.rows_scanned == null ? "—" : `≤ ${m.rows_scanned.toLocaleString()}`, "rows scanned (stats upper bound)"),
-    c(m.rows_returned.toLocaleString(), "rows returned"),
-    c(`${m.row_groups_skipped ?? "—"} / ${m.row_groups_total ?? "—"}`, "row groups skipped"),
-    c(fmtBytes(m.bytes_read), "bytes read (DuckDB profiler, undercounts)"),
-    c(fmtBytes(m.peak_memory_bytes), "peak buffer memory (DuckDB)"),
-  );
+const BADGE: Record<string, [string, string]> = {
+  engine_observed: ["Observed", "ok"], source_observed: ["Observed", "ok"],
+  source_estimated: ["Estimated", "est"], planner_estimated: ["Estimated", "est"],
+  derived: ["Derived", "der"], unknown: ["Unavailable", "na"],
+};
+/** A metric card: value + provenance badge. Estimates are never shown as observed facts. */
+function mcard(label: string, m: Metric<number>, fmt: (v: number) => string, prefix = ""): HTMLElement {
+  const [text, cls] = m.value == null ? BADGE.unknown : (BADGE[m.source] ?? BADGE.unknown);
+  return el("div", { class: "card", "data-metric": label, "data-source": m.value == null ? "unknown" : m.source },
+    el("div", { class: "v" }, m.value == null ? "Unknown" : prefix + fmt(m.value)),
+    el("div", { class: "l" }, label, " ", el("span", { class: `badge ${cls}` }, text)));
 }
+const fmtN = (v: number) => v.toLocaleString();
+
+function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
+  const skipped = m.row_groups_skipped.value, total = m.row_groups_total.value;
+  const rg: Metric<number> = { value: skipped, source: m.row_groups_skipped.source };
+  const cards = [
+    mcard("Total (plan + execute + boundary)", tm.total_ms, fmtMs),
+    mcard("Engine execution", m.elapsed_ms, fmtMs),
+    mcard("Rows returned", m.rows_returned, fmtN),
+    mcard("Row groups total", m.row_groups_total, fmtN),
+    mcard(`Row groups skipped (of ${total ?? "?"}; from GeoParquet statistics)`, rg, fmtN),
+    mcard("Rows scanned, upper bound", m.rows_scanned_upper_bound, fmtN, "≤ "),
+    mcard("Bytes read, upper bound", m.estimated_bytes_upper_bound, fmtBytesN, "≤ "),
+    mcard("Bytes read (actual I/O)", m.bytes_read, fmtBytesN),
+    mcard("Peak buffer memory (engine)", m.peak_memory_bytes, fmtBytesN),
+  ];
+  return el("div", { class: "cards" }, ...cards);
+}
+const fmtBytesN = (v: number) => fmtBytes(v);
 
 function executionTab(): HTMLElement {
   const r = S.last;
@@ -382,14 +403,14 @@ function executionTab(): HTMLElement {
   const p = r.physical;
   const pipe = el("div", { class: "pipe" });
   const steps = [...p.steps.map((s) => ({ t: s.label, d: s.detail })),
-    { t: "Render", d: `${r.rows_total} rows → table / map (GeoJSON boundary conversion ${fmtMs(r.timing.boundary_conversion_ms)})` }];
+    { t: "Render", d: `${r.rows_total} rows → table / map (GeoJSON boundary conversion ${fmtMs(r.timing.boundary_conversion_ms.value ?? 0)})` }];
   steps.forEach((s, i) => {
     if (i) pipe.append(el("div", { class: "arrow" }, "↓"));
     pipe.append(el("div", { class: "step" }, el("div", { class: "t" }, s.t), el("div", { class: "d" }, s.d.replace("\\\\?\\", ""))));
   });
   const dec = el("div", {}, el("h3", { style: "padding-left:0" }, "Planner decisions"),
     ...p.decisions.map((d) => el("div", { class: "dec" }, el("span", { class: `o-${d.outcome}` }, `[${d.outcome}] `), `${d.rule} · ${d.subject}: ${d.reason}`)));
-  return el("div", {}, metricCards(r.metrics, r.timing), pipe, dec, el("div", { class: "note" }, r.metrics.scan_metrics_source), ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
+  return el("div", {}, metricCards(r.metrics, r.timing), pipe, dec, ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
 }
 
 function profileTab(): HTMLElement {
@@ -397,10 +418,15 @@ function profileTab(): HTMLElement {
   if (!r) return el("div", { class: "empty" }, "No profile yet.");
   return el("div", {}, metricCards(r.metrics, r.timing),
     el("table", {}, el("tbody", {},
-      el("tr", {}, el("td", {}, "gateway planning + overhead"), el("td", {}, fmtMs(r.timing.plan_and_overhead_ms))),
-      el("tr", {}, el("td", {}, "engine execution"), el("td", {}, fmtMs(r.metrics.elapsed_ms))),
-      el("tr", {}, el("td", {}, "GeoJSON boundary conversion"), el("td", {}, fmtMs(r.timing.boundary_conversion_ms))))),
+      el("tr", {}, el("td", {}, "gateway planning + overhead"), el("td", {}, fmtMs(r.timing.plan_and_overhead_ms.value ?? 0))),
+      el("tr", {}, el("td", {}, "engine execution"), el("td", {}, fmtMs(r.metrics.elapsed_ms.value ?? 0))),
+      el("tr", {}, el("td", {}, "GeoJSON boundary conversion"), el("td", {}, fmtMs(r.timing.boundary_conversion_ms.value ?? 0))))),
     el("div", { class: "note" }, "CPU / network profiling is not implemented in the MVP; only the numbers above are measured."));
 }
 
 renderLeft(); renderRight(); renderTab();
+
+// Test hook for the browser smoke test only (?e2e=1): exposes the map and state, nothing else.
+if (new URLSearchParams(location.search).has("e2e")) {
+  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab };
+}

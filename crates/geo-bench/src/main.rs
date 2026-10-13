@@ -3,13 +3,25 @@
 //!       --sizes 10mb,100mb --reps 3
 //!
 //! No timing thresholds are asserted: the output is for *relative* comparison
-//! (pruning effectiveness, bytes read, spatial vs shuffled ordering).
+//! (pruning effectiveness, spatial vs shuffled ordering).
+//!
+//! Correctness gate: every run records `result_count` + `result_hash` and is
+//! compared with the independent oracle output `expected-<size>.json`
+//! (`benchmarks/oracle.py`: pyarrow + numpy, no DuckDB). A timing row is only
+//! valid when `validation == pass`; any FAIL makes the process exit non-zero.
+//! Metric provenance is part of the column names: `*_estimated` values are
+//! statistics-derived bounds, not measurements; actual bytes read is unknown
+//! and is not reported.
 
+use arrow_array::cast::AsArray;
+use arrow_array::{Array, RecordBatch};
+use arrow_schema::DataType;
 use geo_executor::ExecutionContext;
 use geo_ir::*;
 use geo_runtime::Runtime;
 use geo_types::*;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 
 #[derive(Serialize)]
@@ -20,16 +32,59 @@ struct Row {
     distribution: String,
     ordering: String,
     query: String,
-    rows_scanned_upper_bound: Option<u64>,
-    rows_returned: u64,
-    row_groups_total: Option<u64>,
-    row_groups_skipped: Option<u64>,
-    bytes_read_duckdb: Option<u64>,
-    predicted_bytes_after_prune: Option<u64>,
-    time_ms_median: f64,
-    time_ms_min: f64,
-    peak_buffer_memory_bytes: Option<u64>,
+    result_count: u64,
+    result_hash: String,
+    expected_count: Option<u64>,
+    /// pass | FAIL | no-oracle
+    validation: String,
+    rows_returned_engine_observed: u64,
+    row_groups_total_source_observed: Option<u64>,
+    row_groups_skipped_source_estimated: Option<u64>,
+    rows_scanned_upper_bound_source_estimated: Option<u64>,
+    estimated_bytes_upper_bound_source_estimated: Option<u64>,
+    /// Always null: no trustworthy measurement of real I/O exists.
+    bytes_read: Option<u64>,
+    time_ms_median_engine_observed: f64,
+    time_ms_min_engine_observed: f64,
+    peak_buffer_memory_bytes_engine_observed: Option<u64>,
     reps: usize,
+}
+
+/// One canonical string per row (must match benchmarks/oracle.py): cells joined by "|";
+/// Int64 decimal, Utf8 raw, Binary lowercase hex.
+fn row_strings(batches: &[RecordBatch]) -> Vec<String> {
+    let mut out = Vec::new();
+    for b in batches {
+        for r in 0..b.num_rows() {
+            let mut cells = Vec::new();
+            for c in b.columns() {
+                cells.push(if c.is_null(r) {
+                    "NULL".to_string()
+                } else {
+                    match c.data_type() {
+                        DataType::Int64 => c.as_primitive::<arrow_array::types::Int64Type>().value(r).to_string(),
+                        DataType::Utf8 => c.as_string::<i32>().value(r).to_string(),
+                        DataType::Binary => c.as_binary::<i32>().value(r).iter().map(|x| format!("{x:02x}")).collect(),
+                        other => format!("<unsupported {other}>"),
+                    }
+                });
+            }
+            out.push(cells.join("|"));
+        }
+    }
+    out
+}
+
+/// (count, sha256-hex). A single-row single-column Int64 result is a count query: count = the value.
+fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
+    let mut rows = row_strings(batches);
+    let n_rows = rows.len() as u64;
+    let is_scalar_count = n_rows == 1 && batches.iter().any(|b| b.num_rows() == 1 && b.num_columns() == 1 && b.column(0).data_type() == &DataType::Int64);
+    let count = if is_scalar_count { rows[0].parse::<u64>().unwrap_or(n_rows) } else { n_rows };
+    rows.sort();
+    let mut h = Sha256::new();
+    h.update(rows.join("\n").as_bytes());
+    (count, h.finalize().iter().map(|b| format!("{b:02x}")).collect())
 }
 
 fn bb(x0: f64, y0: f64, x1: f64, y1: f64) -> BoundingBox {
@@ -124,7 +179,18 @@ fn main() {
     let mut ctx = ExecutionContext::new(vec![data.clone()]);
     ctx.max_rows = 5_000_000;
     ctx.memory_limit_mb = 4096;
+    ctx.timeout = std::time::Duration::from_secs(600);
     let mut rows: Vec<Row> = Vec::new();
+    let mut failures = 0usize;
+
+    let mut expected: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+    for size in &sizes {
+        let p = out.join(format!("expected-{size}.json"));
+        match std::fs::read_to_string(&p).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()) {
+            Some(serde_json::Value::Object(m)) => expected.extend(m),
+            _ => eprintln!("warning: no oracle file {} (run benchmarks/oracle.py): rows will be 'no-oracle'", p.display()),
+        }
+    }
 
     for size in &sizes {
         for dist in ["clustered", "uniform"] {
@@ -135,7 +201,7 @@ fn main() {
                     eprintln!("skip {name}: missing");
                     continue;
                 }
-                let src = rt.open_source(&path).expect("open source");
+                let src = rt.open_source(path.to_str().unwrap(), &ctx).expect("open source");
                 let file_size = std::fs::metadata(&path).unwrap().len();
                 let n_rows = match &src {
                     Node::Source { statistics, .. } => statistics.row_count.unwrap_or(0),
@@ -148,7 +214,7 @@ fn main() {
                         // first iteration is a warm-up (OS file cache) and is discarded
                         match rt.run(&plan, &ctx) {
                             Ok(o) => {
-                                times.push(o.result.metrics.elapsed_ms);
+                                times.push(o.result.metrics.elapsed_ms.value.unwrap_or(f64::NAN));
                                 last = Some(o);
                             }
                             Err(e) => {
@@ -157,10 +223,25 @@ fn main() {
                             }
                         }
                     }
-                    let Some(o) = last else { continue };
+                    let Some(o) = last else {
+                        failures += 1;
+                        continue;
+                    };
                     let mut t: Vec<f64> = times.into_iter().skip(1).collect();
                     t.sort_by(|a, b| a.partial_cmp(b).unwrap());
                     let m = &o.result.metrics;
+                    let (count, hash) = result_digest(&o.result.batches);
+                    let exp = expected.get(&name).and_then(|d| d.get(qname));
+                    let exp_count = exp.and_then(|e| e["count"].as_u64());
+                    let validation = match exp {
+                        None => "no-oracle",
+                        Some(e) if e["count"].as_u64() == Some(count) && e["hash"].as_str() == Some(hash.as_str()) => "pass",
+                        Some(_) => "FAIL",
+                    };
+                    if validation == "FAIL" {
+                        failures += 1;
+                        eprintln!("!! VALIDATION FAIL {name} {qname}: got count={count} hash={}, expected count={:?}", &hash[..12], exp_count);
+                    }
                     let row = Row {
                         dataset: name.clone(),
                         size_bytes: file_size,
@@ -168,21 +249,30 @@ fn main() {
                         distribution: dist.into(),
                         ordering: ordering.into(),
                         query: qname.into(),
-                        rows_scanned_upper_bound: m.rows_scanned,
-                        rows_returned: m.rows_returned,
-                        row_groups_total: m.row_groups_total,
-                        row_groups_skipped: m.row_groups_skipped,
-                        bytes_read_duckdb: m.bytes_read,
-                        predicted_bytes_after_prune: o.physical.estimate.bytes_to_read,
-                        time_ms_median: t.get(t.len() / 2).copied().unwrap_or(f64::NAN),
-                        time_ms_min: t.first().copied().unwrap_or(f64::NAN),
-                        peak_buffer_memory_bytes: m.peak_memory_bytes,
+                        result_count: count,
+                        result_hash: hash,
+                        expected_count: exp_count,
+                        validation: validation.into(),
+                        rows_returned_engine_observed: m.rows_returned.value.unwrap_or(0),
+                        row_groups_total_source_observed: m.row_groups_total.value,
+                        row_groups_skipped_source_estimated: m.row_groups_skipped.value,
+                        rows_scanned_upper_bound_source_estimated: m.rows_scanned_upper_bound.value,
+                        estimated_bytes_upper_bound_source_estimated: m.estimated_bytes_upper_bound.value,
+                        bytes_read: m.bytes_read.value,
+                        time_ms_median_engine_observed: t.get(t.len() / 2).copied().unwrap_or(f64::NAN),
+                        time_ms_min_engine_observed: t.first().copied().unwrap_or(f64::NAN),
+                        peak_buffer_memory_bytes_engine_observed: m.peak_memory_bytes.value,
                         reps: t.len(),
                     };
                     eprintln!(
-                        "{:<28} {:<34} ret={:<8} rg_skip={:?}/{:?} bytes={:?} {:.1}ms",
-                        row.dataset, row.query, row.rows_returned, row.row_groups_skipped, row.row_groups_total,
-                        row.bytes_read_duckdb, row.time_ms_median
+                        "{:<28} {:<32} {:<9} n={:<8} rg_skip~{:?}/{:?} {:.1}ms",
+                        row.dataset,
+                        row.query,
+                        row.validation,
+                        row.result_count,
+                        row.row_groups_skipped_source_estimated,
+                        row.row_groups_total_source_observed,
+                        row.time_ms_median_engine_observed
                     );
                     rows.push(row);
                 }
@@ -193,26 +283,30 @@ fn main() {
     std::fs::create_dir_all(&out).unwrap();
     std::fs::write(out.join(format!("bench-{tag}.json")), serde_json::to_string_pretty(&rows).unwrap()).unwrap();
     let mut md = String::from(
-        "| dataset | size MB | distribution | ordering | query | rows scanned (<=) | rows returned | row groups skipped | bytes read (DuckDB) | predicted bytes | median ms | peak buf MB |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n",
+        "| dataset | size MB | dist | order | query | result count | result hash | validation | rg skipped (est.) / total (obs.) | rows scanned <= (est.) | bytes <= (est.) | bytes read | median ms (obs.) | peak buf MB (obs.) |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n",
     );
     for r in &rows {
         md += &format!(
-            "| {} | {:.1} | {} | {} | {} | {} | {} | {}/{} | {} | {} | {:.1} | {} |\n",
+            "| {} | {:.1} | {} | {} | {} | {} | {} | {} | {}/{} | {} | {} | unknown | {:.1} | {} |\n",
             r.dataset,
             r.size_bytes as f64 / 1e6,
             r.distribution,
             r.ordering,
             r.query,
-            r.rows_scanned_upper_bound.map(|v| v.to_string()).unwrap_or_default(),
-            r.rows_returned,
-            r.row_groups_skipped.unwrap_or(0),
-            r.row_groups_total.unwrap_or(0),
-            r.bytes_read_duckdb.map(|v| v.to_string()).unwrap_or_default(),
-            r.predicted_bytes_after_prune.map(|v| v.to_string()).unwrap_or_default(),
-            r.time_ms_median,
-            r.peak_buffer_memory_bytes.map(|v| format!("{:.1}", v as f64 / 1e6)).unwrap_or_default(),
+            r.result_count,
+            &r.result_hash[..12],
+            r.validation,
+            r.row_groups_skipped_source_estimated.unwrap_or(0),
+            r.row_groups_total_source_observed.unwrap_or(0),
+            r.rows_scanned_upper_bound_source_estimated.map(|v| v.to_string()).unwrap_or_default(),
+            r.estimated_bytes_upper_bound_source_estimated.map(|v| v.to_string()).unwrap_or_default(),
+            r.time_ms_median_engine_observed,
+            r.peak_buffer_memory_bytes_engine_observed.map(|v| format!("{:.1}", v as f64 / 1e6)).unwrap_or_default(),
         );
     }
     std::fs::write(out.join(format!("bench-{tag}.md")), md).unwrap();
-    eprintln!("wrote {}/bench-{tag}.{{json,md}}", out.display());
+    eprintln!("wrote {}/bench-{tag}.{{json,md}}; validation failures: {failures}", out.display());
+    if failures > 0 {
+        std::process::exit(1);
+    }
 }
