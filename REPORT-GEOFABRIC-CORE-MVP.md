@@ -17,7 +17,7 @@ Prepared for independent Principal Architect review. Date: 2026-10-13. All numbe
 
 ## 2. Repository State
 
-- Branch: `main`; commit: {{COMMIT}} (earlier: `d66684a` docs, then incremental commits per milestone).
+- Branch: `main`; commit: `e49c4da` (earlier: `d66684a` docs, then incremental commits per milestone).
 - Technologies: Rust workspace (arrow/parquet 58, duckdb crate 1.10506 bundled, axum 0.8, serde), Python 3.12 (tooling only), TypeScript 7 + Vite 8 + MapLibre GL 6.
 - Tree:
 
