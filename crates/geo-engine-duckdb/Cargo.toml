@@ -1,0 +1,9 @@
+[package]
+name = "geo-engine-duckdb"
+description = "DuckDB execution adapter for GeoFabric (RFC-002). All DuckDB specifics live here."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+duckdb = { version = "1", features = ["bundled", "parquet"] }

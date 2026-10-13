@@ -1,0 +1,18 @@
+[package]
+name = "geo-source-geoparquet"
+description = "GeoParquet source: metadata, CRS, row-group stats, bbox pruning, Arrow-native reads (no GeoJSON)"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+parquet = { version = "58", default-features = false, features = ["arrow", "snap", "zstd", "lz4", "flate2-rust_backened"] }
+arrow-array = "58"
+arrow-schema = "58"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]

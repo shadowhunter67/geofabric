@@ -8,3 +8,6 @@ data/*
 !data/.gitkeep
 target/
 Cargo.lock.bak
+benchmarks/.venv/
+benchmarks/data/
+benchmarks/results/*.json

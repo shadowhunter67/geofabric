@@ -1,0 +1,14 @@
+[package]
+name = "geo-executor"
+description = "Execution engine contract (RFC-002): traits and result/metrics types. No engine code."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+arrow-array = "58"
+arrow-schema = "58"
+serde.workspace = true
+thiserror.workspace = true
