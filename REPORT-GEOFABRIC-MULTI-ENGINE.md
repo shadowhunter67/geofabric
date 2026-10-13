@@ -19,7 +19,7 @@ Also done: dynamic (prebuilt) DuckDB for development with sha256 verification; c
 
 ## 2. Repository State
 
-Branch `main`; head {{COMMIT}}; previous approved commit `c865a41`. Milestone commits: prebuilt DuckDB workflow → PlanGraph + planner v1 → DuckDB-Wasm engine + cross-engine tests → calibration + selection tests + docs.
+Branch `main`; head `02215f1`; previous approved commit `c865a41`. Milestone commits: prebuilt DuckDB workflow → PlanGraph + planner v1 → DuckDB-Wasm engine + cross-engine tests → calibration + selection tests + docs.
 Tests: **Rust 98**, **TypeScript unit 17** (`node --test`), **browser e2e 9** (smoke 1, engines/UI 8; plus the manual crossover run) — all pass; `arch_check` passes (now with the browser descriptor crate).
 
 ## 3. PlanGraph / DAG
