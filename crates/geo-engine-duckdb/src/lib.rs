@@ -72,7 +72,7 @@ impl DuckDbEngine {
 
     /// The SQL this adapter would run for `plan` (for explain / debugging).
     pub fn compile_sql(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<String, EngineError> {
-        Ok(sql::compile(&plan.root, ctx, self.spatial)?.sql)
+        Ok(sql::compile(plan, ctx, self.spatial)?.sql)
     }
 
     fn check(&self, plan: &Plan) -> Result<(), EngineError> {
@@ -126,7 +126,7 @@ fn scan_analysis(plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_source_g
     })
 }
 
-impl ExecutionEngine for DuckDbEngine {
+impl EngineDescriptor for DuckDbEngine {
     fn id(&self) -> EngineId {
         EngineId::new(ENGINE_ID)
     }
@@ -153,8 +153,11 @@ impl ExecutionEngine for DuckDbEngine {
             ));
         }
         Capabilities {
+            kind: EngineKind::Server,
             ops,
             sources: [SourceFormat::GeoParquet].into_iter().collect(),
+            limits: EngineLimits::default(),
+            bbox_filter_requires_covering: !self.spatial,
             location: "in-process DuckDB (local file system sources)".into(),
             notes,
         }
@@ -211,14 +214,16 @@ impl ExecutionEngine for DuckDbEngine {
         });
         Ok(steps)
     }
+}
 
+impl ExecutionEngine for DuckDbEngine {
     fn execute(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<ExecutionResult, EngineError> {
         self.check(plan)?;
         if ctx.cancel.is_cancelled() {
             return Err(EngineError::Cancelled);
         }
         let scans = scan_analysis(plan, ctx)?;
-        let compiled = sql::compile(&plan.root, ctx, self.spatial)?;
+        let compiled = sql::compile(plan, ctx, self.spatial)?;
 
         let profile_dir = std::env::temp_dir().join(format!(
             "geofabric-duckdb-{}-{}",

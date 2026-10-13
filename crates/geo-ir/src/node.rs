@@ -1,5 +1,5 @@
 use crate::expr::{AggExpr, Expr, SortKey};
-use crate::{IrError, IR_VERSION};
+use crate::IR_VERSION;
 use geo_types::{BoundingBox, Crs, Distance, SpatialSchema};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -179,44 +179,4 @@ pub struct Hints {
     /// Engine id preference; planner may ignore it (and must say so).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub preferred_engine: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Plan {
-    pub ir_version: String,
-    pub root: Node,
-    #[serde(default)]
-    pub hints: Hints,
-}
-
-impl Plan {
-    pub fn new(root: Node) -> Self {
-        Plan { ir_version: IR_VERSION.to_string(), root, hints: Hints::default() }
-    }
-
-    pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self).expect("IR is always serializable")
-    }
-
-    /// Parse only: the returned plan may still fail [`crate::validate`].
-    pub fn from_json(s: &str) -> Result<Plan, IrError> {
-        let plan: Plan = serde_json::from_str(s).map_err(|e| IrError::Parse(e.to_string()))?;
-        if plan.ir_version != IR_VERSION {
-            return Err(IrError::UnsupportedVersion {
-                found: plan.ir_version,
-                supported: IR_VERSION.to_string(),
-            });
-        }
-        Ok(plan)
-    }
-
-    pub fn plan_id(&self) -> String {
-        self.root.node_id()
-    }
-
-    /// Operation kinds required to execute this plan (for capability matching).
-    pub fn required_ops(&self) -> std::collections::BTreeSet<OpKind> {
-        self.root.lineage().into_iter().map(|(_, k)| k).collect()
-    }
 }

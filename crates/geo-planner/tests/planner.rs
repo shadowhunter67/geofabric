@@ -14,14 +14,17 @@ struct Mock {
     ops: Vec<OpKind>,
 }
 
-impl ExecutionEngine for Mock {
+impl EngineDescriptor for Mock {
     fn id(&self) -> EngineId {
         EngineId::new(self.id)
     }
     fn capabilities(&self) -> Capabilities {
         Capabilities {
+            kind: EngineKind::Server,
             ops: self.ops.iter().copied().collect::<BTreeSet<_>>(),
             sources: [SourceFormat::GeoParquet].into_iter().collect(),
+            limits: EngineLimits::default(),
+            bbox_filter_requires_covering: false,
             location: "mock".into(),
             notes: vec![],
         }
@@ -31,9 +34,6 @@ impl ExecutionEngine for Mock {
     }
     fn explain(&self, _: &Plan, _: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError> {
         Ok(vec![ExplainStep { label: "mock".into(), detail: self.id.into() }])
-    }
-    fn execute(&self, _: &Plan, _: &ExecutionContext) -> Result<ExecutionResult, EngineError> {
-        Ok(ExecutionResult { batches: vec![], metrics: ExecutionMetrics::default() })
     }
 }
 
@@ -74,7 +74,7 @@ fn picks_only_capable_engine_and_logs_rejections() {
     let Some(p) = data() else { return };
     let weak = Mock { id: "weak", ops: vec![OpKind::Source, OpKind::BboxFilter] };
     let strong = Mock { id: "strong", ops: vec![OpKind::Source, OpKind::BboxFilter, OpKind::Intersects] };
-    let engines: Vec<&dyn ExecutionEngine> = vec![&weak, &strong];
+    let engines: Vec<&dyn EngineDescriptor> = vec![&weak, &strong];
     let phys = Planner::default().plan(&plan_for(&p, true), &engines, &ctx()).unwrap();
     assert_eq!(phys.engine.0, "strong");
     assert!(phys.decisions.iter().any(|d| d.subject == "weak" && d.outcome == Outcome::Rejected));
@@ -88,7 +88,7 @@ fn first_registered_wins_tie_and_hint_overrides() {
     let Some(p) = data() else { return };
     let a = Mock { id: "a", ops: vec![OpKind::Source, OpKind::BboxFilter] };
     let b = Mock { id: "b", ops: vec![OpKind::Source, OpKind::BboxFilter] };
-    let engines: Vec<&dyn ExecutionEngine> = vec![&a, &b];
+    let engines: Vec<&dyn EngineDescriptor> = vec![&a, &b];
     let mut plan = plan_for(&p, false);
     let phys = Planner::default().plan(&plan, &engines, &ctx()).unwrap();
     assert_eq!(phys.engine.0, "a");
@@ -104,7 +104,7 @@ fn first_registered_wins_tie_and_hint_overrides() {
 fn no_capable_engine_is_an_error_with_reasons() {
     let Some(p) = data() else { return };
     let weak = Mock { id: "weak", ops: vec![OpKind::Source] };
-    let engines: Vec<&dyn ExecutionEngine> = vec![&weak];
+    let engines: Vec<&dyn EngineDescriptor> = vec![&weak];
     match Planner::default().plan(&plan_for(&p, false), &engines, &ctx()) {
         Err(PlanError::NoEngine(msg)) => assert!(msg.contains("bbox_filter")),
         other => panic!("{:?}", other.map(|_| ())),
@@ -114,32 +114,11 @@ fn no_capable_engine_is_an_error_with_reasons() {
 #[test]
 fn cost_guard_refuses_expensive_scans() {
     let Some(p) = data() else { return };
-    let mut m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
-    m.ops.push(OpKind::Intersects);
-    struct Big(Mock);
-    impl ExecutionEngine for Big {
-        fn id(&self) -> EngineId {
-            self.0.id()
-        }
-        fn capabilities(&self) -> Capabilities {
-            self.0.capabilities()
-        }
-        fn estimate(&self, _: &Plan, _: &ExecutionContext) -> Result<Estimate, EngineError> {
-            Ok(Estimate { rows_upper_bound: Metric::unknown(), bytes_upper_bound: Metric::planner_estimated(u64::MAX) })
-        }
-        fn explain(&self, p: &Plan, c: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError> {
-            self.0.explain(p, c)
-        }
-        fn execute(&self, p: &Plan, c: &ExecutionContext) -> Result<ExecutionResult, EngineError> {
-            self.0.execute(p, c)
-        }
-    }
-    let big = Big(m);
-    let engines: Vec<&dyn ExecutionEngine> = vec![&big];
-    assert!(matches!(
-        Planner::default().plan(&plan_for(&p, false), &engines, &ctx()),
-        Err(PlanError::TooExpensive(_))
-    ));
+    let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
+    let engines: Vec<&dyn EngineDescriptor> = vec![&m];
+    let mut planner = Planner::default();
+    planner.config.max_scan_bytes = 1000; // far below the estimated input
+    assert!(matches!(planner.plan(&plan_for(&p, false), &engines, &ctx()), Err(PlanError::TooExpensive(_))));
 }
 
 #[test]
@@ -155,7 +134,7 @@ fn invalid_plan_is_rejected_before_engines_are_consulted() {
         bbox: BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap(),
     });
     let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
-    let engines: Vec<&dyn ExecutionEngine> = vec![&m];
+    let engines: Vec<&dyn EngineDescriptor> = vec![&m];
     assert!(matches!(Planner::default().plan(&plan, &engines, &ctx()), Err(PlanError::Invalid(_))));
 }
 
@@ -167,16 +146,17 @@ fn unauthorized_source_fails_before_any_metadata_io_with_opaque_error() {
     std::fs::create_dir_all(&root).unwrap();
     let ctx = ExecutionContext::new(vec![root]);
     let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };
-    let engines: Vec<&dyn ExecutionEngine> = vec![&m];
+    let engines: Vec<&dyn EngineDescriptor> = vec![&m];
     // existing valid GeoParquet outside the root ...
     let e1 = Planner::default().plan(&plan_for(&p, false), &engines, &ctx).unwrap_err();
     // ... and a path that does not exist at all must be indistinguishable
-    let mut ghost = plan_for(&p, false);
-    if let Node::BboxFilter { input, .. } = &mut ghost.root {
+    let mut ghost_tree = plan_for(&p, false).to_tree().unwrap();
+    if let Node::BboxFilter { input, .. } = &mut ghost_tree {
         if let Node::Source { uri, .. } = input.as_mut() {
             *uri = "Z:/definitely/not/here.parquet".into();
         }
     }
+    let ghost = Plan::new(ghost_tree);
     let e2 = Planner::default().plan(&ghost, &engines, &ctx).unwrap_err();
     assert!(matches!(e1, PlanError::AccessDenied), "{e1:?}");
     assert!(matches!(e2, PlanError::AccessDenied), "{e2:?}");

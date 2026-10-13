@@ -5,7 +5,7 @@
 //! restricted to a safe character set. No user string is concatenated raw.
 
 use geo_executor::{EngineError, ExecutionContext};
-use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, Node};
+use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, NodeId, Plan, PlanNode};
 use geo_source_geoparquet::{wkt_envelope, GeoParquetSource};
 use geo_types::{AuthorizedSource, Crs, SpatialSchema};
 use std::path::Path;
@@ -85,6 +85,7 @@ struct CoveringRef {
     crs: Crs,
 }
 
+#[derive(Clone)]
 struct Out {
     name: String,
     schema: SpatialSchema,
@@ -100,16 +101,22 @@ pub(crate) struct Compiled {
 }
 
 struct Translator<'a> {
+    plan: &'a Plan,
+    schemas: std::collections::BTreeMap<NodeId, SpatialSchema>,
+    /// One CTE per plan node: a shared node is compiled exactly once and referenced by name.
+    memo: std::collections::HashMap<NodeId, Out>,
     ctx: &'a ExecutionContext,
     spatial: bool,
     ctes: Vec<(String, String)>,
     sources: Vec<AuthorizedSource>,
 }
 
-pub(crate) fn compile(root: &Node, ctx: &ExecutionContext, spatial: bool) -> Result<Compiled, EngineError> {
-    let mut t = Translator { ctx, spatial, ctes: Vec::new(), sources: Vec::new() };
-    let out = t.node(root)?;
-    let with = t.ctes.iter().map(|(n, s)| format!("{} AS ({})", q_ident(n), s)).collect::<Vec<_>>().join(",\n");
+pub(crate) fn compile(plan: &Plan, ctx: &ExecutionContext, spatial: bool) -> Result<Compiled, EngineError> {
+    let schemas = plan.schemas().map_err(|e| EngineError::InvalidPlan(e.to_string()))?;
+    let mut t = Translator { plan, schemas, memo: Default::default(), ctx, spatial, ctes: Vec::new(), sources: Vec::new() };
+    let root = plan.root.clone();
+    let out = t.node(&root)?;
+    let with = t.ctes.iter().map(|(n, s)| format!("{} AS NOT MATERIALIZED ({})", q_ident(n), s)).collect::<Vec<_>>().join(",\n");
     let geometry_columns: Vec<(String, Crs)> =
         out.schema.geometry_columns.iter().map(|g| (g.name.clone(), g.crs.clone())).collect();
     if !geometry_columns.is_empty() && !spatial {
@@ -151,8 +158,8 @@ impl Translator<'_> {
         name
     }
 
-    fn schema_of(&self, n: &Node) -> Result<SpatialSchema, EngineError> {
-        n.output_schema().map_err(|e| EngineError::InvalidPlan(e.to_string()))
+    fn schema_of(&self, id: &NodeId) -> Result<SpatialSchema, EngineError> {
+        self.schemas.get(id).cloned().ok_or_else(|| EngineError::InvalidPlan(format!("no schema for node {id}")))
     }
 
     fn keep_covering(&self, c: &Option<CoveringRef>, schema: &SpatialSchema) -> Option<CoveringRef> {
@@ -160,9 +167,20 @@ impl Translator<'_> {
             .filter(|c| schema.fields.iter().any(|f| f.name == c.top_level) && schema.geometry(&c.geom).is_some())
     }
 
-    fn node(&mut self, n: &Node) -> Result<Out, EngineError> {
+    fn node(&mut self, id: &NodeId) -> Result<Out, EngineError> {
+        if let Some(done) = self.memo.get(id) {
+            return Ok(done.clone());
+        }
+        let out = self.compile_node(id)?;
+        self.memo.insert(id.clone(), out.clone());
+        Ok(out)
+    }
+
+    fn compile_node(&mut self, id: &NodeId) -> Result<Out, EngineError> {
+        let plan = self.plan;
+        let n = plan.nodes.get(id).ok_or_else(|| EngineError::InvalidPlan(format!("missing node {id}")))?;
         match n {
-            Node::Source { uri, .. } => {
+            PlanNode::Source { uri, .. } => {
                 let authorized = self.ctx.guard.authorize(uri).map_err(|_| EngineError::AccessDenied)?;
                 let src = GeoParquetSource::open_authorized(&authorized).map_err(|e| EngineError::Engine(e.to_string()))?;
                 let p = authorized.path().to_path_buf();
@@ -178,14 +196,14 @@ impl Translator<'_> {
                     }
                 });
                 let name = self.push(format!("SELECT * FROM read_parquet({})", q_str(&sql_path(&p))));
-                Ok(Out { name, schema: self.schema_of(n)?, covering })
+                Ok(Out { name, schema: self.schema_of(id)?, covering })
             }
-            Node::Filter { input, predicate } => {
+            PlanNode::Filter { input, predicate } => {
                 let i = self.node(input)?;
                 let name = self.push(format!("SELECT * FROM {} WHERE {}", q_ident(&i.name), expr(predicate)?));
                 Ok(Out { name, ..i })
             }
-            Node::BboxFilter { input, geometry_column, bbox } => {
+            PlanNode::BboxFilter { input, geometry_column, bbox } => {
                 let i = self.node(input)?;
                 let (x0, y0, x1, y1) =
                     (num(bbox.min_x())?, num(bbox.min_y())?, num(bbox.max_x())?, num(bbox.max_y())?);
@@ -205,7 +223,7 @@ impl Translator<'_> {
                 let name = self.push(format!("SELECT * FROM {} WHERE {pred}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
-            Node::Intersects { input, geometry_column, with } => {
+            PlanNode::Intersects { input, geometry_column, with } => {
                 self.need_spatial("intersects")?;
                 safe_wkt(&with.wkt)?;
                 let i = self.node(input)?;
@@ -231,7 +249,7 @@ impl Translator<'_> {
                 let name = self.push(format!("SELECT * FROM {} WHERE {pred}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
-            Node::Buffer {
+            PlanNode::Buffer {
                 input, geometry_column, distance, input_crs, output_crs, error_tolerance, output_column,
             } => {
                 self.need_spatial("buffer")?;
@@ -256,10 +274,10 @@ impl Translator<'_> {
                     format!("SELECT *, ST_Buffer({g}, {}) AS {} FROM {}", num(d)?, q_ident(output_column), q_ident(&i.name))
                 };
                 let name = self.push(sql);
-                let schema = self.schema_of(n)?;
+                let schema = self.schema_of(id)?;
                 Ok(Out { name, covering: None, schema })
             }
-            Node::SpatialJoin { left, right, left_column, right_column, join_type, right_prefix, .. } => {
+            PlanNode::SpatialJoin { left, right, left_column, right_column, join_type, right_prefix, .. } => {
                 self.need_spatial("spatial join")?;
                 let l = self.node(left)?;
                 let r = self.node(right)?;
@@ -281,9 +299,9 @@ impl Translator<'_> {
                     q_ident(right_column)
                 );
                 let name = self.push(sql);
-                Ok(Out { name, covering: None, schema: self.schema_of(n)? })
+                Ok(Out { name, covering: None, schema: self.schema_of(id)? })
             }
-            Node::Aggregate { input, group_by, aggregates } => {
+            PlanNode::Aggregate { input, group_by, aggregates } => {
                 let i = self.node(input)?;
                 let mut sel: Vec<String> = group_by.iter().map(|g| q_ident(g)).collect();
                 for a in aggregates {
@@ -309,22 +327,22 @@ impl Translator<'_> {
                     sql += &format!(" GROUP BY {}", group_by.iter().map(|g| q_ident(g)).collect::<Vec<_>>().join(", "));
                 }
                 let name = self.push(sql);
-                Ok(Out { name, covering: None, schema: self.schema_of(n)? })
+                Ok(Out { name, covering: None, schema: self.schema_of(id)? })
             }
-            Node::Project { input, columns } => {
+            PlanNode::Project { input, columns } => {
                 let i = self.node(input)?;
                 let sel = columns.iter().map(|c| q_ident(c)).collect::<Vec<_>>().join(", ");
                 let name = self.push(format!("SELECT {sel} FROM {}", q_ident(&i.name)));
-                let schema = self.schema_of(n)?;
+                let schema = self.schema_of(id)?;
                 let covering = self.keep_covering(&i.covering, &schema);
                 Ok(Out { name, covering, schema })
             }
-            Node::Limit { input, n: lim } => {
+            PlanNode::Limit { input, n: lim } => {
                 let i = self.node(input)?;
                 let name = self.push(format!("SELECT * FROM {} LIMIT {lim}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
-            Node::Sort { input, keys } => {
+            PlanNode::Sort { input, keys } => {
                 let i = self.node(input)?;
                 if keys.is_empty() {
                     return Err(EngineError::InvalidPlan("sort without keys".into()));

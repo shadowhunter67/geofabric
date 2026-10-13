@@ -1,0 +1,12 @@
+[package]
+name = "geo-engine-browser"
+description = "Planner-side descriptor of the browser engine (DuckDB-Wasm). Execution happens in the web client (web/src/engine/); this crate only tells the planner what it can do and where its limits are."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+geo-source-geoparquet = { path = "../geo-source-geoparquet" }

@@ -19,9 +19,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use geo_executor::{limits, CancelToken, EngineError, ExecutionContext};
+use geo_executor::{limits, result_digest, CancelToken, EngineError, ExecutionContext};
 use geo_ir::*;
-use geo_runtime::{Runtime, RuntimeError};
+use geo_runtime::{Dispatch, Runtime, RuntimeError};
 use geo_source_geoparquet::GeoParquetSource;
 use geo_types::*;
 use serde::Deserialize;
@@ -112,6 +112,7 @@ impl From<RuntimeError> for ApiError {
             RuntimeError::Execution(EngineError::Cancelled) => err(StatusCode::REQUEST_TIMEOUT, "cancelled", "query cancelled"),
             RuntimeError::Execution(EngineError::Engine(m)) => err(StatusCode::INTERNAL_SERVER_ERROR, "engine_error", m),
             RuntimeError::Source(s) => err(StatusCode::BAD_REQUEST, "source_error", s.to_string()),
+            RuntimeError::ClientEngineSelected(m) => err(StatusCode::INTERNAL_SERVER_ERROR, "client_engine", m),
         }
     }
 }
@@ -194,6 +195,10 @@ pub struct QueryReq {
     filter: Option<FilterReq>,
     group_by: Option<String>,
     limit: Option<u64>,
+    /// Engine preference ("duckdb" | "duckdb-wasm"); honored only if feasible.
+    engine: Option<String>,
+    /// Override `allow_browser` for this request.
+    browser: Option<bool>,
 }
 
 fn json_to_literal(v: &Value) -> Result<Literal, ApiError> {
@@ -350,9 +355,12 @@ fn to_response(plan: &Plan, run: geo_runtime::RunOutput, total_ms: f64) -> Value
             }
         }
     }
-    let lineage: Vec<Value> = plan.root.lineage().into_iter().map(|(id, k)| json!({"id": &id[..12], "op": k.name()})).collect();
+    let lineage: Vec<Value> = plan.lineage().into_iter().map(|(id, k)| json!({"id": &id[..12], "op": k.name()})).collect();
     let engine_ms = run.result.metrics.elapsed_ms.value.unwrap_or(0.0);
+    let (dcount, dhash) = result_digest(batches);
     json!({
+        "placement": "server",
+        "result_digest": {"count": dcount, "sha256": dhash},
         "plan_id": plan.plan_id(),
         "ir": plan,
         "physical": run.physical,
@@ -382,7 +390,45 @@ impl Drop for CancelOnDrop {
     }
 }
 
-async fn run_plan(st: Shared, plan: Plan) -> Result<Json<Value>, ApiError> {
+/// Gateway-side description of a plan the planner placed in the browser: the
+/// plan itself, the planner's explanation, and the authorized URLs of its sources.
+fn client_response(st: &AppState, plan: &Plan, physical: geo_planner::PhysicalPlan) -> Value {
+    let mut urls = Map::new();
+    for n in plan.nodes.values() {
+        if let geo_ir::PlanNode::Source { uri, .. } = n {
+            if let Ok(a) = st.ctx().guard.authorize(uri) {
+                if let Some(stem) = a.path().file_stem() {
+                    urls.insert(uri.clone(), json!(format!("/api/files/{}", stem.to_string_lossy())));
+                }
+            }
+        }
+    }
+    json!({
+        "placement": "browser",
+        "plan_id": plan.plan_id(),
+        "ir": plan,
+        "physical": physical,
+        "source_urls": urls,
+        "lineage": plan.lineage().into_iter().map(|(id, k)| json!({"id": &id[..12], "op": k.name()})).collect::<Vec<_>>(),
+        "limits": {"max_rows": MAX_FEATURES, "timeout_ms": st.config.query_timeout.as_millis() as u64},
+    })
+}
+
+fn planner_cfg(st: &AppState, browser: Option<bool>) -> geo_planner::PlannerConfig {
+    let mut cfg = st.rt.planner_config().clone();
+    if let Some(b) = browser {
+        cfg.allow_browser = b;
+    }
+    cfg
+}
+
+fn apply_engine(plan: &mut Plan, engine: &Option<String>) {
+    if let Some(e) = engine {
+        plan.hints.preferred_engine = Some(e.clone());
+    }
+}
+
+async fn run_plan(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<Value>, ApiError> {
     let permit = st
         .slots
         .clone()
@@ -392,51 +438,110 @@ async fn run_plan(st: Shared, plan: Plan) -> Result<Json<Value>, ApiError> {
     let cancel = ctx.cancel.clone();
     let mut guard = CancelOnDrop(cancel, false);
     let st2 = st.clone();
+    let cfg = planner_cfg(&st, browser);
     // The permit moves into the blocking task: the slot is only released when the
     // query has really finished (or was interrupted), not when the client left.
     let handle = tokio::task::spawn_blocking(move || {
         let _permit = permit;
         let t0 = Instant::now();
         ctx.max_rows = MAX_FEATURES + 1;
-        let run = st2.rt.run(&plan, &ctx)?;
-        let total = t0.elapsed().as_secs_f64() * 1000.0;
-        Ok::<_, RuntimeError>(to_response(&plan, run, total))
+        match st2.rt.dispatch_with(&cfg, &plan, &ctx)? {
+            Dispatch::Executed(run) => {
+                let total = t0.elapsed().as_secs_f64() * 1000.0;
+                Ok::<_, RuntimeError>(to_response(&plan, run, total))
+            }
+            Dispatch::Client { physical } => Ok(client_response(&st2, &plan, physical)),
+        }
     });
     let res = handle.await.map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
     guard.1 = true; // finished: do not cancel
     Ok(Json(res))
 }
 
-async fn query(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
-    let a = authorized_source(&st, &q.source)?;
+/// Plan only (no execution): where would this query run, and why?
+async fn plan_only(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<Value>, ApiError> {
+    let st2 = st.clone();
+    let cfg = planner_cfg(&st, browser);
+    let (plan, physical) = tokio::task::spawn_blocking(move || {
+        let physical = st2.rt.plan_with(&cfg, &plan, &st2.ctx())?;
+        Ok::<_, RuntimeError>((plan, physical))
+    })
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
+    let mut v = client_response(&st, &plan, physical);
+    v["placement"] = v["physical"]["placement"].clone();
+    Ok(Json(v))
+}
+
+async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Option<bool>), ApiError> {
+    let a = authorized_source(st, &q.source)?;
     let st2 = st.clone();
     let uri = a.uri().to_string();
-    let plan = tokio::task::spawn_blocking(move || {
+    let (engine, browser) = (q.engine.clone(), q.browser);
+    let mut plan = tokio::task::spawn_blocking(move || {
         let ctx = st2.ctx();
         build_ir(&st2.rt, &uri, &ctx, &q)
     })
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
-    run_plan(st, plan).await
+    apply_engine(&mut plan, &engine);
+    Ok((plan, browser))
+}
+
+async fn query(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
+    let (plan, browser) = build_query_plan(&st, q).await?;
+    run_plan(st, plan, browser).await
+}
+
+async fn query_plan(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
+    let (plan, browser) = build_query_plan(&st, q).await?;
+    plan_only(st, plan, browser).await
 }
 
 #[derive(Deserialize)]
 pub struct IrReq {
     ir: Value,
+    engine: Option<String>,
+    browser: Option<bool>,
+}
+
+fn parse_ir(r: &IrReq) -> Result<Plan, ApiError> {
+    let mut plan = Plan::from_json(&r.ir.to_string()).map_err(|e| err(StatusCode::BAD_REQUEST, "bad_ir", e.to_string()))?;
+    apply_engine(&mut plan, &r.engine);
+    Ok(plan)
 }
 
 async fn run_ir(State(st): State<Shared>, Json(r): Json<IrReq>) -> Result<Json<Value>, ApiError> {
-    let plan = Plan::from_json(&r.ir.to_string()).map_err(|e| err(StatusCode::BAD_REQUEST, "bad_ir", e.to_string()))?;
-    run_plan(st, plan).await
+    let plan = parse_ir(&r)?;
+    run_plan(st, plan, r.browser).await
 }
 
 async fn explain_ir(State(st): State<Shared>, Json(r): Json<IrReq>) -> Result<Json<Value>, ApiError> {
-    let plan = Plan::from_json(&r.ir.to_string()).map_err(|e| err(StatusCode::BAD_REQUEST, "bad_ir", e.to_string()))?;
-    let st2 = st.clone();
-    let phys = tokio::task::spawn_blocking(move || st2.rt.plan(&plan, &st2.ctx()))
+    let plan = parse_ir(&r)?;
+    plan_only(st, plan, r.browser).await
+}
+
+/// Parquet bytes for the browser engine, with HTTP range support. Authorized sources only.
+async fn file(
+    State(st): State<Shared>,
+    UrlPath(id): UrlPath<String>,
+    req: axum::http::Request<axum::body::Body>,
+) -> Result<Response, ApiError> {
+    use tower::ServiceExt;
+    let a = authorized_source(&st, &id)?;
+    let resp = tower_http::services::ServeFile::new(a.path())
+        .oneshot(req)
         .await
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
-    Ok(Json(json!({"physical": phys})))
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "file", e.to_string()))?;
+    Ok(resp.map(axum::body::Body::new).into_response())
+}
+
+async fn config(State(st): State<Shared>) -> Json<Value> {
+    Json(json!({
+        "planner": st.rt.planner_config(),
+        "query_timeout_ms": st.config.query_timeout.as_millis() as u64,
+        "engines": ["duckdb", "duckdb-wasm"],
+    }))
 }
 
 /// API routes only (static UI is mounted by the binary).
@@ -444,9 +549,12 @@ pub fn api_router(state: Shared) -> Router {
     let limit = state.config.max_body_bytes;
     Router::new()
         .route("/api/health", get(|| async { Json(json!({"ok": true})) }))
+        .route("/api/config", get(config))
         .route("/api/sources", get(sources))
         .route("/api/sources/{id}/row_groups", get(row_groups))
+        .route("/api/files/{id}", get(file))
         .route("/api/query", post(query))
+        .route("/api/query/plan", post(query_plan))
         .route("/api/ir/run", post(run_ir))
         .route("/api/ir/explain", post(explain_ir))
         .layer(RequestBodyLimitLayer::new(limit))

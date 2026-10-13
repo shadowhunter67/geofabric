@@ -46,7 +46,7 @@ fn roundtrip_and_version() {
         n: 10,
     });
     let json = plan.to_json();
-    assert!(json.contains("\"ir_version\": \"0.1\""));
+    assert!(json.contains("\"ir_version\": \"0.2\""));
     assert_eq!(Plan::from_json(&json).unwrap(), plan);
     assert_eq!(plan.to_json(), json, "deterministic");
     assert!(validate(&plan).is_ok());
@@ -56,7 +56,7 @@ fn roundtrip_and_version() {
 fn rejects_bad_input() {
     assert!(matches!(Plan::from_json("{"), Err(IrError::Parse(_))));
     let plan = Plan::new(source(Crs::Epsg(4326)));
-    let bad = plan.to_json().replace("\"0.1\"", "\"9.9\"");
+    let bad = plan.to_json().replace("\"0.2\"", "\"9.9\"");
     assert!(matches!(Plan::from_json(&bad), Err(IrError::UnsupportedVersion { .. })));
     let unknown_field = plan.to_json().replace("\"hints\"", "\"bogus\"");
     assert!(Plan::from_json(&unknown_field).is_err());

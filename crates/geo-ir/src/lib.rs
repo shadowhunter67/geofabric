@@ -5,18 +5,15 @@
 //! an operation is CRS-sensitive.
 
 mod expr;
+mod graph;
 mod node;
 mod schema;
 mod validate;
 
 pub use expr::{AggFunc, AggExpr, CompareOp, Expr, Literal, SortKey};
-pub use node::{
-    GeometryLiteral, Hints, JoinType, Node, OpKind, Plan, SourceFormat, SourceStats, SpatialPredicate,
-};
+pub use graph::{migrate_v0_1, GraphBuilder, GraphError, NodeId, Plan, PlanNode, TreePlanV01, IR_VERSION, IR_VERSION_TREE};
+pub use node::{GeometryLiteral, Hints, JoinType, Node, OpKind, SourceFormat, SourceStats, SpatialPredicate};
 pub use validate::{validate, Issue, Severity, ValidationReport};
-
-/// Version string written to / required from serialized plans.
-pub const IR_VERSION: &str = "0.1";
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum IrError {
@@ -24,6 +21,8 @@ pub enum IrError {
     Parse(String),
     #[error("unsupported ir_version '{found}' (supported: {supported})")]
     UnsupportedVersion { found: String, supported: String },
+    #[error("graph error: {0}")]
+    Graph(String),
     #[error("column '{0}' not found")]
     ColumnNotFound(String),
     #[error("schema error: {0}")]

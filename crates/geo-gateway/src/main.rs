@@ -23,7 +23,18 @@ async fn main() {
         config.query_timeout = Duration::from_secs(secs);
     }
     let data_dir = std::fs::canonicalize(&data).unwrap_or_else(|e| panic!("data dir '{data}': {e}"));
-    let rt = tokio::task::spawn_blocking(Runtime::with_duckdb).await.unwrap();
+    let mut rt = tokio::task::spawn_blocking(Runtime::with_duckdb_and_browser).await.unwrap();
+    let mut pcfg = rt.planner_config().clone();
+    if args.iter().any(|a| a == "--no-browser") {
+        pcfg.allow_browser = false;
+    }
+    if let Ok(v) = arg(&args, "--browser-max-mb", "").parse::<u64>() {
+        pcfg.browser_max_input_bytes = v << 20;
+    }
+    if let Ok(v) = arg(&args, "--browser-max-rows", "").parse::<u64>() {
+        pcfg.browser_max_result_rows = v;
+    }
+    rt.set_planner_config(pcfg);
     let state = Arc::new(AppState::new(rt, data_dir, config.clone()));
     let index = ServeFile::new(format!("{web}/index.html"));
     let app = api_router(state).fallback_service(ServeDir::new(&web).fallback(index));

@@ -25,6 +25,7 @@ arrow-cast = "58"
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "signal", "time"] }
 tower-http = { version = "0.6", features = ["fs", "limit"] }
+tower = { version = "0.5", features = ["util"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

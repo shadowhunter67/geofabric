@@ -29,10 +29,33 @@ impl std::fmt::Display for EngineId {
     }
 }
 
+/// Where an engine runs relative to the user.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EngineKind {
+    /// Runs next to the data (server / local process): data stays put, results travel.
+    Server,
+    /// Runs in the user's browser: the data it needs travels to the client.
+    Browser,
+}
+
+/// Hard limits an engine declares; the planner must respect them (a browser tab must
+/// not be crashed by an optimistic plan).
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct EngineLimits {
+    pub max_input_bytes: Option<u64>,
+    pub max_result_rows: Option<u64>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Capabilities {
+    pub kind: EngineKind,
     pub ops: BTreeSet<OpKind>,
     pub sources: BTreeSet<SourceFormat>,
+    pub limits: EngineLimits,
+    /// `BboxFilter` can only run through the source's bbox covering column (no
+    /// spatial extension available to this engine).
+    pub bbox_filter_requires_covering: bool,
     /// Where this engine runs, for planner explanations (e.g. "local process").
     pub location: String,
     pub notes: Vec<String>,
@@ -225,10 +248,59 @@ pub enum EngineError {
     Engine(String),
 }
 
-pub trait ExecutionEngine: Send + Sync {
+/// What the planner needs to know about an engine. Engines that run elsewhere
+/// (the browser) are described to the planner here and executed by their own
+/// host; the planner never executes anything.
+pub trait EngineDescriptor: Send + Sync {
     fn id(&self) -> EngineId;
     fn capabilities(&self) -> Capabilities;
     fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Estimate, EngineError>;
     fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError>;
+}
+
+/// An engine that can execute plans inside this process.
+pub trait ExecutionEngine: EngineDescriptor {
     fn execute(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<ExecutionResult, EngineError>;
+}
+
+/// Canonical result digest shared by the test-suite, benchmarks, gateway and the browser
+/// executor: one string per row (cells joined by `|`; Int64 decimal, Utf8 raw, Binary
+/// lowercase hex, null `NULL`), rows sorted, SHA-256 over them joined by a newline.
+/// `count` is the value of a scalar `count(*)`-style result (1 row x 1 Int64 column),
+/// otherwise the number of rows.
+pub fn result_digest(batches: &[RecordBatch]) -> (u64, String) {
+    use arrow_array::cast::AsArray;
+    use arrow_array::Array;
+    use arrow_schema::DataType;
+    use sha2::{Digest, Sha256};
+    let mut rows: Vec<String> = Vec::new();
+    for b in batches {
+        for r in 0..b.num_rows() {
+            let cells: Vec<String> = b
+                .columns()
+                .iter()
+                .map(|c| {
+                    if c.is_null(r) {
+                        "NULL".to_string()
+                    } else {
+                        match c.data_type() {
+                            DataType::Int64 => c.as_primitive::<arrow_array::types::Int64Type>().value(r).to_string(),
+                            DataType::Utf8 => c.as_string::<i32>().value(r).to_string(),
+                            DataType::Binary => c.as_binary::<i32>().value(r).iter().map(|x| format!("{x:02x}")).collect(),
+                            other => format!("<unsupported {other}>"),
+                        }
+                    }
+                })
+                .collect();
+            rows.push(cells.join("|"));
+        }
+    }
+    let n_rows = rows.len() as u64;
+    let scalar = n_rows == 1
+        && batches.iter().any(|b| b.num_rows() == 1 && b.num_columns() == 1 && b.column(0).data_type() == &arrow_schema::DataType::Int64);
+    let count = if scalar { rows[0].parse::<u64>().unwrap_or(n_rows) } else { n_rows };
+    rows.sort();
+    let mut h = Sha256::new();
+    h.update(rows.join("\n").as_bytes());
+    (count, h.finalize().iter().map(|b| format!("{b:02x}")).collect())
 }

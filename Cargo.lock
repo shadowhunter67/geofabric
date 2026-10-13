@@ -646,6 +646,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "geo-engine-browser"
+version = "0.1.0"
+dependencies = [
+ "geo-executor",
+ "geo-ir",
+ "geo-source-geoparquet",
+ "geo-types",
+]
+
+[[package]]
 name = "geo-engine-duckdb"
 version = "0.1.0"
 dependencies = [
@@ -666,6 +676,7 @@ dependencies = [
  "geo-ir",
  "geo-types",
  "serde",
+ "sha2",
  "thiserror",
 ]
 
@@ -721,6 +732,7 @@ version = "0.1.0"
 dependencies = [
  "arrow-array",
  "arrow-schema",
+ "geo-engine-browser",
  "geo-engine-duckdb",
  "geo-executor",
  "geo-ir",

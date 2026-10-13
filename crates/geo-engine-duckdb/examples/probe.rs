@@ -1,5 +1,5 @@
 //! Build/link probe for ADR-006: prints capabilities and the DuckDB library version.
-use geo_executor::ExecutionEngine;
+use geo_executor::EngineDescriptor;
 fn main() {
     let e = geo_engine_duckdb::DuckDbEngine::new(Default::default());
     let c = e.capabilities();

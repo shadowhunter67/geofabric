@@ -17,6 +17,7 @@ geo-executor = { path = "../geo-executor" }
 geo-planner = { path = "../geo-planner" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 geo-engine-duckdb = { path = "../geo-engine-duckdb", default-features = false }
+geo-engine-browser = { path = "../geo-engine-browser" }
 thiserror.workspace = true
 serde.workspace = true
 
