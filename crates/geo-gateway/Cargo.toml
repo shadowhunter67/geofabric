@@ -1,0 +1,23 @@
+[package]
+name = "geo-gateway"
+description = "HTTP gateway for the web UI: sources, query templates, IR execution. GeoJSON is produced here, at the boundary only."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+geo-planner = { path = "../geo-planner" }
+geo-runtime = { path = "../geo-runtime" }
+geo-source-geoparquet = { path = "../geo-source-geoparquet" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+arrow-array = "58"
+arrow-schema = "58"
+arrow-cast = "58"
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync", "signal"] }
+tower-http = { version = "0.6", features = ["fs", "limit"] }

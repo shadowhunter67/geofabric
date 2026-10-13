@@ -1,0 +1,4 @@
+clustered_1gb_spatial: 968.6 MB, rows=13000000, rg=130
+clustered_1gb_shuffled: 1005.1 MB, rows=13000000, rg=130
+uniform_1gb_spatial: 977.7 MB, rows=13000000, rg=130
+uniform_1gb_shuffled: 1007.4 MB, rows=13000000, rg=130

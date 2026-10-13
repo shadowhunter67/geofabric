@@ -25,6 +25,8 @@ RULES = {
     "geo-source-*": ["geo-planner", "geo-runtime"] + ENGINES + UI,   # storage must not depend on renderer/engine
     "geo-engine-*": ["geo-planner", "geo-runtime"] + UI,             # adapters: geo-types/geo-ir/geo-executor only
 }
+# direct (non-transitive) dependency rules: the gateway must go through geo-runtime
+DIRECT_RULES = {"geo-gateway": ["geo-engine-*", "duckdb", "libduckdb-sys"]}
 WEB_FORBIDDEN_NPM = ["duckdb", "duckdb-async", "pg", "postgres", "better-sqlite3"]
 
 
@@ -84,6 +86,14 @@ def main() -> int:
             dn = pkgs[dep]["name"]
             if any(match(p, dn) for p in forb):
                 violations.append(f"{name} -> {dn} (forbidden by rules)")
+    for mid in members:
+        name = pkgs[mid]["name"]
+        for pat, forb in DIRECT_RULES.items():
+            if match(pat, name):
+                for dep in graph[mid]:
+                    dn = pkgs[dep]["name"]
+                    if any(match(p, dn) for p in forb):
+                        violations.append(f"{name} -> {dn} (direct dependency forbidden; use geo-runtime)")
     # web package.json
     pj = ROOT / "web" / "package.json"
     if pj.exists():

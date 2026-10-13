@@ -53,7 +53,35 @@ impl Runtime {
         Ok(GeoParquetSource::open(path)?.to_ir_source())
     }
 
+    /// Every Source URI must resolve inside `ctx.allowed_roots` *before* any file
+    /// is opened for planning (planning reads Parquet footers).
+    pub fn check_source_access(plan: &Plan, ctx: &ExecutionContext) -> Result<(), RuntimeError> {
+        fn walk(n: &Node, ctx: &ExecutionContext) -> Result<(), geo_executor::EngineError> {
+            if let Node::Source { uri, .. } = n {
+                if uri.contains("://") {
+                    return Err(geo_executor::EngineError::AccessDenied(format!("remote source '{uri}' not enabled")));
+                }
+                let p = std::fs::canonicalize(uri)
+                    .map_err(|_| geo_executor::EngineError::AccessDenied(format!("cannot access '{uri}'")))?;
+                let ok = ctx
+                    .allowed_roots
+                    .iter()
+                    .filter_map(|r| std::fs::canonicalize(r).ok())
+                    .any(|r| p.starts_with(r));
+                if !ok {
+                    return Err(geo_executor::EngineError::AccessDenied(format!("'{uri}' is outside the allowed roots")));
+                }
+            }
+            for i in n.inputs() {
+                walk(i, ctx)?;
+            }
+            Ok(())
+        }
+        Ok(walk(&plan.root, ctx)?)
+    }
+
     pub fn plan(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<PhysicalPlan, RuntimeError> {
+        Self::check_source_access(plan, ctx)?;
         let refs: Vec<&dyn ExecutionEngine> = self.engines.iter().map(|e| e.as_ref()).collect();
         Ok(self.planner.plan(plan, &refs, ctx)?)
     }

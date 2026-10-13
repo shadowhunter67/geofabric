@@ -11,3 +11,5 @@ Cargo.lock.bak
 benchmarks/.venv/
 benchmarks/data/
 benchmarks/results/*.json
+web/dist/
+web/node_modules/

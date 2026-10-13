@@ -1,0 +1,30 @@
+| dataset | size MB | distribution | ordering | query | rows scanned (<=) | rows returned | row groups skipped | bytes read (DuckDB) | predicted bytes | median ms | peak buf MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| clustered_1gb_spatial | 968.6 | clustered | spatial | bbox_count_small(0.6%) | 400000 | 1 | 126/130 | 24576 | 30091685 | 17.8 | 7.5 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | bbox_count_large(25%) | 3300000 | 1 | 97/130 | 202752 | 246435628 | 107.8 | 17.5 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | attr_filter_fullscan | 13000000 | 1 | 0/130 | 379422 | 968453486 | 51.4 | 13.8 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | intersects_count_small | 400000 | 1 | 126/130 | 28160 | 30091685 | 26.1 | 21.4 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | aggregate_by_category_small | 400000 | 8 | 126/130 | 26574 | 30091685 | 16.8 | 11.7 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | spatial_join_small | 700000 | 1 | 253/260 | 31232 | 52664055 | 48.8 | 50.5 |
+| clustered_1gb_spatial | 968.6 | clustered | spatial | return_rows_small(id,geometry) | 400000 | 3507 | 126/130 | 30464 | 30091685 | 82.0 | 10.8 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | bbox_count_small(0.6%) | 13000000 | 1 | 0/130 | 798720 | 1004946251 | 446.4 | 33.9 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | bbox_count_large(25%) | 13000000 | 1 | 0/130 | 798720 | 1004946251 | 453.0 | 38.2 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | attr_filter_fullscan | 13000000 | 1 | 0/130 | 379421 | 1004946251 | 89.4 | 13.3 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | intersects_count_small | 13000000 | 1 | 0/130 | 1129216 | 1004946251 | 1166.0 | 88.8 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | aggregate_by_category_small | 13000000 | 8 | 0/130 | 977949 | 1004946251 | 465.1 | 50.0 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | spatial_join_small | 26000000 | 1 | 0/260 | 1125888 | 2009892502 | 2129.9 | 90.3 |
+| clustered_1gb_shuffled | 1005.1 | clustered | shuffled | return_rows_small(id,geometry) | 13000000 | 3507 | 0/130 | 1328384 | 1004946251 | 3801.6 | 37.5 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | bbox_count_small(0.6%) | 1200000 | 1 | 118/130 | 73728 | 90301397 | 54.7 | 15.1 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | bbox_count_large(25%) | 4900000 | 1 | 81/130 | 301056 | 368686466 | 187.4 | 23.4 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | attr_filter_fullscan | 13000000 | 1 | 0/130 | 379425 | 977597896 | 45.2 | 13.1 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | intersects_count_small | 1200000 | 1 | 118/130 | 85504 | 90301397 | 53.8 | 38.4 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | aggregate_by_category_small | 1200000 | 8 | 118/130 | 80333 | 90301397 | 32.9 | 25.5 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | spatial_join_small | 900000 | 1 | 251/260 | 46592 | 67739215 | 94.9 | 52.1 |
+| uniform_1gb_spatial | 977.7 | uniform | spatial | return_rows_small(id,geometry) | 1200000 | 81698 | 118/130 | 93184 | 90301397 | 219.2 | 14.6 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | bbox_count_small(0.6%) | 13000000 | 1 | 0/130 | 798720 | 1007234518 | 440.2 | 34.1 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | bbox_count_large(25%) | 13000000 | 1 | 0/130 | 798720 | 1007234518 | 448.9 | 39.7 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | attr_filter_fullscan | 13000000 | 1 | 0/130 | 379421 | 1007234518 | 95.1 | 14.0 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | intersects_count_small | 13000000 | 1 | 0/130 | 1131520 | 1007234518 | 1223.0 | 88.6 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | aggregate_by_category_small | 13000000 | 8 | 0/130 | 978461 | 1007234518 | 283.2 | 55.9 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | spatial_join_small | 26000000 | 1 | 0/260 | 1131520 | 2014469036 | 1324.8 | 90.1 |
+| uniform_1gb_shuffled | 1007.4 | uniform | shuffled | return_rows_small(id,geometry) | 13000000 | 81698 | 0/130 | 1331200 | 1007234518 | 2602.7 | 34.8 |

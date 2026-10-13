@@ -1,0 +1,30 @@
+| dataset | size MB | distribution | ordering | query | rows scanned (<=) | rows returned | row groups skipped | bytes read (DuckDB) | predicted bytes | median ms | peak buf MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| clustered_10mb_spatial | 9.8 | clustered | spatial | bbox_count_small(0.6%) | 15000 | 1 | 23/26 | 6144 | 1137198 | 10.1 | 1.5 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | bbox_count_large(25%) | 40000 | 1 | 18/26 | 16384 | 3020122 | 10.6 | 2.1 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | attr_filter_fullscan | 130000 | 1 | 0/26 | 22639 | 9793686 | 10.8 | 1.5 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | intersects_count_small | 15000 | 1 | 23/26 | 6656 | 1137198 | 12.2 | 3.3 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | aggregate_by_category_small | 15000 | 8 | 23/26 | 6502 | 1137198 | 22.6 | 3.7 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | spatial_join_small | 30000 | 1 | 46/52 | 7680 | 2274396 | 38.6 | 7.3 |
+| clustered_10mb_spatial | 9.8 | clustered | spatial | return_rows_small(id,geometry) | 15000 | 33 | 23/26 | 7168 | 1137198 | 14.9 | 1.7 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | bbox_count_small(0.6%) | 130000 | 1 | 0/26 | 53248 | 10007809 | 41.1 | 3.2 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | bbox_count_large(25%) | 130000 | 1 | 0/26 | 53248 | 10007809 | 18.4 | 3.4 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | attr_filter_fullscan | 130000 | 1 | 0/26 | 22637 | 10007809 | 11.2 | 1.8 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | intersects_count_small | 130000 | 1 | 0/26 | 62464 | 10007809 | 28.4 | 8.8 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | aggregate_by_category_small | 130000 | 8 | 0/26 | 59706 | 10007809 | 18.6 | 11.1 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | spatial_join_small | 260000 | 1 | 0/52 | 66560 | 20015618 | 63.5 | 12.6 |
+| clustered_10mb_shuffled | 10.0 | clustered | shuffled | return_rows_small(id,geometry) | 130000 | 33 | 0/26 | 71680 | 10007809 | 87.3 | 3.6 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | bbox_count_small(0.6%) | 35000 | 1 | 19/26 | 14336 | 2666312 | 11.5 | 1.8 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | bbox_count_large(25%) | 60000 | 1 | 14/26 | 24576 | 4564341 | 14.1 | 2.3 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | attr_filter_fullscan | 130000 | 1 | 0/26 | 22639 | 9878666 | 11.2 | 1.6 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | intersects_count_small | 35000 | 1 | 19/26 | 15872 | 2666312 | 10.8 | 4.7 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | aggregate_by_category_small | 35000 | 8 | 19/26 | 15412 | 2666312 | 13.4 | 5.7 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | spatial_join_small | 35000 | 1 | 45/52 | 10240 | 2668541 | 22.6 | 5.8 |
+| uniform_10mb_spatial | 9.9 | uniform | spatial | return_rows_small(id,geometry) | 35000 | 844 | 19/26 | 17408 | 2666312 | 21.2 | 2.0 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | bbox_count_small(0.6%) | 130000 | 1 | 0/26 | 53248 | 10029026 | 16.9 | 2.8 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | bbox_count_large(25%) | 130000 | 1 | 0/26 | 53248 | 10029026 | 16.8 | 3.3 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | attr_filter_fullscan | 130000 | 1 | 0/26 | 22637 | 10029026 | 10.9 | 1.3 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | intersects_count_small | 130000 | 1 | 0/26 | 66560 | 10029026 | 38.2 | 8.7 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | aggregate_by_category_small | 130000 | 8 | 0/26 | 62573 | 10029026 | 18.5 | 14.5 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | spatial_join_small | 260000 | 1 | 0/52 | 66560 | 20058052 | 70.1 | 13.6 |
+| uniform_10mb_shuffled | 10.1 | uniform | shuffled | return_rows_small(id,geometry) | 130000 | 844 | 0/26 | 79872 | 10029026 | 88.4 | 3.9 |

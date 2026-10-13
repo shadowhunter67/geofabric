@@ -243,7 +243,10 @@ impl ExecutionEngine for DuckDbEngine {
             }
             None => metrics.notes.push("DuckDB profile unavailable".into()),
         }
-        metrics.notes.push("DuckDB total_bytes_read may exclude cached or footer reads".into());
+        metrics.notes.push(
+            "bytes_read is DuckDB profiler total_bytes_read: it UNDER-counts (a full column scan of a 98 MB file reported ~56 KB); use it only for relative comparison, not as true I/O"
+                .into(),
+        );
         Ok(ExecutionResult { batches, metrics })
     }
 }

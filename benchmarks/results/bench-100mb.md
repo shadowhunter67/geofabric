@@ -1,0 +1,30 @@
+| dataset | size MB | distribution | ordering | query | rows scanned (<=) | rows returned | row groups skipped | bytes read (DuckDB) | predicted bytes | median ms | peak buf MB |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| clustered_100mb_spatial | 98.4 | clustered | spatial | bbox_count_small(0.6%) | 80000 | 1 | 61/65 | 8192 | 6098852 | 8.8 | 4.1 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | bbox_count_large(25%) | 340000 | 1 | 48/65 | 34816 | 25781311 | 17.1 | 5.4 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | attr_filter_fullscan | 1300000 | 1 | 0/65 | 56595 | 98318429 | 9.7 | 3.3 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | intersects_count_small | 80000 | 1 | 61/65 | 9472 | 6098852 | 10.1 | 13.9 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | aggregate_by_category_small | 80000 | 8 | 61/65 | 8910 | 6098852 | 8.4 | 5.9 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | spatial_join_small | 140000 | 1 | 123/130 | 11264 | 10668484 | 20.3 | 32.8 |
+| clustered_100mb_spatial | 98.4 | clustered | spatial | return_rows_small(id,geometry) | 80000 | 350 | 61/65 | 10496 | 6098852 | 15.9 | 8.2 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | bbox_count_small(0.6%) | 1300000 | 1 | 0/65 | 133120 | 101119363 | 43.6 | 9.2 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | bbox_count_large(25%) | 1300000 | 1 | 0/65 | 133120 | 101119363 | 42.4 | 8.6 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | attr_filter_fullscan | 1300000 | 1 | 0/65 | 56595 | 101119363 | 18.4 | 3.5 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | intersects_count_small | 1300000 | 1 | 0/65 | 179968 | 101119363 | 117.2 | 28.1 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | aggregate_by_category_small | 1300000 | 8 | 0/65 | 156076 | 101119363 | 47.0 | 19.9 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | spatial_join_small | 2600000 | 1 | 0/130 | 183040 | 202238726 | 187.2 | 41.2 |
+| clustered_100mb_shuffled | 101.2 | clustered | shuffled | return_rows_small(id,geometry) | 1300000 | 350 | 0/65 | 212736 | 101119363 | 373.6 | 14.8 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | bbox_count_small(0.6%) | 200000 | 1 | 55/65 | 20480 | 15285975 | 14.2 | 4.5 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | bbox_count_large(25%) | 580000 | 1 | 36/65 | 59392 | 44270323 | 25.0 | 7.0 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | attr_filter_fullscan | 1300000 | 1 | 0/65 | 56584 | 99131944 | 14.9 | 3.5 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | intersects_count_small | 200000 | 1 | 55/65 | 23808 | 15285975 | 22.5 | 20.2 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | aggregate_by_category_small | 200000 | 8 | 55/65 | 22275 | 15285975 | 15.0 | 12.3 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | spatial_join_small | 140000 | 1 | 123/130 | 13312 | 10706457 | 28.8 | 30.5 |
+| uniform_100mb_spatial | 99.2 | uniform | spatial | return_rows_small(id,geometry) | 200000 | 8184 | 55/65 | 26368 | 15285975 | 43.0 | 8.4 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | bbox_count_small(0.6%) | 1300000 | 1 | 0/65 | 133120 | 101352033 | 43.4 | 9.4 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | bbox_count_large(25%) | 1300000 | 1 | 0/65 | 133120 | 101352033 | 44.9 | 9.2 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | attr_filter_fullscan | 1300000 | 1 | 0/65 | 56600 | 101352033 | 13.7 | 3.3 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | intersects_count_small | 1300000 | 1 | 0/65 | 183040 | 101352033 | 132.3 | 35.1 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | aggregate_by_category_small | 1300000 | 8 | 0/65 | 156440 | 101352033 | 48.9 | 16.8 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | spatial_join_small | 2600000 | 1 | 0/130 | 183040 | 202704066 | 254.8 | 39.5 |
+| uniform_100mb_shuffled | 101.4 | uniform | shuffled | return_rows_small(id,geometry) | 1300000 | 8184 | 0/65 | 216320 | 101352033 | 388.3 | 14.8 |
