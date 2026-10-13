@@ -1,0 +1,8 @@
+.env*
+*.p12
+service-account*.json
+*.key
+__pycache__/
+node_modules/
+data/*
+!data/.gitkeep
