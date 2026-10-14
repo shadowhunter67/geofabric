@@ -16,3 +16,8 @@ web/node_modules/
 !benchmarks/results/expected-*.json
 !benchmarks/results/bench-h-*.json
 tools/.cache/
+
+web/test-results/
+web/playwright-report/
+benchmarks/results/gw-*.log
+benchmarks/results/*.jsonl
