@@ -277,3 +277,44 @@ fn covering_is_declared_when_present_and_inferred_by_convention_when_not() {
     let q = BoundingBox::new(19.0, -1.0, 21.0, 2.0, Crs::Epsg(4326)).unwrap();
     assert_eq!(s.prune(&q).unwrap().kept, vec![2]);
 }
+
+fn data_file(name: &str) -> Option<std::path::PathBuf> {
+    let p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../benchmarks/data").join(name);
+    if p.exists() {
+        Some(p)
+    } else {
+        eprintln!("SKIP: {name} missing");
+        None
+    }
+}
+
+#[test]
+fn estimator_inputs_reflect_layout_and_geometry_type() {
+    use geo_source_geoparquet::GeoParquetSource;
+    if let (Some(a), Some(b)) = (data_file("clustered_10mb_spatial.parquet"), data_file("clustered_10mb_shuffled.parquet")) {
+        let sp = GeoParquetSource::open(&a).unwrap();
+        let sh = GeoParquetSource::open(&b).unwrap();
+        assert_eq!(sp.info().read_class, geo_source_geoparquet::ReadClass::PlainWkb, "synthetic files are plain WKB");
+        assert_eq!(sp.info().geometry_null_fraction, Some(0.0));
+        let to_scan = |s: &GeoParquetSource| {
+            let plan = geo_ir::Plan::new(s.to_ir_source());
+            geo_source_geoparquet::analyze_plan(&plan, &geo_types::RootedAccessGuard::new(vec![s.path().parent().unwrap().to_path_buf()])).unwrap().remove(0)
+        };
+        let (cs, ch) = (to_scan(&sp).spatial_coherence.unwrap(), to_scan(&sh).spatial_coherence.unwrap());
+        assert!(cs > 0.9 && ch < 0.2, "spatial file coherent ({cs}), shuffled not ({ch})");
+    }
+    if let Some(o) = data_file("overture_buildings_vn_south.parquet") {
+        assert_eq!(GeoParquetSource::open(&o).unwrap().info().read_class, geo_source_geoparquet::ReadClass::DuckDbTyped, "the Overture subset was written by DuckDB 1.5");
+    }
+}
+
+#[test]
+fn read_class_from_writer_string() {
+    use geo_source_geoparquet::ReadClass::*;
+    let c = geo_source_geoparquet::ReadClass::from_created_by;
+    assert_eq!(c(Some("DuckDB version v1.5.6 (build 069cc9f9b5)")), DuckDbTyped);
+    assert_eq!(c(Some("DuckDB version v1.4.3 (build x)")), PlainWkb);
+    assert_eq!(c(Some("DuckDB version v2.0.0")), DuckDbTyped);
+    assert_eq!(c(Some("parquet-cpp-arrow version 24.0.0")), PlainWkb);
+    assert_eq!(c(None), PlainWkb);
+}

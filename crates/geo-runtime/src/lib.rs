@@ -11,8 +11,9 @@ use geo_engine_browser::{BrowserEngineConfig, DuckDbWasmDescriptor};
 use geo_engine_duckdb::{DuckDbConfig, DuckDbEngine};
 use geo_executor::{EngineDescriptor, ExecutionContext, ExecutionEngine, ExecutionResult};
 use geo_ir::{Node, Plan, PlanNode};
-use geo_planner::{PhysicalPlan, PlanError, Planner, PlannerConfig};
+use geo_planner::{PhysicalPlan, PlanError, PlanInputs, Planner, PlannerConfig, PlannerState};
 use geo_source_geoparquet::{GeoParquetSource, SourceError};
+use std::sync::Arc;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
@@ -57,6 +58,8 @@ pub struct Runtime {
     engines: Vec<Box<dyn ExecutionEngine>>,
     clients: Vec<Box<dyn EngineDescriptor>>,
     planner: Planner,
+    /// What the planner knows about the world: probes, health, telemetry, network (ADR-009/010).
+    state: Arc<PlannerState>,
 }
 
 impl From<SourceError> for RuntimeError {
@@ -70,7 +73,7 @@ impl From<SourceError> for RuntimeError {
 
 impl Runtime {
     pub fn empty() -> Self {
-        Runtime { engines: Vec::new(), clients: Vec::new(), planner: Planner::default() }
+        Runtime { engines: Vec::new(), clients: Vec::new(), planner: Planner::default(), state: Arc::new(PlannerState::new()) }
     }
 
     /// Server-only runtime: DuckDB.
@@ -88,11 +91,18 @@ impl Runtime {
     }
 
     pub fn register(&mut self, e: Box<dyn ExecutionEngine>) {
+        self.state.register_engine(&e.id().to_string());
         self.engines.push(e);
     }
 
     pub fn register_client(&mut self, d: Box<dyn EngineDescriptor>) {
+        self.state.register_engine(&d.id().to_string());
         self.clients.push(d);
+    }
+
+    /// Probes, health, telemetry and network profile the planner plans with.
+    pub fn state(&self) -> &Arc<PlannerState> {
+        &self.state
     }
 
     pub fn engines(&self) -> &[Box<dyn ExecutionEngine>] {
@@ -121,6 +131,11 @@ impl Runtime {
 
     /// Like [`Self::plan`] with an explicit planner configuration (per-request overrides).
     pub fn plan_with(&self, cfg: &PlannerConfig, plan: &Plan, ctx: &ExecutionContext) -> Result<PhysicalPlan, RuntimeError> {
+        self.plan_with_inputs(cfg, plan, ctx, &self.state.snapshot())
+    }
+
+    /// Plan with an explicit snapshot of the world (per-request overrides: network profile, browser warm/cold, ...).
+    pub fn plan_with_inputs(&self, cfg: &PlannerConfig, plan: &Plan, ctx: &ExecutionContext, inputs: &PlanInputs) -> Result<PhysicalPlan, RuntimeError> {
         authorize_all(plan, ctx)?;
         let mut refs: Vec<&dyn EngineDescriptor> = Vec::new();
         for e in &self.engines {
@@ -129,7 +144,7 @@ impl Runtime {
         for c in &self.clients {
             refs.push(c.as_ref());
         }
-        Ok(Planner { config: cfg.clone() }.plan(plan, &refs, ctx)?)
+        Ok(Planner { config: cfg.clone() }.plan_with_inputs(plan, &refs, ctx, inputs)?)
     }
 
     /// Plan, then execute here if an in-process engine was selected; otherwise tell the
@@ -139,7 +154,11 @@ impl Runtime {
     }
 
     pub fn dispatch_with(&self, cfg: &PlannerConfig, plan: &Plan, ctx: &ExecutionContext) -> Result<Dispatch, RuntimeError> {
-        let physical = self.plan_with(cfg, plan, ctx)?;
+        self.dispatch_with_inputs(cfg, plan, ctx, &self.state.snapshot())
+    }
+
+    pub fn dispatch_with_inputs(&self, cfg: &PlannerConfig, plan: &Plan, ctx: &ExecutionContext, inputs: &PlanInputs) -> Result<Dispatch, RuntimeError> {
+        let physical = self.plan_with_inputs(cfg, plan, ctx, inputs)?;
         match self.engines.iter().find(|e| e.id() == physical.engine) {
             Some(engine) => {
                 let result = engine.execute(plan, ctx)?;

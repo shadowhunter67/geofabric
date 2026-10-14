@@ -5,7 +5,7 @@
 
 use geo_executor::EngineKind;
 use geo_ir::*;
-use geo_planner::{Outcome, PlannerConfig};
+use geo_planner::{MemoryClass, Observation, Outcome, PlanInputs, PlannerConfig, ProbeCheck, ProbeReport};
 use geo_runtime::Runtime;
 use geo_types::*;
 use std::path::PathBuf;
@@ -57,6 +57,41 @@ fn pick(plan: &Plan, cfg: &PlannerConfig) -> geo_planner::PhysicalPlan {
     rt().plan_with(cfg, plan, &ctx()).expect("plan")
 }
 
+/// A browser runtime that passed every probe check (what the web client reports on this machine) and a
+/// planner that has seen this source before (4 earlier runs, so its estimate is calibrated).
+fn world() -> PlanInputs {
+    let c = |name: &str, ok: bool| ProbeCheck { name: name.into(), ok, required: !name.starts_with("read_class") && name != "extension_load", detail: String::new(), ms: 1.0 };
+    let mut i = PlanInputs::default();
+    i.probes.insert(
+        "duckdb-wasm".into(),
+        ProbeReport {
+            engine: "duckdb-wasm".into(),
+            session: "t".into(),
+            engine_version: "1".into(),
+            runtime_version: "1".into(),
+            captured_at_ms: i.now_ms,
+            duration_ms: 1.0,
+            checks: vec![c("init", true), c("worker", true), c("parquet", true), c("arrow", true), c("covering", true), c("read_class:plain_wkb", true), c("read_class:duckdb_typed", false)],
+            memory_class: MemoryClass::High,
+            device_memory_gb: Some(8.0),
+            js_heap_limit_mb: Some(4096),
+            supported_ops: ["source", "filter", "bbox_filter", "aggregate", "project", "limit", "sort"].iter().map(|s| s.to_string()).collect(),
+        },
+    );
+    let obs: Vec<Observation> = (0..4)
+        .map(|k| Observation {
+            ts_ms: 0, source: "clustered_10mb_spatial".into(), kind: "features".into(), engine: "duckdb".into(), raw_selected: 226.0 + k as f64, total_rows: 130_000,
+            est_rows: 226, actual_rows: 2, limit: Some(2000), censored: false, group_by: None, est_ms: None, actual_ms: 80.0, network: "LOCAL".into(), fallback: false,
+        })
+        .collect();
+    i.calibration = geo_planner::Calibration::fit(&obs);
+    i
+}
+
+fn pick_in(plan: &Plan, cfg: &PlannerConfig, inputs: &PlanInputs) -> geo_planner::PhysicalPlan {
+    rt().plan_with_inputs(cfg, plan, &ctx(), inputs).expect("plan")
+}
+
 fn reason(p: &geo_planner::PhysicalPlan, engine: &str) -> String {
     p.candidates.iter().find(|c| c.engine.0 == engine).map(|c| c.rejected_because.join(" | ")).unwrap_or_default()
 }
@@ -66,7 +101,7 @@ fn small_file_selective_viewport_runs_in_the_browser() {
     let Some(src) = source("clustered_10mb_spatial") else { return };
     // 0.2 % of the extent, around a dense cluster: measured faster in the browser (35-62 ms vs 74-91 ms)
     let plan = bbox_plan(src, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
-    let p = pick(&plan, &PlannerConfig::default());
+    let p = pick_in(&plan, &PlannerConfig::default(), &world());
     assert_eq!(p.engine.0, "duckdb-wasm", "decisions: {:?}", p.decisions);
     assert_eq!(p.placement, EngineKind::Browser);
     let alt = p.candidates.iter().find(|c| c.engine.0 == "duckdb").unwrap();
@@ -91,7 +126,7 @@ fn medium_file_loses_on_score_and_large_file_is_rejected_by_the_memory_guard() {
         let plan = bbox_plan(src, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
         let p = pick(&plan, &PlannerConfig::default());
         assert_eq!(p.engine.0, "duckdb");
-        assert!(reason(&p, "duckdb-wasm").contains("memory guard"), "{}", reason(&p, "duckdb-wasm"));
+        assert!(reason(&p, "duckdb-wasm").contains("memory risk"), "{}", reason(&p, "duckdb-wasm"));
     }
 }
 
@@ -101,7 +136,7 @@ fn real_overture_data_goes_to_duckdb() {
     let plan = bbox_plan(src, Crs::OgcCrs84, window([105.0, 8.5, 108.0, 12.0], 0.002, (106.7, 10.8)), 2000, false);
     let p = pick(&plan, &PlannerConfig::default());
     assert_eq!(p.engine.0, "duckdb");
-    assert!(reason(&p, "duckdb-wasm").contains("memory guard"));
+    assert!(reason(&p, "duckdb-wasm").contains("memory risk"), "{}", reason(&p, "duckdb-wasm"));
     // the inferred covering is reported, not hidden
     assert!(p.decisions.iter().any(|d| d.rule == "covering" && d.outcome == Outcome::Warning), "{:?}", p.decisions);
     assert!(p.scans[0].covering_inferred);
@@ -145,7 +180,7 @@ fn browser_memory_limit_is_a_hard_constraint_not_a_score() {
     let Some(src) = source("clustered_10mb_spatial") else { return };
     let plan = bbox_plan(src, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
     let mut cfg = PlannerConfig::default();
-    cfg.browser_max_input_bytes = 1 << 20; // 1 MB: the tab "cannot hold" even this small plan
+    cfg.browser_max_input_bytes = Some(1 << 20); // 1 MB: the tab "cannot hold" even this small plan
     let p = pick(&plan, &cfg);
     assert_eq!(p.engine.0, "duckdb");
     assert!(reason(&p, "duckdb-wasm").contains("memory guard"));

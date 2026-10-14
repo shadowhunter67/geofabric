@@ -89,6 +89,42 @@ pub struct SourceInfo {
     pub row_count: u64,
     pub row_groups: Vec<RowGroupInfo>,
     pub schema: SpatialSchema,
+    /// Parquet `created_by` (writer and version), e.g. `DuckDB version v1.5.6 (build ...)`.
+    pub created_by: Option<String>,
+    /// How a reader has to treat the geometry column (see [`ReadClass`]).
+    pub read_class: ReadClass,
+    /// Fraction of rows whose geometry is null (from column statistics); `None` when the file has no null counts.
+    pub geometry_null_fraction: Option<f64>,
+}
+
+/// Reader-compatibility class of a GeoParquet file, derived from the footer only. The Parquet schema alone
+/// cannot tell the classes apart (both store WKB in a `BYTE_ARRAY`, no logical type); the writer can:
+/// DuckDB >= 1.5 writes files its own readers type as `GEOMETRY(crs)`. Browser runtimes are *probed* per
+/// class (`geo_planner::ProbeReport`), so the planner never assumes a class is readable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReadClass {
+    /// Plain WKB written by pyarrow / GDAL / parquet-rs / DuckDB < 1.5.
+    PlainWkb,
+    /// Written by DuckDB >= 1.5 (typed geometry; e.g. the Overture subset).
+    DuckDbTyped,
+}
+
+impl ReadClass {
+    pub fn from_created_by(created_by: Option<&str>) -> ReadClass {
+        let Some(c) = created_by else { return ReadClass::PlainWkb };
+        let Some(rest) = c.strip_prefix("DuckDB version v") else { return ReadClass::PlainWkb };
+        let mut it = rest.split(|ch: char| !ch.is_ascii_digit());
+        let major: u32 = it.next().and_then(|x| x.parse().ok()).unwrap_or(0);
+        let minor: u32 = it.next().and_then(|x| x.parse().ok()).unwrap_or(0);
+        if (major, minor) >= (1, 5) { ReadClass::DuckDbTyped } else { ReadClass::PlainWkb }
+    }
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ReadClass::PlainWkb => "plain_wkb",
+            ReadClass::DuckDbTyped => "duckdb_typed",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -217,6 +253,19 @@ impl GeoParquetSource {
                 column_bytes,
             });
         }
+        let mut geometry_nulls: Option<u64> = Some(0);
+        for rg in 0..md.num_row_groups() {
+            for c in md.row_group(rg).columns() {
+                if c.column_path().string() != primary {
+                    continue;
+                }
+                match c.statistics().and_then(|s| s.null_count_opt()) {
+                    Some(n) => geometry_nulls = geometry_nulls.map(|t| t + n),
+                    None => geometry_nulls = None,
+                }
+            }
+        }
+        let total_rows = md.file_metadata().num_rows().max(0) as u64;
         let info = SourceInfo {
             path: path.to_string_lossy().into_owned(),
             file_size,
@@ -229,6 +278,9 @@ impl GeoParquetSource {
             row_count: md.file_metadata().num_rows().max(0) as u64,
             row_groups,
             schema,
+            created_by: fmd.created_by().map(|c| c.to_string()),
+            read_class: ReadClass::from_created_by(fmd.created_by()),
+            geometry_null_fraction: geometry_nulls.map(|n| if total_rows > 0 { n as f64 / total_rows as f64 } else { 0.0 }),
         };
         Ok(Self { path, info })
     }

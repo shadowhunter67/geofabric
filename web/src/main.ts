@@ -3,10 +3,15 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
 import { DuckDbWasmEngine } from "./engine/wasm.ts";
+import { compile } from "./engine/sqlgen.ts";
 import { resultDigest } from "./engine/digest.ts";
 import { wkbToGeoJSON } from "./engine/wkb.ts";
 import { EngineError } from "./engine/contract.ts";
 import type { PlanGraph, SourceBinding } from "./engine/contract.ts";
+import { isFresh, runProbe, sessionId, usable } from "./engine/probe.ts";
+import type { ProbeReport } from "./engine/probe.ts";
+import { classifyFailure, fallbackAllowed } from "./engine/failure.ts";
+import type { FailureClass } from "./engine/failure.ts";
 
 // ---------- types ----------
 interface Column { name: string; type: string }
@@ -16,16 +21,34 @@ interface SourceMeta {
   columns: Column[]; error?: string;
 }
 interface Decision { rule: string; subject: string; outcome: string; reason: string }
+interface Factor { name: string; value: number; weight: number; detail: string }
+interface Confidence { score: number; label: "high" | "medium" | "low"; factors: Factor[] }
+interface Risk { score: number; memory: number; result_rows: number; probe: number; health: number; format: number; memory_input_bytes: number; crash_threshold_bytes: number; threshold_basis: string }
+interface Health { state: "healthy" | "degraded" | "unhealthy" | "unknown"; reason: string; events: number; failures: number; last_failure: string | null }
 interface Candidate {
   engine: string; kind: "server" | "browser"; feasible: boolean; score_ms: number | null;
-  cost: { fixed_ms: number; scan_ms: number; transfer_ms: number; scan_bytes: number; transfer_bytes: number } | null;
+  cost: { fixed_ms: number; scan_ms: number; transfer_ms: number; latency_ms: number; cold_start_ms: number; scan_bytes: number; transfer_bytes: number } | null;
   reasons: string[]; rejected_because: string[];
+  confidence: Confidence | null; risk: Risk | null; health: Health; probe_status: string;
+}
+interface Estimate {
+  rows: number; low: number; high: number; quality: "poor" | "fair" | "good"; covering_quality: string; raw_selected: number;
+  correction: { factor: number; samples: number; basis: string }; spatial_coherence: number | null; row_groups_total: number; row_groups_kept: number;
+  limit_bound: boolean; notes: string[];
+}
+interface Assessment {
+  confidence: Confidence; engine_confidence: number; margin_factor: number; estimate: Estimate;
+  network: { name: string; rtt_ms: number; down_mbps: number; up_mbps: number; origin: string };
+  health: Record<string, Health>;
+  probes: Record<string, { status: string; usable: boolean; age_ms: number | null; failed_checks: string[]; memory_class: string | null; engine_version: string | null; runtime_version: string | null }>;
+  fallback: { engine: string; reason: string; max_fallbacks: number } | null; policy: string[];
 }
 interface Physical {
   engine: string; placement?: "server" | "browser"; decisions: Decision[]; steps: { label: string; detail: string }[];
+  assessment: Assessment;
   candidates?: Candidate[]; input_bytes_upper_bound?: number; result_rows_estimate?: number;
   scans: { uri: string; covering?: { xmin: string; ymin: string; xmax: string; ymax: string; declared: boolean } | null;
-    prune: { kept: number[]; skipped: number; total_row_groups: number; kept_rows: number; kept_bytes: number; total_bytes: number } }[];
+    prune: { kept: number[]; skipped: number; total_row_groups: number; total_rows: number; kept_rows: number; kept_bytes: number; total_bytes: number } }[];
 }
 interface Metric<T> { value: T | null; source: string }
 interface Metrics {
@@ -35,7 +58,7 @@ interface Metrics {
   notes: string[];
 }
 interface RunResp {
-  fallback?: { from: string; reason: string };
+  fallback?: { from: string; reason: string; class: FailureClass };
   placement?: "server" | "browser"; result_digest?: { count: number; sha256: string };
   source_urls?: Record<string, string>; limits?: { max_rows: number; timeout_ms: number };
   plan_id: string; ir: unknown; physical: Physical; lineage: { id: string; op: string }[];
@@ -76,7 +99,11 @@ const S = {
   busy: false,
   engine: "auto",
   allowBrowser: true,
+  probe: null as ProbeReport | null,
+  probing: null as Promise<void> | null,
+  network: "LOCAL",
 };
+const SESSION = sessionId();
 
 // ---------- layout ----------
 const app = document.getElementById("app")!;
@@ -108,6 +135,10 @@ function log(msg: string, isErr = false) {
 // ---------- settings ----------
 settingsPop.append(
   el("label", {}, el("input", { type: "checkbox", onchange: (e: Event) => { S.liveRequery = (e.target as HTMLInputElement).checked; } }), " Re-query when the map moves"),
+  el("label", { class: "net" }, "Assumed network ",
+    el("select", { "data-testid": "network-select", onchange: (e: Event) => void setNetwork((e.target as HTMLSelectElement).value) },
+      ...["LOCAL", "FAST_LAN", "GOOD_BROADBAND", "MOBILE", "HIGH_LATENCY"].map((n) => el("option", { value: n }, n)))),
+  el("div", { class: "note" }, "What the planner assumes about the link between you and the data (presets are assumptions, not measurements; LOCAL = this host)."),
   el("div", { class: "note" }, "Basemap: none (offline; no external tile requests)."),
   el("div", { class: "note" }, "Mode: Developer (SQL is not exposed; submit logical IR)."),
 );
@@ -144,6 +175,7 @@ map.on("load", () => {
     });
   }
   void loadSources();
+  void probeRuntime("startup");
 });
 mapDiv.append(el("div", { class: "legend" },
   el("i", { style: "background:#e0a84a" }), "result  ", el("i", { style: "background:#5fbf8a" }), "row group read  ",
@@ -218,6 +250,7 @@ function currentRequest() {
     group_by: S.kind === "count_by" ? S.groupBy : undefined,
     engine: S.engine === "auto" ? undefined : S.engine,
     browser: S.allowBrowser,
+    client: { warm: wasm.isWarm() },
   };
 }
 
@@ -234,6 +267,55 @@ function bindSources(r: RunResp): Record<string, SourceBinding> {
   return out;
 }
 
+// ---------- runtime probe, reports (ADR-009/010) ----------
+/** Probe the browser engine and tell the planner. Re-runs on reload (new session), TTL expiry and after a fatal failure. */
+function probeRuntime(reason: string): Promise<void> {
+  if (S.probing) return S.probing;
+  S.probing = (async () => {
+    try {
+      const report = await runProbe(wasm, SESSION);
+      S.probe = report;
+      await api("/api/probe", report);
+      log(`runtime probe (${reason}): ${usable(report) ? "usable" : "NOT usable"}, ${report.checks.filter((c) => c.ok).length}/${report.checks.length} checks, ${report.duration_ms.toFixed(0)} ms, memory class ${report.memory_class}`);
+    } catch (e) {
+      log(`runtime probe failed: ${e}`, true);
+    } finally {
+      S.probing = null;
+      if (S.tab === "execution") renderTab();
+    }
+  })();
+  return S.probing;
+}
+
+async function setNetwork(name: string) {
+  try {
+    await api("/api/network", { profile: name });
+    S.network = name;
+    log(`planner network profile: ${name}`);
+  } catch (e) { log(String(e), true); }
+}
+
+/** Fire-and-forget: tell the gateway how a browser run went (health, known incompatibilities, telemetry). */
+function reportRun(r: RunResp, ok: boolean, rowsOrErr: number | string, ms: number, fallback = false) {
+  const scan = r.physical.scans[0];
+  const source = scan ? scan.uri.split(/[\\/]/).pop()!.replace(/\.parquet$/, "") : "";
+  const est = r.physical.assessment?.estimate;
+  const ir = r.ir as PlanGraph;
+  const nodes = Object.values(ir.nodes);
+  const agg = nodes.find((n) => n.op === "aggregate");
+  const lim = nodes.filter((n) => n.op === "limit").map((n) => (n.op === "limit" ? n.n : Infinity));
+  const groupBy = agg && agg.op === "aggregate" && agg.group_by.length ? agg.group_by[0] : undefined;
+  const body = ok
+    ? {
+        engine: r.physical.engine, source, ok: true, kind: groupBy ? "count_by" : agg ? "count" : "features", raw_selected: est?.raw_selected ?? 0,
+        total_rows: r.physical.scans.reduce((a, x) => a + (x.prune?.total_rows ?? 0), 0), est_rows: r.physical.result_rows_estimate ?? 0,
+        actual_rows: rowsOrErr as number, limit: lim.length ? Math.min(...lim) : undefined, group_by: groupBy,
+        est_ms: r.physical.candidates?.find((c) => c.engine === r.physical.engine)?.score_ms ?? undefined, actual_ms: ms, fallback,
+      }
+    : { engine: r.physical.engine, source, ok: false, message: String(rowsOrErr) };
+  void fetch("/api/report", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
+}
+
 /**
  * Browser execution can fail for reasons the planner cannot see from metadata (measured: DuckDB-Wasm
  * cannot read natively-typed Parquet GEOMETRY columns written by DuckDB >= 1.5, e.g. an Overture
@@ -241,14 +323,22 @@ function bindSources(r: RunResp): Record<string, SourceBinding> {
  * with the browser disabled, and the response carries `fallback` so the UI says what happened.
  */
 async function placeWithFallback(first: RunResp, retry: () => Promise<RunResp>): Promise<RunResp> {
+  const t0 = performance.now();
   try {
-    return await resolvePlacement(first);
+    const res = await resolvePlacement(first);
+    if (first.placement === "browser") reportRun(first, true, res.rows_total, performance.now() - t0);
+    return res;
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
-    log(`browser engine failed, falling back to the server engine: ${reason}`, true);
+    const cls = classifyFailure(reason);
+    reportRun(first, false, reason, performance.now() - t0);
+    if (!fallbackAllowed(cls)) throw e; // cancelled by the user: no fallback
+    log(`browser engine failed (${cls}), falling back once to the server engine: ${reason}`, true);
     await wasm.recycle();
+    // a crash/out-of-memory means the runtime we probed is gone: probe the new instance (in the background)
+    if (cls === "ENGINE_CRASH" || cls === "MEMORY") { S.probe = null; void probeRuntime(`after ${cls}`); }
     const second = await retry();
-    return { ...second, fallback: { from: first.physical.engine, reason } };
+    return { ...second, fallback: { from: first.physical.engine, reason, class: cls } };
   }
 }
 
@@ -311,6 +401,7 @@ async function run() {
     statusEl.textContent = "unsupported CRS";
     return;
   }
+  if (!S.probing && !isFresh(S.probe)) void probeRuntime(S.probe ? "ttl expired" : "no probe yet");
   S.busy = true; runBtn.disabled = true; statusEl.textContent = "running…";
   try {
     const req = currentRequest();
@@ -546,9 +637,48 @@ function plannerPanel(r: RunResp): HTMLElement {
     ...alts.map((c) => el("div", { class: "alt", "data-testid": "engine-alternative", "data-engine": c.engine },
       el("b", {}, `Alternative: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
       c.feasible ? `score ${c.score_ms?.toFixed(1)} ms` : "not feasible", c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),
-    r.fallback ? el("div", { class: "dec", "data-testid": "engine-fallback" }, el("span", { class: "o-warning" }, "[fallback] "), `the browser engine failed (${r.fallback.reason.slice(0, 160)}); the query was re-run on the server`) : null,
-    r.result_digest ? el("div", { class: "note" }, `result digest ${r.result_digest.sha256.slice(0, 12)} · count ${r.result_digest.count}`) : null);
+    r.fallback ? el("div", { class: "dec", "data-testid": "engine-fallback" }, el("span", { class: "o-warning" }, "[fallback] "), `the browser engine failed (${r.fallback.class ?? "?"}: ${r.fallback.reason.slice(0, 160)}); the query was re-run once on the server`) : null,
+    r.result_digest ? el("div", { class: "note" }, `result digest ${r.result_digest.sha256.slice(0, 12)} · count ${r.result_digest.count}`) : null,
+    assessmentPanel(r));
   return box;
+}
+
+const pct = (v: number) => `${Math.round(v * 100)}%`;
+function badge(text: string, cls: string, testid?: string): HTMLElement {
+  return el("span", { class: `badge ${cls}`, "data-testid": testid }, text);
+}
+const HEALTH_BADGE: Record<string, [string, string]> = { healthy: ["Healthy", "ok"], degraded: ["Degraded", "warn"], unhealthy: ["Unhealthy", "bad"], unknown: ["Unknown", "na"] };
+
+/** Planner self-assessment: confidence, health, probe, network, risk and fallback (ADR-009/010). */
+function assessmentPanel(r: RunResp): HTMLElement {
+  const p = r.physical, a = p.assessment;
+  if (!a) return el("div", {});
+  const sel = p.candidates?.find((c) => c.engine === p.engine);
+  const browser = p.candidates?.find((c) => c.kind === "browser");
+  const probe = a.probes?.["duckdb-wasm"];
+  const kv = (k: string, ...v: (Child | Child[])[]) => [el("span", {}, k), el("b", {}, ...v.flat())] as HTMLElement[];
+  const conf = a.confidence;
+  const confCls = conf.label === "high" ? "ok" : conf.label === "medium" ? "warn" : "bad";
+  const est = a.estimate;
+  const actual = r.rows_total;
+  const factor = (e: number, t: number) => { const x = (e + 1) / (t + 1); return Math.max(x, 1 / x); };
+  const rows: HTMLElement[] = [
+    ...kv("Engine", ENGINE_LABEL[p.engine] ?? p.engine, " ", badge(p.placement === "browser" ? "Local" : "Server", "der")),
+    ...kv("Confidence", badge(`${conf.label === "low" ? "Low Confidence" : conf.label === "medium" ? "Medium" : "High"} ${pct(conf.score)}`, confCls, "confidence-badge"),
+      el("span", { class: "note", "data-testid": "confidence-factors", title: conf.factors.map((f) => `${f.name} ${f.value.toFixed(2)} (w ${f.weight})`).join("\n") },
+        `  engine ${pct(a.engine_confidence)} × margin ${a.margin_factor.toFixed(2)}`)),
+    ...kv("Health", ...Object.entries(a.health ?? {}).flatMap(([e, h]) => [badge(`${e}: ${HEALTH_BADGE[h.state]?.[0] ?? h.state}`, HEALTH_BADGE[h.state]?.[1] ?? "na", `health-${e}`), " "])),
+    ...kv("Runtime probe", probe ? [badge(probe.status === "fresh" && probe.usable ? "Observed" : probe.status === "missing" ? "Not probed" : probe.status === "stale" ? "Stale" : "Failed", probe.status === "fresh" && probe.usable ? "ok" : "warn", "probe-badge"),
+      el("span", { class: "note" }, probe.age_ms != null ? `  ${(probe.age_ms / 1000).toFixed(0)} s ago · ${probe.memory_class ?? "?"} memory · wasm ${probe.engine_version ?? "?"}${probe.failed_checks.length ? ` · not OK: ${probe.failed_checks.join(", ")}` : ""}` : "  static description only")] : "—"),
+    ...kv("Network profile", `${a.network.name} `, el("span", { class: "note" }, `(rtt ${a.network.rtt_ms} ms · ${a.network.down_mbps} Mbps · ${a.network.origin})`)),
+    ...kv("Result estimate", badge("Estimated", "est"), ` ~${est.rows.toLocaleString()} rows (${est.low.toLocaleString()}–${est.high.toLocaleString()}), quality ${est.quality}`,
+      r.rows_total != null ? [" · ", badge("Observed", "ok"), el("span", { "data-testid": "estimate-vs-actual" }, ` ${actual.toLocaleString()} rows (×${factor(est.rows, actual).toFixed(1)} off)`)] : []),
+    ...kv("Browser risk", browser?.risk ? [`${pct(browser.risk.score)} `, el("span", { class: "note", "data-testid": "risk" }, `memory ${pct(Math.min(browser.risk.memory, 9.99))} of the crash threshold (${fmtBytes(browser.risk.memory_input_bytes)} / ${fmtBytes(browser.risk.crash_threshold_bytes)})`)] : browser && !browser.feasible ? `rejected — ${browser.rejected_because[0]?.slice(0, 120) ?? ""}` : "—"),
+    ...kv("Fallback", a.fallback ? `${ENGINE_LABEL[a.fallback.engine] ?? a.fallback.engine} (at most ${a.fallback.max_fallbacks}, no retry on the same engine)` : p.placement === "browser" ? "none feasible" : "not needed (server plan)"),
+  ];
+  void sel;
+  return el("div", { class: "kv2 assess", "data-testid": "assessment" }, ...rows,
+    ...(a.policy ?? []).map((t) => el("div", { class: "dec", style: "grid-column:1/-1" }, el("span", { class: "o-warning" }, "[policy] "), t)));
 }
 
 function profileTab(): HTMLElement {
@@ -566,5 +696,5 @@ renderLeft(); renderRight(); renderTab();
 
 // Test hook for the browser smoke test only (?e2e=1): exposes the map and state, nothing else.
 if (new URLSearchParams(location.search).has("e2e")) {
-  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab, wasm, resultDigest, resolvePlacement, bindSources };
+  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab, wasm, resultDigest, resolvePlacement, bindSources, probeRuntime, setNetwork, placeWithFallback, reportRun, compile };
 }

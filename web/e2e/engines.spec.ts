@@ -128,5 +128,5 @@ test("UI: when the browser engine fails, the query is re-run on the server and t
   const panel = page.getByTestId("planner-panel");
   await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
   await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure");
-  await expect(panel.getByTestId("engine-fallback")).toContainText("re-run on the server");
+  await expect(panel.getByTestId("engine-fallback")).toContainText("re-run once on the server");
 });

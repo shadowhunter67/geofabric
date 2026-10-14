@@ -100,8 +100,12 @@ export function compile(plan: PlanGraph, sources: Record<string, SourceBinding>,
         }
         const c = b.covering;
         const col = (p: string) => p.split(".").map(qIdent).join(".");
-        const name = push(`SELECT * FROM read_parquet(${qStr(f.name)})`);
         const geom = n.schema.geometry_columns[0]?.name ?? null;
+        // Geometry leaves the engine as plain WKB bytes. DuckDB >= 1.5 types the column GEOMETRY(crs); streaming
+        // such a column out of DuckDB-Wasm fails when the CRS is an identifier ("OGC:CRS84", e.g. Overture files):
+        // "TransactionContext::ActiveTransaction called without active transaction" (reproduced, see ADR-009).
+        // ST_AsWKB at the scan avoids the lazy typed conversion; it is part of the core build (no spatial extension).
+        const name = push(geom ? `SELECT * REPLACE (ST_AsWKB(${qIdent(geom)}) AS ${qIdent(geom)}) FROM read_parquet(${qStr(f.name)})` : `SELECT * FROM read_parquet(${qStr(f.name)})`);
         return {
           name,
           covering: c ? [col(c.xmin), col(c.ymin), col(c.xmax), col(c.ymax)] : null,

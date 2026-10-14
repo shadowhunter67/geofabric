@@ -85,3 +85,13 @@ test("structural problems: cycle, missing node, unbound source, non-finite numbe
   const nan = plan({ s: src, f: { op: "bbox_filter", input: "s", geometry_column: "geometry", bbox: { ...bbox, min_x: Number.NaN } } }, "f");
   assert.throws(() => compile(nan, sources, 10), /non-finite/);
 });
+
+test("geometry is converted to WKB at the scan (typed GEOMETRY(crs) cannot be streamed out of DuckDB-Wasm)", () => {
+  const p = plan({ s: src, l: { op: "limit", input: "s", n: 5 } }, "l");
+  const { sql } = compile(p, sources, 10);
+  assert.match(sql, /SELECT \* REPLACE \(ST_AsWKB\("geometry"\) AS "geometry"\) FROM read_parquet\('gf_src_0\.parquet'\)/);
+  // a source without a geometry column is read as is
+  const noGeom: PlanNode = { op: "source", uri: "a.parquet", format: "geo_parquet", schema: { fields: [], geometry_columns: [] } };
+  const q = compile(plan({ s: noGeom }, "s"), sources, 10);
+  assert.match(q.sql, /SELECT \* FROM read_parquet\('gf_src_0\.parquet'\)/);
+});

@@ -21,6 +21,9 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use geo_executor::{limits, result_digest, CancelToken, EngineError, ExecutionContext};
 use geo_ir::*;
+use geo_planner::{
+    plan_shape, source_key, ExecutionReport, FailureClass, NetworkProfile, Observation, PhysicalPlan, PlanInputs, ProbeReport,
+};
 use geo_runtime::{Dispatch, Runtime, RuntimeError};
 use geo_source_geoparquet::GeoParquetSource;
 use geo_types::*;
@@ -29,7 +32,7 @@ use serde_json::{json, Map, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::Semaphore;
+use tokio::sync::{Mutex as AsyncMutex, Semaphore};
 use tower_http::limit::RequestBodyLimitLayer;
 
 pub const MAX_FEATURES: u64 = 100_000;
@@ -53,17 +56,37 @@ impl Default for GatewayConfig {
     }
 }
 
+/// Development/validation aid: delays every `/api` response as a link with this profile would
+/// (latency + shared-bandwidth serialization). It models a network; it is not one.
+pub struct SimNet {
+    pub profile: NetworkProfile,
+    free_at: AsyncMutex<tokio::time::Instant>,
+}
+
+impl SimNet {
+    pub fn new(profile: NetworkProfile) -> Self {
+        SimNet { profile, free_at: AsyncMutex::new(tokio::time::Instant::now()) }
+    }
+}
+
 pub struct AppState {
     pub rt: Runtime,
     pub data_dir: PathBuf,
     pub config: GatewayConfig,
     pub slots: Arc<Semaphore>,
+    pub sim: Option<Arc<SimNet>>,
 }
 
 impl AppState {
     pub fn new(rt: Runtime, data_dir: PathBuf, config: GatewayConfig) -> Self {
         let slots = Arc::new(Semaphore::new(config.max_concurrent_queries));
-        AppState { rt, data_dir, config, slots }
+        AppState { rt, data_dir, config, slots, sim: None }
+    }
+
+    pub fn with_simulated_network(mut self, profile: NetworkProfile) -> Self {
+        self.rt.state().set_network(profile.clone());
+        self.sim = Some(Arc::new(SimNet::new(profile)));
+        self
     }
 
     fn ctx(&self) -> ExecutionContext {
@@ -187,7 +210,7 @@ pub struct FilterReq {
 #[derive(Deserialize)]
 pub struct QueryReq {
     source: String,
-    /// features | count_by | intersects_features
+    /// features | count_by | count | intersects_features
     kind: String,
     /// viewport [xmin, ymin, xmax, ymax] in `crs`
     bbox: [f64; 4],
@@ -199,6 +222,36 @@ pub struct QueryReq {
     engine: Option<String>,
     /// Override `allow_browser` for this request.
     browser: Option<bool>,
+    /// What-if network profile for this request only (planner evaluation), e.g. "MOBILE".
+    network: Option<String>,
+    /// State of the client's browser engine (cold start cost).
+    client: Option<ClientState>,
+    /// Measurement aid: operator memory limit (MB) for the browser engine for this request only (replaces the
+    /// risk model's memory rejection, like `--browser-max-mb`). Used to run the browser engine past the planner's guard.
+    browser_limit_mb: Option<u64>,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct ClientState {
+    /// The DuckDB-Wasm instance is already instantiated.
+    warm: Option<bool>,
+}
+
+/// Per-request overrides of the planning context.
+#[derive(Default, Clone)]
+struct Opts {
+    browser_limit_mb: Option<u64>,
+    browser: Option<bool>,
+    network: Option<NetworkProfile>,
+    warm: Option<bool>,
+}
+
+fn opts(browser: Option<bool>, network: &Option<String>, client: &Option<ClientState>, limit_mb: Option<u64>) -> Result<Opts, ApiError> {
+    let network = match network {
+        None => None,
+        Some(n) => Some(NetworkProfile::by_name(n).ok_or_else(|| err(StatusCode::BAD_REQUEST, "bad_network", format!("unknown network profile '{n}'")))?),
+    };
+    Ok(Opts { browser, network, warm: client.as_ref().and_then(|c| c.warm), browser_limit_mb: limit_mb })
 }
 
 fn json_to_literal(v: &Value) -> Result<Literal, ApiError> {
@@ -244,7 +297,7 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
                 with: GeometryLiteral { wkt: format!("POLYGON(({a} {b}, {c} {b}, {c} {d}, {a} {d}, {a} {b}))"), crs },
             }
         }
-        "features" | "count_by" => Node::BboxFilter { input: Box::new(src.clone()), geometry_column: geom_col.clone(), bbox: bb },
+        "features" | "count_by" | "count" => Node::BboxFilter { input: Box::new(src.clone()), geometry_column: geom_col.clone(), bbox: bb },
         _ => return Err(bad("unknown kind")),
     };
     if let Some(f) = &q.filter {
@@ -264,6 +317,11 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
     }
     let limit = q.limit.unwrap_or(20_000).min(MAX_FEATURES);
     node = match q.kind.as_str() {
+        "count" => Node::Aggregate {
+            input: Box::new(node),
+            group_by: vec![],
+            aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
+        },
         "count_by" => {
             let g = q.group_by.clone().ok_or_else(|| bad("group_by required"))?;
             Node::Limit {
@@ -414,12 +472,24 @@ fn client_response(st: &AppState, plan: &Plan, physical: geo_planner::PhysicalPl
     })
 }
 
-fn planner_cfg(st: &AppState, browser: Option<bool>) -> geo_planner::PlannerConfig {
+fn planner_cfg(st: &AppState, o: &Opts) -> geo_planner::PlannerConfig {
     let mut cfg = st.rt.planner_config().clone();
-    if let Some(b) = browser {
+    if let Some(b) = o.browser {
         cfg.allow_browser = b;
     }
+    if let Some(mb) = o.browser_limit_mb {
+        cfg.browser_max_input_bytes = Some(mb << 20);
+    }
     cfg
+}
+
+fn plan_inputs(st: &AppState, o: &Opts) -> PlanInputs {
+    let mut i = st.rt.state().snapshot();
+    if let Some(n) = &o.network {
+        i.network = n.clone();
+    }
+    i.browser_warm = o.warm;
+    i
 }
 
 fn apply_engine(plan: &mut Plan, engine: &Option<String>) {
@@ -428,7 +498,39 @@ fn apply_engine(plan: &mut Plan, engine: &Option<String>) {
     }
 }
 
-async fn run_plan(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<Value>, ApiError> {
+/// Telemetry record of a finished run (estimator calibration + planner accuracy evaluation).
+fn observation(physical: &PhysicalPlan, plan: &Plan, engine: &str, actual_rows: u64, actual_ms: f64, network: &str, fallback: bool) -> Observation {
+    let shape = plan_shape(plan);
+    let est = &physical.assessment.estimate;
+    let censored = shape.limit.is_some_and(|l| actual_rows >= l);
+    Observation {
+        ts_ms: geo_planner::now_ms(),
+        source: physical.scans.first().map(|s| source_key(&s.uri)).unwrap_or_default(),
+        kind: shape.kind().into(),
+        engine: engine.into(),
+        raw_selected: est.raw_selected,
+        total_rows: physical.scans.iter().map(|s| s.total_rows).sum(),
+        est_rows: physical.result_rows_estimate,
+        actual_rows,
+        limit: shape.limit,
+        censored,
+        group_by: shape.group_by,
+        est_ms: physical.candidates.iter().find(|c| c.engine.0 == engine).and_then(|c| c.score_ms),
+        actual_ms,
+        network: network.into(),
+        fallback,
+    }
+}
+
+fn classify_runtime_error(e: &RuntimeError) -> Option<(FailureClass, String)> {
+    match e {
+        RuntimeError::Execution(EngineError::Timeout { limit_ms }) => Some((FailureClass::Timeout, format!("timeout after {limit_ms} ms"))),
+        RuntimeError::Execution(EngineError::Engine(m)) => Some((FailureClass::classify(m), m.clone())),
+        _ => None, // user errors, limits, authorization, cancellation: not a statement about the engine
+    }
+}
+
+async fn run_plan(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiError> {
     let permit = st
         .slots
         .clone()
@@ -438,19 +540,33 @@ async fn run_plan(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<
     let cancel = ctx.cancel.clone();
     let mut guard = CancelOnDrop(cancel, false);
     let st2 = st.clone();
-    let cfg = planner_cfg(&st, browser);
+    let cfg = planner_cfg(&st, &o);
+    let inputs = plan_inputs(&st, &o);
     // The permit moves into the blocking task: the slot is only released when the
     // query has really finished (or was interrupted), not when the client left.
     let handle = tokio::task::spawn_blocking(move || {
         let _permit = permit;
         let t0 = Instant::now();
         ctx.max_rows = MAX_FEATURES + 1;
-        match st2.rt.dispatch_with(&cfg, &plan, &ctx)? {
-            Dispatch::Executed(run) => {
+        let net = inputs.network.name.clone();
+        match st2.rt.dispatch_with_inputs(&cfg, &plan, &ctx, &inputs) {
+            Ok(Dispatch::Executed(run)) => {
                 let total = t0.elapsed().as_secs_f64() * 1000.0;
+                let actual_rows = run.result.metrics.rows_returned.value.unwrap_or(0);
+                let engine = run.physical.engine.to_string();
+                let obs = observation(&run.physical, &plan, &engine, actual_rows, total, &net, false);
+                let source = obs.source.clone();
+                st2.rt.state().record(ExecutionReport { engine, source, outcome: Ok(()), observation: Some(obs) });
                 Ok::<_, RuntimeError>(to_response(&plan, run, total))
             }
-            Dispatch::Client { physical } => Ok(client_response(&st2, &plan, physical)),
+            Ok(Dispatch::Client { physical }) => Ok(client_response(&st2, &plan, physical)),
+            Err(e) => {
+                if let Some((class, msg)) = classify_runtime_error(&e) {
+                    let source = plan.nodes.values().find_map(|n| if let geo_ir::PlanNode::Source { uri, .. } = n { Some(source_key(uri)) } else { None }).unwrap_or_default();
+                    st2.rt.state().record(ExecutionReport { engine: "duckdb".into(), source, outcome: Err((class, msg)), observation: None });
+                }
+                Err(e)
+            }
         }
     });
     let res = handle.await.map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
@@ -459,11 +575,12 @@ async fn run_plan(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<
 }
 
 /// Plan only (no execution): where would this query run, and why?
-async fn plan_only(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json<Value>, ApiError> {
+async fn plan_only(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiError> {
     let st2 = st.clone();
-    let cfg = planner_cfg(&st, browser);
+    let cfg = planner_cfg(&st, &o);
+    let inputs = plan_inputs(&st, &o);
     let (plan, physical) = tokio::task::spawn_blocking(move || {
-        let physical = st2.rt.plan_with(&cfg, &plan, &st2.ctx())?;
+        let physical = st2.rt.plan_with_inputs(&cfg, &plan, &st2.ctx(), &inputs)?;
         Ok::<_, RuntimeError>((plan, physical))
     })
     .await
@@ -473,11 +590,12 @@ async fn plan_only(st: Shared, plan: Plan, browser: Option<bool>) -> Result<Json
     Ok(Json(v))
 }
 
-async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Option<bool>), ApiError> {
+async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Opts), ApiError> {
     let a = authorized_source(st, &q.source)?;
     let st2 = st.clone();
     let uri = a.uri().to_string();
-    let (engine, browser) = (q.engine.clone(), q.browser);
+    let o = opts(q.browser, &q.network, &q.client, q.browser_limit_mb)?;
+    let engine = q.engine.clone();
     let mut plan = tokio::task::spawn_blocking(move || {
         let ctx = st2.ctx();
         build_ir(&st2.rt, &uri, &ctx, &q)
@@ -485,17 +603,17 @@ async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Option<bool
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
     apply_engine(&mut plan, &engine);
-    Ok((plan, browser))
+    Ok((plan, o))
 }
 
 async fn query(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
-    let (plan, browser) = build_query_plan(&st, q).await?;
-    run_plan(st, plan, browser).await
+    let (plan, o) = build_query_plan(&st, q).await?;
+    run_plan(st, plan, o).await
 }
 
 async fn query_plan(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
-    let (plan, browser) = build_query_plan(&st, q).await?;
-    plan_only(st, plan, browser).await
+    let (plan, o) = build_query_plan(&st, q).await?;
+    plan_only(st, plan, o).await
 }
 
 #[derive(Deserialize)]
@@ -503,6 +621,9 @@ pub struct IrReq {
     ir: Value,
     engine: Option<String>,
     browser: Option<bool>,
+    network: Option<String>,
+    client: Option<ClientState>,
+    browser_limit_mb: Option<u64>,
 }
 
 fn parse_ir(r: &IrReq) -> Result<Plan, ApiError> {
@@ -513,12 +634,14 @@ fn parse_ir(r: &IrReq) -> Result<Plan, ApiError> {
 
 async fn run_ir(State(st): State<Shared>, Json(r): Json<IrReq>) -> Result<Json<Value>, ApiError> {
     let plan = parse_ir(&r)?;
-    run_plan(st, plan, r.browser).await
+    let o = opts(r.browser, &r.network, &r.client, r.browser_limit_mb)?;
+    run_plan(st, plan, o).await
 }
 
 async fn explain_ir(State(st): State<Shared>, Json(r): Json<IrReq>) -> Result<Json<Value>, ApiError> {
     let plan = parse_ir(&r)?;
-    plan_only(st, plan, r.browser).await
+    let o = opts(r.browser, &r.network, &r.client, r.browser_limit_mb)?;
+    plan_only(st, plan, o).await
 }
 
 /// Parquet bytes for the browser engine, with HTTP range support. Authorized sources only.
@@ -541,7 +664,124 @@ async fn config(State(st): State<Shared>) -> Json<Value> {
         "planner": st.rt.planner_config(),
         "query_timeout_ms": st.config.query_timeout.as_millis() as u64,
         "engines": ["duckdb", "duckdb-wasm"],
+        "network": st.rt.state().network(),
+        "simulated_network": st.sim.as_ref().map(|s| s.profile.name.clone()),
     }))
+}
+
+// ---------- planner state: probes, health, telemetry, network (ADR-009/010) ----------
+
+async fn put_probe(State(st): State<Shared>, Json(report): Json<ProbeReport>) -> Result<Json<Value>, ApiError> {
+    if report.engine.is_empty() || report.engine.len() > 64 || report.checks.len() > 64 {
+        return Err(err(StatusCode::BAD_REQUEST, "bad_probe", "malformed probe report"));
+    }
+    let engine = report.engine.clone();
+    let verdict = st.rt.state().put_probe(report);
+    Ok(Json(json!({"stored": true, "engine": engine, "version_changed": verdict.version_changed, "replaced_session": verdict.replaced_session})))
+}
+
+#[derive(Deserialize)]
+pub struct EngineRef {
+    engine: String,
+}
+
+async fn invalidate_probe(State(st): State<Shared>, Json(r): Json<EngineRef>) -> Json<Value> {
+    Json(json!({"invalidated": st.rt.state().invalidate_probe(&r.engine)}))
+}
+
+#[derive(Deserialize)]
+pub struct ClientReport {
+    engine: String,
+    source: String,
+    ok: bool,
+    message: Option<String>,
+    kind: Option<String>,
+    raw_selected: Option<f64>,
+    total_rows: Option<u64>,
+    est_rows: Option<u64>,
+    actual_rows: Option<u64>,
+    limit: Option<u64>,
+    group_by: Option<String>,
+    est_ms: Option<f64>,
+    actual_ms: Option<f64>,
+    fallback: Option<bool>,
+}
+
+/// A client-side engine (the browser) reports how a run went: health, known incompatibilities, telemetry.
+async fn client_report(State(st): State<Shared>, Json(r): Json<ClientReport>) -> Result<Json<Value>, ApiError> {
+    if !valid_id(&r.source) || r.engine.len() > 64 {
+        return Err(err(StatusCode::BAD_REQUEST, "bad_report", "malformed report"));
+    }
+    let state = st.rt.state();
+    let (outcome, class) = if r.ok {
+        (Ok(()), None)
+    } else {
+        let msg = r.message.clone().unwrap_or_default();
+        let class = FailureClass::classify(&msg);
+        (Err((class, msg)), Some(class))
+    };
+    let observation = (r.ok && r.actual_rows.is_some()).then(|| Observation {
+        ts_ms: geo_planner::now_ms(),
+        source: r.source.clone(),
+        kind: r.kind.clone().unwrap_or_else(|| "features".into()),
+        engine: r.engine.clone(),
+        raw_selected: r.raw_selected.unwrap_or(0.0),
+        total_rows: r.total_rows.unwrap_or(0),
+        est_rows: r.est_rows.unwrap_or(0),
+        actual_rows: r.actual_rows.unwrap_or(0),
+        limit: r.limit,
+        censored: r.limit.is_some_and(|l| r.actual_rows.unwrap_or(0) >= l) && r.group_by.is_none(),
+        group_by: r.group_by.clone(),
+        est_ms: r.est_ms,
+        actual_ms: r.actual_ms.unwrap_or(0.0),
+        network: state.network().name,
+        fallback: r.fallback.unwrap_or(false),
+    });
+    state.record(ExecutionReport { engine: r.engine.clone(), source: r.source.clone(), outcome, observation });
+    Ok(Json(json!({"recorded": true, "class": class})))
+}
+
+async fn planner_state(State(st): State<Shared>) -> Json<Value> {
+    Json(json!(st.rt.state().summary()))
+}
+
+/// Development/test aid (localhost, no auth, like the rest of the v0 gateway): forget probes, health, telemetry.
+async fn reset_state(State(st): State<Shared>) -> Json<Value> {
+    st.rt.state().reset();
+    Json(json!({"reset": true}))
+}
+
+async fn telemetry(State(st): State<Shared>) -> Json<Value> {
+    Json(json!({"observations": st.rt.state().telemetry()}))
+}
+
+#[derive(Deserialize)]
+pub struct NetworkReq {
+    profile: String,
+}
+
+async fn set_network(State(st): State<Shared>, Json(r): Json<NetworkReq>) -> Result<Json<Value>, ApiError> {
+    let p = NetworkProfile::by_name(&r.profile).ok_or_else(|| err(StatusCode::BAD_REQUEST, "bad_network", "unknown network profile"))?;
+    st.rt.state().set_network(p.clone());
+    Ok(Json(json!({"network": p})))
+}
+
+/// See [`SimNet`].
+async fn simulate_network(State(st): State<Shared>, req: axum::extract::Request, next: axum::middleware::Next) -> Response {
+    let resp = next.run(req).await;
+    let Some(sim) = st.sim.clone() else { return resp };
+    use axum::body::HttpBody;
+    let bytes = resp.body().size_hint().exact().unwrap_or(0);
+    let transfer = Duration::from_secs_f64(sim.profile.download_ms(bytes) / 1000.0);
+    let latency = Duration::from_secs_f64(sim.profile.turn_ms() / 1000.0);
+    let finish = {
+        let mut free = sim.free_at.lock().await;
+        let f = (*free).max(tokio::time::Instant::now()) + transfer;
+        *free = f;
+        f
+    };
+    tokio::time::sleep_until(finish + latency).await;
+    resp
 }
 
 /// API routes only (static UI is mounted by the binary).
@@ -550,6 +790,13 @@ pub fn api_router(state: Shared) -> Router {
     Router::new()
         .route("/api/health", get(|| async { Json(json!({"ok": true})) }))
         .route("/api/config", get(config))
+        .route("/api/state", get(planner_state))
+        .route("/api/telemetry", get(telemetry))
+        .route("/api/state/reset", post(reset_state))
+        .route("/api/network", post(set_network))
+        .route("/api/probe", post(put_probe))
+        .route("/api/probe/invalidate", post(invalidate_probe))
+        .route("/api/report", post(client_report))
         .route("/api/sources", get(sources))
         .route("/api/sources/{id}/row_groups", get(row_groups))
         .route("/api/files/{id}", get(file))
@@ -557,6 +804,7 @@ pub fn api_router(state: Shared) -> Router {
         .route("/api/query/plan", post(query_plan))
         .route("/api/ir/run", post(run_ir))
         .route("/api/ir/explain", post(explain_ir))
+        .layer(axum::middleware::from_fn_with_state(state.clone(), simulate_network))
         .layer(RequestBodyLimitLayer::new(limit))
         .with_state(state)
 }

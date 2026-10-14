@@ -1,5 +1,6 @@
 //! geo-gateway binary: `geo-gateway --data <dir> [--port 8787] [--host 127.0.0.1]
-//! [--web web/dist] [--timeout-secs 30]`
+//! [--web web/dist] [--timeout-secs 30] [--network LOCAL|FAST_LAN|GOOD_BROADBAND|MOBILE|HIGH_LATENCY]
+//! [--simulate-network <profile>] [--telemetry <file.jsonl>] [--no-learn]`
 
 use geo_gateway::{api_router, AppState, GatewayConfig};
 use geo_runtime::Runtime;
@@ -29,13 +30,40 @@ async fn main() {
         pcfg.allow_browser = false;
     }
     if let Ok(v) = arg(&args, "--browser-max-mb", "").parse::<u64>() {
-        pcfg.browser_max_input_bytes = v << 20;
+        pcfg.browser_max_input_bytes = Some(v << 20);
     }
     if let Ok(v) = arg(&args, "--browser-max-rows", "").parse::<u64>() {
         pcfg.browser_max_result_rows = v;
     }
     rt.set_planner_config(pcfg);
-    let state = Arc::new(AppState::new(rt, data_dir, config.clone()));
+    // planner knowledge: past telemetry (calibration), whether to keep learning, the network profile
+    let planner_state = rt.state().clone();
+    if let Some(profile) = geo_planner::NetworkProfile::by_name(&arg(&args, "--network", "LOCAL")) {
+        planner_state.set_network(profile);
+    }
+    let tele = arg(&args, "--telemetry", "");
+    if !tele.is_empty() {
+        let path = std::path::PathBuf::from(&tele);
+        if path.exists() {
+            match planner_state.load_telemetry(&path) {
+                Ok(n) => eprintln!("loaded {n} telemetry observations from {tele}"),
+                Err(e) => eprintln!("telemetry {tele}: {e}"),
+            }
+        }
+        planner_state.set_sink(Some(path));
+    }
+    if args.iter().any(|a| a == "--no-learn") {
+        planner_state.set_learning(false);
+        eprintln!("planner calibration is frozen (--no-learn)");
+    }
+    let mut app_state = AppState::new(rt, data_dir, config.clone());
+    let sim = arg(&args, "--simulate-network", "");
+    if !sim.is_empty() {
+        let profile = geo_planner::NetworkProfile::by_name(&sim).unwrap_or_else(|| panic!("unknown network profile '{sim}'"));
+        eprintln!("SIMULATING network profile {} (rtt {} ms, {} Mbps down): every /api response is delayed accordingly", profile.name, profile.rtt_ms, profile.down_mbps);
+        app_state = app_state.with_simulated_network(profile);
+    }
+    let state = Arc::new(app_state);
     let index = ServeFile::new(format!("{web}/index.html"));
     let app = api_router(state).fallback_service(ServeDir::new(&web).fallback(index));
     let addr = format!("{host}:{port}");

@@ -723,6 +723,7 @@ dependencies = [
  "geo-source-geoparquet",
  "geo-types",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 

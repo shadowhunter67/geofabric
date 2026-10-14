@@ -78,9 +78,13 @@ textarea.ir { width: 100%; height: 130px; font-family: var(--mono); font-size: 1
 .badge.est { color: var(--accent-2); border-color: var(--accent-2); }
 .badge.der { color: var(--accent); border-color: var(--accent); }
 .badge.na { color: var(--muted); border-style: dashed; }
+.badge.warn { color: var(--accent-2); border-color: var(--accent-2); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
 .planner { border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--panel-2); border-radius: 4px; padding: 8px 10px; margin-bottom: 10px; }
 .planner .row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
 .planner .engine { font-weight: 650; font-size: 14px; }
 .planner .engine.browser { color: var(--accent-2); }
 .planner .kv2 { display: grid; grid-template-columns: 220px 1fr; gap: 2px 8px; font-size: 12px; margin-bottom: 4px; }
 .planner .alt { font-size: 12px; color: var(--muted); padding-top: 2px; }
+.planner .assess { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.planner .assess .note { margin: 0; }

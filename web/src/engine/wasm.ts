@@ -52,6 +52,11 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     return ENGINE_ID;
   }
 
+  /** The DuckDB-Wasm instance exists (a query now pays no instantiation cost). */
+  isWarm(): boolean {
+    return this.db !== null;
+  }
+
   capabilities(): Capabilities {
     return { id: ENGINE_ID, kind: "browser", ops: SUPPORTED_OPS };
   }
@@ -71,7 +76,19 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     return this.starting;
   }
 
-  async execute(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
+  /**
+   * Executions are serialized: they share one DuckDB instance and register source files under fixed names
+   * (`gf_src_N.parquet`), so a runtime probe running next to a user query would overwrite the other's files.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
+
+  execute(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
+    const run = this.queue.then(() => this.executeNow(plan, ctx));
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async executeNow(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
     const t0 = performance.now();
     const { sql, files } = compile(plan, ctx.sources, ctx.maxRows); // throws "unsupported"/"invalid" before any I/O
     const est = ctx.estimatedInputBytes ?? 0;

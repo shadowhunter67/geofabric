@@ -42,6 +42,17 @@ pub struct SourceScan {
     /// fraction of the query window with the row group's bbox (uniform-density assumption).
     /// An estimate (`SourceEstimated`), not a bound: dense clusters make it optimistic, sparse ones pessimistic.
     pub selected_rows_estimate: u64,
+    /// Uniform-density estimate **before** the null-fraction adjustment is applied, kept for calibration.
+    pub raw_selected_rows: f64,
+    /// Reader-compatibility class of the file (see [`crate::ReadClass`]).
+    pub read_class: crate::ReadClass,
+    /// Fraction of null geometries (column statistics), if known.
+    pub null_fraction: Option<f64>,
+    /// 1 = row groups tile space without overlap (spatially sorted file); 0 = every row group spans the
+    /// whole extent (shuffled file: pruning cannot help). From the row-group bboxes; `None` without bboxes.
+    pub spatial_coherence: Option<f64>,
+    /// Row-group-level density spread: max/median of rows per unit bbox area (>1 = skewed, estimates less reliable).
+    pub density_skew: Option<f64>,
     pub prune: PruneReport,
 }
 
@@ -165,7 +176,12 @@ pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<So
             has_covering: info.covering.is_some(),
             covering_inferred: info.covering.as_ref().is_some_and(|c| !c.declared),
             covering: info.covering.clone(),
-            selected_rows_estimate: selected_rows.ceil() as u64,
+            selected_rows_estimate: (selected_rows * (1.0 - info.geometry_null_fraction.unwrap_or(0.0))).ceil() as u64,
+            raw_selected_rows: selected_rows,
+            read_class: info.read_class,
+            null_fraction: info.geometry_null_fraction,
+            spatial_coherence: coherence(info),
+            density_skew: density_skew(info),
             covering_bytes_total: info.covering.as_ref().map_or(0, |c| {
                 let top = c.xmin.split('.').next().unwrap_or("");
                 info.row_groups.iter().map(|r| r.column_bytes.get(top).copied().unwrap_or(0)).sum()
@@ -222,4 +238,38 @@ fn collect(
             collect(plan, right, &[], out, seen);
         }
     }
+}
+
+fn rg_area(b: &[f64; 4]) -> f64 {
+    ((b[2] - b[0]) * (b[3] - b[1])).max(0.0)
+}
+
+/// Spatial coherence from row-group bboxes: sum(row-group area) relative to the file bbox area.
+/// A perfectly tiled file gives ~1, a shuffled one ~number of row groups. Mapped to [0, 1].
+fn coherence(info: &crate::SourceInfo) -> Option<f64> {
+    let fb = info.file_bbox?;
+    let fa = rg_area(&fb);
+    let boxes: Vec<&[f64; 4]> = info.row_groups.iter().filter_map(|r| r.bbox.as_ref()).collect();
+    if fa <= 0.0 || boxes.len() < 2 || boxes.len() != info.row_groups.len() {
+        return None;
+    }
+    let n = boxes.len() as f64;
+    let ratio = boxes.iter().map(|b| rg_area(b)).sum::<f64>() / fa;
+    Some(((n - ratio) / (n - 1.0)).clamp(0.0, 1.0))
+}
+
+fn density_skew(info: &crate::SourceInfo) -> Option<f64> {
+    let mut d: Vec<f64> = info
+        .row_groups
+        .iter()
+        .filter_map(|r| r.bbox.as_ref().map(|b| (r.rows as f64, rg_area(b))))
+        .filter(|(_, a)| *a > 0.0)
+        .map(|(rows, a)| rows / a)
+        .collect();
+    if d.len() < 2 {
+        return None;
+    }
+    d.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let med = d[d.len() / 2];
+    (med > 0.0).then(|| d[d.len() - 1] / med)
 }

@@ -11,4 +11,5 @@ geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true

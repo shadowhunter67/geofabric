@@ -1,0 +1,74 @@
+[
+ {
+  "message": "query cancelled",
+  "class": "CANCELLED"
+ },
+ {
+  "message": "browser query cancelled",
+  "class": "CANCELLED"
+ },
+ {
+  "message": "Target crashed",
+  "class": "ENGINE_CRASH"
+ },
+ {
+  "message": "Page crashed while running the query",
+  "class": "ENGINE_CRASH"
+ },
+ {
+  "message": "browser engine failed (engine: out of memory)",
+  "class": "MEMORY"
+ },
+ {
+  "message": "std::bad_alloc",
+  "class": "MEMORY"
+ },
+ {
+  "message": "Out of Memory Error: failed to allocate block",
+  "class": "MEMORY"
+ },
+ {
+  "message": "browser query interrupted after 30000 ms",
+  "class": "TIMEOUT"
+ },
+ {
+  "message": "execution_timeout: query interrupted after 30000 ms",
+  "class": "TIMEOUT"
+ },
+ {
+  "message": "TransactionContext::ActiveTransaction called without active transaction",
+  "class": "UNSUPPORTED_FORMAT"
+ },
+ {
+  "message": "Invalid Input Error: Invalid Parquet file",
+  "class": "UNSUPPORTED_FORMAT"
+ },
+ {
+  "message": "unsupported: spatial_join is not supported by this engine",
+  "class": "UNSUPPORTED_OPERATION"
+ },
+ {
+  "message": "operation intersects is not supported",
+  "class": "UNSUPPORTED_OPERATION"
+ },
+ {
+  "message": "Catalog Error: Scalar Function with name st_foo does not exist: no such function",
+  "class": "CAPABILITY"
+ },
+ {
+  "message": "extension spatial is not available",
+  "class": "CAPABILITY"
+ },
+ {
+  "message": "Failed to fetch",
+  "class": "TRANSIENT"
+ },
+ {
+  "message": "NetworkError when attempting to fetch resource",
+  "class": "TRANSIENT"
+ },
+ {
+  "message": "something unexpected",
+  "class": "TRANSIENT"
+ }
+]
