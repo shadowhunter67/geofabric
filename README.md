@@ -56,6 +56,10 @@ The first run of the DuckDB adapter downloads the `spatial` extension (needs net
 
 Real data (optional, ~1.5 GB, public Overture release, not committed): `benchmarks/.venv/Scripts/python benchmarks/overture_fetch.py --name vn_south --bbox 105 8.5 108 12 --out benchmarks/data` then `oracle_overture.py` for the independent expected results.
 
+## Quick start (Windows)
+
+Double-click **`start-ui.bat`** (or run it in a terminal): it prepares the DuckDB library on first use, builds the UI/gateway if missing, starts the gateway on http://127.0.0.1:8787 in its own window (close that window to stop) and opens the browser. Options: `start-ui.bat rebuild`, `start-ui.bat nobrowser`.
+
 ## Demo (exact steps)
 
 ```
