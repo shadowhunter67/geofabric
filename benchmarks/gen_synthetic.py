@@ -25,6 +25,7 @@ CATEGORIES = ["residential", "commercial", "industrial", "public", "religious", 
 # rows are calibrated from measured file size (zstd) ~= 76 bytes/row (see manifest)
 SIZES = {
     "10mb": dict(rows=130_000, row_group=5_000),
+    "30mb": dict(rows=390_000, row_group=10_000),  # added for the held-out planner evaluation (a size the cost model never saw)
     "100mb": dict(rows=1_300_000, row_group=20_000),
     "1gb": dict(rows=13_000_000, row_group=100_000),
 }

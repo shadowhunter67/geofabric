@@ -214,7 +214,16 @@ fn network_profile_changes_the_decision_and_the_cost_split() {
     for k in [3, 4] {
         assert_eq!(scores[k].1, "duckdb", "{}: the server wins when bytes and round trips are expensive: {scores:?}", scores[k].0);
     }
-    assert!(scores[4].4 > 1000.0, "HIGH_LATENCY: >1 s of pure latency for range requests: {scores:?}");
+    assert!(scores[4].4 > 2.0 * 155.0 - 1.0, "HIGH_LATENCY: plan request + whole-file download: {scores:?}");
+    // a file above the whole-file limit is read with many sequential range requests: latency explodes on a slow link
+    if let Some(big) = plan_for("clustered_100mb_spatial", 0.01, 2000) {
+        let mut i = world("clustered_100mb_spatial");
+        i.network = NetworkProfile::by_name("HIGH_LATENCY").unwrap();
+        let p = pick(&big, &i);
+        let b = cand(&p, "duckdb-wasm");
+        assert!(b.cost.as_ref().unwrap().latency_ms > 1000.0, "range mode on HIGH_LATENCY: {:?}", b.cost);
+        assert_eq!(p.assessment.browser_access[0].strategy, geo_planner::AccessStrategy::Range);
+    }
 }
 
 #[test]
@@ -242,8 +251,13 @@ fn browser_risk_scales_with_memory_class_and_replaces_the_fixed_limit() {
     assert!(rl.memory > rh.memory * 4.0, "a 1 GB device has a much smaller crash threshold: {} vs {}", rl.memory, rh.memory);
     assert_eq!(rh.crash_threshold_bytes, 245 * 1024 * 1024);
     assert!(rh.score >= rh.memory.min(1.0) - 1e-9 && rh.score <= 1.0);
-    // 1 GB file: infeasible through the risk model, with the numbers in the message
-    if let Some(big) = plan_for("clustered_1gb_spatial", 0.002, 2000) {
+    // 1 GB file, half of the extent, 100k rows: the browser would have to pull far more than a tab holds ->
+    // infeasible through the risk model, with the numbers in the message (a small window on the same file is fine now:
+    // range requests fetch only what the query touches)
+    if let Some(src) = source("clustered_1gb_spatial") {
+        let w = window(SYN, 0.5, (104.5, 12.5));
+        let b = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(w[0], w[1], w[2], w[3], Crs::Epsg(4326)).unwrap() };
+        let big = Plan::new(Node::Aggregate { input: Box::new(b), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] });
         let p = pick(&big, &hi);
         let why = cand(&p, "duckdb-wasm").rejected_because.join(" ");
         assert!(why.contains("memory risk") && why.contains("crash threshold"), "{why}");

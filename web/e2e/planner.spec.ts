@@ -59,8 +59,8 @@ test("probe result drives pre-rejection: a file class this runtime cannot read i
   const plan = await post(page, "/api/query/plan", { source: "overture_buildings_vn_south", kind: "features", bbox: [106.6, 10.7, 106.7, 10.8], crs: "OGC:CRS84", limit: 2000 });
   if (plan.status === 404) test.skip(true, "Overture subset not present");
   const wasm = (plan.json.physical.candidates as { engine: string; feasible: boolean; rejected_because: string[] }[]).find((c) => c.engine === "duckdb-wasm")!;
-  expect(wasm.feasible).toBe(false); // too large for the tab either way (memory risk) ...
-  if (!typedOk) expect(wasm.rejected_because.join(" ")).toContain("duckdb_typed"); // ... and the probe says why it could not read it anyway
+  expect(wasm.feasible).toBe(typedOk); // a 1.45 GB file is fine in range mode for a small window - unless the probe says the runtime cannot read its class
+  if (!typedOk) expect(wasm.rejected_because.join(" ")).toContain("duckdb_typed");
   console.log("PROBE duckdb_typed readable in this runtime: " + typedOk);
 });
 

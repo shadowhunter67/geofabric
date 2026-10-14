@@ -1,0 +1,2105 @@
+{
+ "seed": 20261014,
+ "cases": [
+  {
+   "id": "ho000",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho001",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.837722,
+    18.940356,
+    110.0,
+    24.0
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho002",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    103.418861,
+    11.470178,
+    106.581139,
+    16.529822
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho003",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho004",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.0,
+    8.0,
+    107.071068,
+    19.313708
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho005",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.343146,
+    110.0,
+    23.656854
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho006",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho007",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.464466,
+    10.343146,
+    109.535534,
+    21.656854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho008",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    100.0,
+    8.0,
+    103.162278,
+    13.059644
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho009",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    107.888197,
+    20.821115,
+    108.111803,
+    21.178885
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho010",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    102.918861,
+    9.970178,
+    106.081139,
+    15.029822
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho011",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho012",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    108.292893,
+    20.868629,
+    109.707107,
+    23.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho013",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    103.418861,
+    11.470178,
+    106.581139,
+    16.529822
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho014",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    108.088197,
+    20.321115,
+    108.311803,
+    20.678885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho015",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    102.888197,
+    9.821115,
+    103.111803,
+    10.178885
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho016",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    105.418861,
+    15.470178,
+    108.581139,
+    20.529822
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho017",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho018",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    105.888197,
+    15.821115,
+    106.111803,
+    16.178885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho019",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.0,
+    8.0,
+    107.071068,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho020",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    107.292893,
+    19.868629,
+    108.707107,
+    22.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho021",
+   "set": "heldout",
+   "dataset": "uniform_1gb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    103.918861,
+    12.470178,
+    107.081139,
+    17.529822
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho022",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho023",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    108.292893,
+    20.868629,
+    109.707107,
+    23.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho024",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    104.292893,
+    12.868629,
+    105.707107,
+    15.131371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho025",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.618861,
+    17.970178,
+    109.781139,
+    23.029822
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho026",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    102.292893,
+    8.868629,
+    103.707107,
+    11.131371
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho027",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.343146,
+    110.0,
+    23.656854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho028",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho029",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.0,
+    8.0,
+    107.071068,
+    19.313708
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho030",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    105.418861,
+    15.470178,
+    108.581139,
+    20.529822
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho031",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho032",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    105.292893,
+    14.868629,
+    106.707107,
+    17.131371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho033",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    100.0,
+    8.0,
+    103.162278,
+    13.059644
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho034",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho035",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    102.918861,
+    9.970178,
+    106.081139,
+    15.029822
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho036",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho037",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    108.292893,
+    20.868629,
+    109.707107,
+    23.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho038",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    104.292893,
+    12.868629,
+    105.707107,
+    15.131371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho039",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.618861,
+    17.970178,
+    109.781139,
+    23.029822
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho040",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.0,
+    8.0,
+    107.071068,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho041",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    106.888197,
+    17.821115,
+    107.111803,
+    18.178885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho042",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.388197,
+    12.321115,
+    104.611803,
+    12.678885
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho043",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.464466,
+    10.343146,
+    109.535534,
+    21.656854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho044",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    100.0,
+    8.0,
+    103.162278,
+    13.059644
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho045",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho046",
+   "set": "heldout",
+   "dataset": "uniform_1gb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    103.918861,
+    12.470178,
+    107.081139,
+    17.529822
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho047",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho048",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    108.888197,
+    21.821115,
+    109.111803,
+    22.178885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho049",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.888197,
+    13.821115,
+    105.111803,
+    14.178885
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho050",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho051",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    102.292893,
+    8.868629,
+    103.707107,
+    11.131371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho052",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    105.418861,
+    15.470178,
+    108.581139,
+    20.529822
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho053",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho054",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    105.888197,
+    15.821115,
+    106.111803,
+    16.178885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho055",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    101.388197,
+    9.321115,
+    101.611803,
+    9.678885
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho056",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    107.888197,
+    20.821115,
+    108.111803,
+    21.178885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho057",
+   "set": "heldout",
+   "dataset": "uniform_1gb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    101.964466,
+    9.343146,
+    109.035534,
+    20.656854
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho058",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho059",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho060",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    101.464466,
+    8.343146,
+    108.535534,
+    19.656854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho061",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.618861,
+    17.970178,
+    109.781139,
+    23.029822
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho062",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    107.888197,
+    20.821115,
+    108.111803,
+    21.178885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho063",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho064",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho065",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho066",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    101.464466,
+    8.343146,
+    108.535534,
+    19.656854
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho067",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    107.492893,
+    19.368629,
+    108.907107,
+    21.631371
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho068",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    101.418861,
+    8.0,
+    104.581139,
+    13.059644
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho069",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.343146,
+    110.0,
+    23.656854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho070",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho071",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.464466,
+    10.343146,
+    109.535534,
+    21.656854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho072",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    100.792893,
+    8.368629,
+    102.207107,
+    10.631371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho073",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    107.292893,
+    19.868629,
+    108.707107,
+    22.131371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho074",
+   "set": "heldout",
+   "dataset": "uniform_1gb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    105.388197,
+    14.821115,
+    105.611803,
+    15.178885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho075",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho076",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    108.888197,
+    21.821115,
+    109.111803,
+    22.178885
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho077",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    104.292893,
+    12.868629,
+    105.707107,
+    15.131371
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho078",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho079",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    102.888197,
+    9.821115,
+    103.111803,
+    10.178885
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho080",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    105.418861,
+    15.470178,
+    108.581139,
+    20.529822
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho081",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho082",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.837722,
+    18.940356,
+    110.0,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho083",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.888197,
+    13.821115,
+    105.111803,
+    14.178885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho084",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    106.618861,
+    17.970178,
+    109.781139,
+    23.029822
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho085",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    102.888197,
+    9.821115,
+    103.111803,
+    10.178885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho086",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    106.292893,
+    16.868629,
+    107.707107,
+    19.131371
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho087",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.388197,
+    12.321115,
+    104.611803,
+    12.678885
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho088",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.464466,
+    10.343146,
+    109.535534,
+    21.656854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho089",
+   "set": "heldout",
+   "dataset": "uniform_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    100.0,
+    8.0,
+    103.162278,
+    13.059644
+   ],
+   "kind": "features",
+   "limit": 20000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho090",
+   "set": "heldout",
+   "dataset": "clustered_100mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    107.292893,
+    19.868629,
+    108.707107,
+    22.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho091",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.388197,
+    12.321115,
+    104.611803,
+    12.678885
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho092",
+   "set": "heldout",
+   "dataset": "clustered_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    100.964466,
+    8.0,
+    108.035534,
+    19.313708
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho093",
+   "set": "heldout",
+   "dataset": "clustered_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.686292,
+    110.0,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho094",
+   "set": "heldout",
+   "dataset": "uniform_30mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    104.888197,
+    13.821115,
+    105.111803,
+    14.178885
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho095",
+   "set": "heldout",
+   "dataset": "uniform_30mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.0005,
+   "bbox": [
+    108.088197,
+    20.321115,
+    108.311803,
+    20.678885
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho096",
+   "set": "heldout",
+   "dataset": "uniform_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    102.292893,
+    8.868629,
+    103.707107,
+    11.131371
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho097",
+   "set": "heldout",
+   "dataset": "uniform_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.5,
+   "bbox": [
+    102.928932,
+    12.343146,
+    110.0,
+    23.656854
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "ho098",
+   "set": "heldout",
+   "dataset": "clustered_10mb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.02,
+   "bbox": [
+    103.792893,
+    11.368629,
+    105.207107,
+    13.631371
+   ],
+   "kind": "features",
+   "limit": 500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "cold"
+  },
+  {
+   "id": "ho099",
+   "set": "heldout",
+   "dataset": "uniform_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.1,
+   "bbox": [
+    104.418861,
+    13.470178,
+    107.581139,
+    18.529822
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  }
+ ]
+}

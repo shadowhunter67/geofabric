@@ -75,12 +75,16 @@ pub struct AppState {
     pub config: GatewayConfig,
     pub slots: Arc<Semaphore>,
     pub sim: Option<Arc<SimNet>>,
+    /// Parquet range requests served to the browser engine (cumulative): lets a measurement run count how many
+    /// requests and bytes a browser query really needed (the planner's network model depends on both).
+    pub file_requests: std::sync::atomic::AtomicU64,
+    pub file_bytes: std::sync::atomic::AtomicU64,
 }
 
 impl AppState {
     pub fn new(rt: Runtime, data_dir: PathBuf, config: GatewayConfig) -> Self {
         let slots = Arc::new(Semaphore::new(config.max_concurrent_queries));
-        AppState { rt, data_dir, config, slots, sim: None }
+        AppState { rt, data_dir, config, slots, sim: None, file_requests: Default::default(), file_bytes: Default::default() }
     }
 
     pub fn with_simulated_network(mut self, profile: NetworkProfile) -> Self {
@@ -656,7 +660,10 @@ async fn file(
         .oneshot(req)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "file", e.to_string()))?;
-    Ok(resp.map(axum::body::Body::new).into_response())
+    let mut resp = resp.map(axum::body::Body::new).into_response();
+    // the data directory can change under us and a measurement must hit the (simulated) network every time
+    resp.headers_mut().insert(axum::http::header::CACHE_CONTROL, axum::http::HeaderValue::from_static("no-store"));
+    Ok(resp)
 }
 
 async fn config(State(st): State<Shared>) -> Json<Value> {
@@ -766,12 +773,20 @@ async fn set_network(State(st): State<Shared>, Json(r): Json<NetworkReq>) -> Res
     Ok(Json(json!({"network": p})))
 }
 
-/// See [`SimNet`].
+/// Counts file-endpoint traffic and, when a network is simulated, delays every `/api` response (see [`SimNet`]).
 async fn simulate_network(State(st): State<Shared>, req: axum::extract::Request, next: axum::middleware::Next) -> Response {
-    let resp = next.run(req).await;
-    let Some(sim) = st.sim.clone() else { return resp };
     use axum::body::HttpBody;
-    let bytes = resp.body().size_hint().exact().unwrap_or(0);
+    use std::sync::atomic::Ordering::Relaxed;
+    let is_file = req.uri().path().starts_with("/api/files/");
+    let resp = next.run(req).await;
+    // streamed file bodies have no exact size hint: fall back to the Content-Length header (ServeFile sets it)
+    let header_len = resp.headers().get(axum::http::header::CONTENT_LENGTH).and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok());
+    let bytes = resp.body().size_hint().exact().or(header_len).unwrap_or(0);
+    if is_file {
+        st.file_requests.fetch_add(1, Relaxed);
+        st.file_bytes.fetch_add(bytes, Relaxed);
+    }
+    let Some(sim) = st.sim.clone() else { return resp };
     let transfer = Duration::from_secs_f64(sim.profile.download_ms(bytes) / 1000.0);
     let latency = Duration::from_secs_f64(sim.profile.turn_ms() / 1000.0);
     let finish = {
@@ -784,6 +799,11 @@ async fn simulate_network(State(st): State<Shared>, req: axum::extract::Request,
     resp
 }
 
+async fn stats(State(st): State<Shared>) -> Json<Value> {
+    use std::sync::atomic::Ordering::Relaxed;
+    Json(json!({"file_requests": st.file_requests.load(Relaxed), "file_bytes": st.file_bytes.load(Relaxed)}))
+}
+
 /// API routes only (static UI is mounted by the binary).
 pub fn api_router(state: Shared) -> Router {
     let limit = state.config.max_body_bytes;
@@ -791,6 +811,7 @@ pub fn api_router(state: Shared) -> Router {
         .route("/api/health", get(|| async { Json(json!({"ok": true})) }))
         .route("/api/config", get(config))
         .route("/api/state", get(planner_state))
+        .route("/api/stats", get(stats))
         .route("/api/telemetry", get(telemetry))
         .route("/api/state/reset", post(reset_state))
         .route("/api/network", post(set_network))

@@ -161,12 +161,18 @@ impl Calibration {
         Correction { factor: 1.0, samples: 0, basis: "none" }
     }
 
-    /// Group count for a grouped aggregate: the source's own history, else the median over all sources.
+    /// Cardinality of a GROUP BY column: the largest group count ever observed for it on this source (a window can
+    /// only show a subset of the groups, so the maximum is the best lower bound of the cardinality); without own
+    /// history, the median of the per-column maxima over all sources. The result has at most `min(cardinality, rows)` groups.
     pub fn group_count(&self, source: &str, column: &str) -> Option<(f64, &'static str)> {
+        let max = |v: &Vec<f64>| v.iter().cloned().fold(0.0f64, f64::max);
         if let Some(v) = self.groups.get(&(source.to_string(), column.to_string())).filter(|v| !v.is_empty()) {
-            return Some((median(&mut v.clone()), "source"));
+            return Some((max(v), "source"));
         }
-        (self.all_groups.len() >= 3).then(|| (median(&mut self.all_groups.clone()), "global"))
+        (self.all_groups.len() >= 3).then(|| {
+            let mut maxima: Vec<f64> = self.groups.values().map(max).collect();
+            (median(&mut maxima), "global")
+        })
     }
 }
 

@@ -121,12 +121,17 @@ fn medium_file_loses_on_score_and_large_file_is_rejected_by_the_memory_guard() {
         let server = p.candidates.iter().find(|c| c.engine.0 == "duckdb").unwrap();
         assert!(wasm.score_ms.unwrap() > 2.0 * server.score_ms.unwrap(), "browser {:?} vs server {:?}", wasm.score_ms, server.score_ms);
     }
-    // 1 GB file: 440 MiB of covering columns > guard -> infeasible, never traded against score
+    // 1 GB file, small window: since the browser engine reads with range requests it is *feasible* (it fetches only the
+    // touched row groups), but ~200 sequential requests make it far slower than the server: it loses on score
     if let Some(src) = source("clustered_1gb_spatial") {
         let plan = bbox_plan(src, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
         let p = pick(&plan, &PlannerConfig::default());
         assert_eq!(p.engine.0, "duckdb");
-        assert!(reason(&p, "duckdb-wasm").contains("memory risk"), "{}", reason(&p, "duckdb-wasm"));
+        let wasm = p.candidates.iter().find(|c| c.engine.0 == "duckdb-wasm").unwrap();
+        let server = p.candidates.iter().find(|c| c.engine.0 == "duckdb").unwrap();
+        assert!(wasm.feasible, "{}", reason(&p, "duckdb-wasm"));
+        assert!(wasm.score_ms.unwrap() > 3.0 * server.score_ms.unwrap(), "browser {:?} vs server {:?}", wasm.score_ms, server.score_ms);
+        assert_eq!(p.assessment.browser_access[0].strategy, geo_planner::AccessStrategy::Range);
     }
 }
 
@@ -136,7 +141,8 @@ fn real_overture_data_goes_to_duckdb() {
     let plan = bbox_plan(src, Crs::OgcCrs84, window([105.0, 8.5, 108.0, 12.0], 0.002, (106.7, 10.8)), 2000, false);
     let p = pick(&plan, &PlannerConfig::default());
     assert_eq!(p.engine.0, "duckdb");
-    assert!(reason(&p, "duckdb-wasm").contains("memory risk"), "{}", reason(&p, "duckdb-wasm"));
+    let wasm = p.candidates.iter().find(|c| c.engine.0 == "duckdb-wasm").unwrap();
+    assert!(!wasm.feasible || wasm.score_ms.unwrap() > p.candidates[0].score_ms.unwrap(), "browser is never the better choice on this file");
     // the inferred covering is reported, not hidden
     assert!(p.decisions.iter().any(|d| d.rule == "covering" && d.outcome == Outcome::Warning), "{:?}", p.decisions);
     assert!(p.scans[0].covering_inferred);
@@ -212,8 +218,13 @@ fn hints_are_honored_only_when_feasible() {
     assert_eq!(p.engine.0, "duckdb", "a feasible hint beats a better score");
     assert!(p.decisions.iter().any(|d| d.rule == "hint" && d.outcome == Outcome::Info));
 
-    let Some(big) = source("clustered_1gb_spatial") else { return };
-    let mut plan = bbox_plan(big, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
+    // an infeasible hint (the browser cannot run Intersects) is ignored
+    let hinted = Plan::new(Node::Intersects {
+        input: Box::new(source("clustered_10mb_spatial").unwrap()),
+        geometry_column: "geometry".into(),
+        with: GeometryLiteral { wkt: "POLYGON((104 12, 104.2 12, 104.2 12.2, 104 12.2, 104 12))".into(), crs: Crs::Epsg(4326) },
+    });
+    let mut plan = hinted;
     plan.hints.preferred_engine = Some("duckdb-wasm".into());
     let p = pick(&plan, &PlannerConfig::default());
     assert_eq!(p.engine.0, "duckdb", "an infeasible hint is ignored");

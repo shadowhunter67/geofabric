@@ -61,7 +61,7 @@ interface Out {
 export interface Compiled {
   sql: string;
   /** Registered-file names used by the SQL, mapped from the plan's source uri. */
-  files: { name: string; url: string; uri: string }[];
+  files: { name: string; url: string; uri: string; access: "full" | "range" }[];
 }
 
 export function compile(plan: PlanGraph, sources: Record<string, SourceBinding>, maxRows: number): Compiled {
@@ -95,7 +95,7 @@ export function compile(plan: PlanGraph, sources: Record<string, SourceBinding>,
         if (!b) throw new EngineError("invalid", "source is not bound to an authorized URL");
         let f = files.find((x) => x.uri === n.uri);
         if (!f) {
-          f = { name: `gf_src_${files.length}.parquet`, url: b.url, uri: n.uri };
+          f = { name: `gf_src_${files.length}.parquet`, url: b.url, uri: n.uri, access: b.access ?? "range" };
           files.push(f);
         }
         const c = b.covering;

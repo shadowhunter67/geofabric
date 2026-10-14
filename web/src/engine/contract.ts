@@ -45,6 +45,8 @@ export interface SourceBinding {
   /** Authorized URL serving the Parquet bytes (HTTP range requests). */
   url: string;
   covering: Covering | null;
+  /** How to get the bytes: whole file once (small files) or HTTP range requests. Decided by the planner. */
+  access?: "full" | "range";
 }
 
 export type MetricSource = "engine_observed" | "source_observed" | "source_estimated" | "planner_estimated" | "derived" | "unknown";

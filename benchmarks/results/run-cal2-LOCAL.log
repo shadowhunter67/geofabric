@@ -1,0 +1,57 @@
+=== LOCAL: cal2-LOCAL.json
+
+Running 1 test using 1 worker
+
+c2000 LOCAL clustered_10mb_spatial count_by f=0.002 warm: planner=duckdb-wasm server=96 browser=459
+c2001 LOCAL clustered_10mb_spatial features f=0.002 warm: planner=duckdb-wasm server=93 browser=563
+c2002 LOCAL clustered_10mb_spatial features f=0.002 warm: planner=duckdb-wasm server=81 browser=599
+c2003 LOCAL clustered_10mb_spatial count_by f=0.01 warm: planner=duckdb-wasm server=98 browser=580
+c2004 LOCAL clustered_10mb_spatial features f=0.01 warm: planner=duckdb-wasm server=90 browser=781
+c2005 LOCAL clustered_10mb_spatial features f=0.01 warm: planner=duckdb-wasm server=90 browser=775
+c2006 LOCAL clustered_10mb_spatial count_by f=0.05 warm: planner=duckdb-wasm server=80 browser=889
+c2007 LOCAL clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=129 browser=747
+c2008 LOCAL clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=142 browser=1641
+c2009 LOCAL clustered_10mb_spatial count_by f=0.25 warm: planner=duckdb-wasm server=97 browser=1741
+c2010 LOCAL clustered_10mb_spatial features f=0.25 warm: planner=duckdb server=145 browser=973
+c2011 LOCAL clustered_10mb_spatial features f=0.25 warm: planner=duckdb server=380 browser=4489
+c2012 LOCAL clustered_100mb_spatial count_by f=0.002 warm: planner=duckdb server=95 browser=445
+c2013 LOCAL clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=91 browser=511
+c2014 LOCAL clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=95 browser=459
+c2015 LOCAL clustered_100mb_spatial count_by f=0.01 warm: planner=duckdb server=97 browser=594
+c2016 LOCAL clustered_100mb_spatial features f=0.01 warm: planner=duckdb server=104 browser=1030
+c2017 LOCAL clustered_100mb_spatial features f=0.01 warm: planner=duckdb server=108 browser=1012
+c2018 LOCAL clustered_100mb_spatial count_by f=0.05 warm: planner=duckdb server=97 browser=1278
+c2019 LOCAL clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=119 browser=364
+c2020 LOCAL clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=743 browser=6074
+c2021 LOCAL clustered_100mb_spatial count_by f=0.25 warm: planner=duckdb server=90 browser=3771
+c2022 LOCAL clustered_100mb_spatial features f=0.25 warm: planner=duckdb server=150 browser=1052
+c2023 LOCAL clustered_100mb_spatial features f=0.25 warm: planner=duckdb server=814 browser=6954
+c2024 LOCAL clustered_1gb_spatial count_by f=0.002 warm: planner=duckdb server=152 browser=estimated input 461.5 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2025 LOCAL clustered_1gb_spatial features f=0.002 warm: planner=duckdb server=183 browser=estimated input 461.5 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2026 LOCAL clustered_1gb_spatial features f=0.002 warm: planner=duckdb server=217 browser=estimated input 461.5 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2027 LOCAL clustered_1gb_spatial count_by f=0.01 warm: planner=duckdb server=181 browser=estimated input 475.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2028 LOCAL clustered_1gb_spatial features f=0.01 warm: planner=duckdb server=213 browser=estimated input 475.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2029 LOCAL clustered_1gb_spatial features f=0.01 warm: planner=duckdb server=389 browser=estimated input 475.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2030 LOCAL clustered_1gb_spatial count_by f=0.05 warm: planner=duckdb server=194 browser=estimated input 533.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2031 LOCAL clustered_1gb_spatial features f=0.05 warm: planner=duckdb server=215 browser=estimated input 533.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2032 LOCAL clustered_1gb_spatial features f=0.05 warm: planner=duckdb server=1482 browser=estimated input 533.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2033 LOCAL clustered_1gb_spatial count_by f=0.25 warm: planner=duckdb server=277 browser=estimated input 711.2 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2034 LOCAL clustered_1gb_spatial features f=0.25 warm: planner=duckdb server=257 browser=estimated input 711.2 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2035 LOCAL clustered_1gb_spatial features f=0.25 warm: planner=duckdb server=1487 browser=estimated input 711.2 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2036 LOCAL overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=201 browser=1457
+c2037 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=324 browser=1413
+c2038 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=2651 browser=10976
+c2039 LOCAL overture_buildings_vn_south count_by f=0.01 warm: planner=duckdb server=288 browser=estimated input 384.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2040 LOCAL overture_buildings_vn_south features f=0.01 warm: planner=duckdb server=330 browser=estimated input 384.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2041 LOCAL overture_buildings_vn_south features f=0.01 warm: planner=duckdb server=2897 browser=estimated input 384.8 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2042 LOCAL overture_buildings_vn_south count_by f=0.05 warm: planner=duckdb server=345 browser=estimated input 647.6 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2043 LOCAL overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=377 browser=estimated input 647.6 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2044 LOCAL overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=2595 browser=estimated input 647.6 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2045 LOCAL overture_buildings_vn_south count_by f=0.25 warm: planner=duckdb server=450 browser=estimated input 1080.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2046 LOCAL overture_buildings_vn_south features f=0.25 warm: planner=duckdb server=353 browser=estimated input 1080.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+c2047 LOCAL overture_buildings_vn_south features f=0.25 warm: planner=duckdb server=2627 browser=estimated input 1080.0 MB (kept data + covering columns of the whole file) exceeds the engine limit 256.0 MB (memory guard)
+  ok 1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (9.9m)
+
+  Slow test file: e2e\heldout.spec.ts (9.9m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (9.9m)

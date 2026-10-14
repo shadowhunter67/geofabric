@@ -95,6 +95,20 @@ pub struct CostModel {
     pub range_request_parallelism: f64,
     /// One-off cost when the browser engine instance is not instantiated yet (measured median 1.3-1.5 s).
     pub browser_cold_start_ms: f64,
+    /// Files up to this size are downloaded whole into the tab (1 request); larger ones are read with HTTP range
+    /// requests. The client follows `assessment.browser_access` (single source of truth). ADR-009.
+    pub browser_full_fetch_max_bytes: u64,
+    /// Range mode, fitted on the cal2 grid (27 runs, LOCAL; median error 1.04x given the true request/byte counts):
+    /// local ms = fixed + per_request * requests + per_mb * fetched MB + per_row * rows.
+    pub browser_range_fixed_ms: f64,
+    pub browser_range_ms_per_request: f64,
+    pub browser_range_ms_per_mb: f64,
+    pub browser_range_us_per_row: f64,
+    /// Requests a range-mode query issues per touched row group, and the share of those row groups' bytes it fetches
+    /// (aggregate: bbox + group columns only; features: all projected columns).
+    pub browser_range_requests_per_rg_aggregate: f64,
+    pub browser_range_requests_per_rg_features: f64,
+    pub browser_range_bytes_share_aggregate: f64,
     pub avg_result_row_bytes: u64,
     /// Result rows assumed for a grouped aggregate (ungrouped = 1).
     pub aggregate_result_rows: u64,
@@ -115,6 +129,14 @@ impl Default for CostModel {
             request_bytes: 2048,
             range_request_parallelism: 4.0,
             browser_cold_start_ms: 1400.0,
+            browser_full_fetch_max_bytes: 32 << 20,
+            browser_range_fixed_ms: 19.0,
+            browser_range_ms_per_request: 14.5,
+            browser_range_ms_per_mb: 14.1,
+            browser_range_us_per_row: 104.0,
+            browser_range_requests_per_rg_aggregate: 9.6,
+            browser_range_requests_per_rg_features: 12.0,
+            browser_range_bytes_share_aggregate: 0.47,
             avg_result_row_bytes: 300,
             aggregate_result_rows: 1000,
         }
@@ -211,6 +233,52 @@ pub struct BrowserRisk {
     pub threshold_basis: String,
 }
 
+/// How the browser engine gets a source's bytes (decided by the planner, followed by the client).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AccessStrategy {
+    /// Download the whole file once (small files: one request beats dozens of sequential range requests).
+    Full,
+    /// HTTP range requests for the row groups the query touches.
+    Range,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BrowserAccess {
+    pub uri: String,
+    pub strategy: AccessStrategy,
+    pub file_bytes: u64,
+    /// Sequential HTTP requests the browser will issue (estimate).
+    pub requests_est: f64,
+    /// Bytes pulled into the tab (estimate).
+    pub fetch_bytes_est: u64,
+}
+
+fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &CostModel) -> Vec<BrowserAccess> {
+    let shape = plan_shape(plan);
+    let aggregate = shape.ungrouped || shape.group_by.is_some();
+    scans
+        .iter()
+        .map(|s| {
+            if s.total_bytes <= c.browser_full_fetch_max_bytes {
+                return BrowserAccess { uri: s.uri.clone(), strategy: AccessStrategy::Full, file_bytes: s.total_bytes, requests_est: 1.0, fetch_bytes_est: s.total_bytes };
+            }
+            let kept = s.prune.kept.len().max(1) as f64;
+            let (touched, requests, bytes) = if aggregate {
+                (kept, c.browser_range_requests_per_rg_aggregate * kept, s.prune.kept_bytes as f64 * c.browser_range_bytes_share_aggregate)
+            } else {
+                // a LIMIT stops the scan early: only the row groups needed to produce `limit` rows are touched
+                let selected = est.selected_after_correction.max(1.0);
+                let needed = shape.limit.map_or(selected, |l| (l as f64).min(selected));
+                let touched = (kept * needed / selected).ceil().clamp(1.0, kept);
+                (touched, c.browser_range_requests_per_rg_features * touched, s.prune.kept_bytes as f64 * touched / kept)
+            };
+            let _ = touched;
+            BrowserAccess { uri: s.uri.clone(), strategy: AccessStrategy::Range, file_bytes: s.total_bytes, requests_est: requests + 4.0, fetch_bytes_est: bytes as u64 }
+        })
+        .collect()
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct FallbackPlan {
     pub engine: EngineId,
@@ -232,6 +300,8 @@ pub struct Assessment {
     pub health: BTreeMap<String, HealthView>,
     pub probes: BTreeMap<String, ProbeSummary>,
     pub fallback: Option<FallbackPlan>,
+    /// How the browser engine would read each source (strategy, requests, bytes). Present for every plan.
+    pub browser_access: Vec<BrowserAccess>,
     /// Policy decisions that overrode the lowest score, in words.
     pub policy: Vec<String>,
     pub browser_warm: Option<bool>,
@@ -328,6 +398,7 @@ struct PlanFacts<'a> {
     est: &'a RowEstimate,
     input_bytes: u64,
     covering_total: u64,
+    access: &'a [BrowserAccess],
     result_bytes: u64,
     has_bbox_filter: bool,
     source_keys: &'a [String],
@@ -429,6 +500,7 @@ impl Planner {
                 if est.notes.is_empty() { String::new() } else { format!("; {}", est.notes.join("; ")) }
             ),
         ));
+        let access = browser_access(plan, &scans, &est, &cfg.cost);
         let source_keys: Vec<String> = scans.iter().map(|s| source_key(&s.uri)).collect();
         let read_classes: Vec<ReadClass> = scans.iter().map(|s| s.read_class).collect();
         let facts = PlanFacts {
@@ -437,6 +509,7 @@ impl Planner {
             est: &est,
             input_bytes,
             covering_total,
+            access: &access,
             result_bytes,
             has_bbox_filter: plan.required_ops().contains(&OpKind::BboxFilter),
             source_keys: &source_keys,
@@ -655,6 +728,7 @@ impl Planner {
             health,
             probes,
             fallback,
+            browser_access: access.clone(),
             policy,
             browser_warm: inputs.browser_warm,
         };
@@ -681,7 +755,7 @@ impl Planner {
         let caps = &e.caps;
         let browser = caps.kind == EngineKind::Browser;
         let (plan, scans, est, inputs) = (f.plan, f.scans, f.est, f.inputs);
-        let (input_bytes, covering_total, result_bytes) = (f.input_bytes, f.covering_total, f.result_bytes);
+        let (input_bytes, result_bytes) = (f.input_bytes, f.result_bytes);
         let result_rows = est.rows;
         let mut why_not: Vec<String> = Vec::new();
         let mut why: Vec<String> = Vec::new();
@@ -702,7 +776,7 @@ impl Planner {
         // memory: engine limit; for the browser either the operator override or the risk model.
         // A browser engine reads the covering columns of the whole file (no struct-stat pruning) on top
         // of the kept data: both count against its memory.
-        let engine_input = if browser { input_bytes + covering_total } else { input_bytes };
+        let engine_input = if browser { f.access.iter().map(|a| a.fetch_bytes_est).sum::<u64>() } else { input_bytes };
         let mut input_limit = caps.limits.max_input_bytes;
         let mut rows_limit = caps.limits.max_result_rows;
         if browser {
@@ -716,7 +790,7 @@ impl Planner {
                 why_not.push(format!(
                     "estimated input {:.1} MB{} exceeds the engine limit {:.1} MB (memory guard)",
                     mb(engine_input),
-                    if browser { " (kept data + covering columns of the whole file)" } else { "" },
+                    if browser { " (bytes the browser would pull into the tab)" } else { "" },
                     mb(l)
                 ));
             } else {
@@ -765,6 +839,9 @@ impl Planner {
                         Some(true) => {}
                         None => format_risk = 0.3,
                     }
+                }
+                if f.access.iter().any(|a| a.strategy == AccessStrategy::Range) && p.check(probe_checks::HTTP_RANGE).is_some_and(|c| !c.ok) {
+                    why_not.push("runtime probe: HTTP range requests do not work in this runtime (needed for files above the whole-file download limit)".into());
                 }
                 if f.has_bbox_filter && p.check(probe_checks::COVERING).is_some_and(|c| !c.ok) {
                     why_not.push("runtime probe: covering-column bbox filtering failed in this runtime".into());
@@ -855,21 +932,39 @@ impl Planner {
                     }
                 }
                 EngineKind::Browser => {
-                    let rg_total: usize = scans.iter().map(|s| s.prune.total_row_groups).sum();
-                    let rg_kept: usize = scans.iter().map(|s| s.prune.kept.len()).sum();
-                    let requests = 2.0 + rg_total as f64 + 2.0 * rg_kept as f64;
-                    let turns = (requests / c.range_request_parallelism.max(1.0)).ceil();
-                    let latency = net.turn_ms() * (1.0 + turns);
                     let cold = if inputs.browser_warm == Some(false) { c.browser_cold_start_ms } else { 0.0 };
+                    let full: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Full).collect();
+                    let range: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Range).collect();
+                    let requests: f64 = f.access.iter().map(|a| a.requests_est).sum();
+                    let fetched: u64 = f.access.iter().map(|a| a.fetch_bytes_est).sum();
+                    // network: the plan request, then the file requests strictly one after another (DuckDB-Wasm issues
+                    // them synchronously; measured), then the bytes
+                    let latency = net.turn_ms() * (1.0 + requests);
+                    let mut scan_ms = 0.0;
+                    let mut fixed = c.browser_fixed_ms;
+                    if !full.is_empty() {
+                        // whole-file mode: the original fit (it was measured while DuckDB-Wasm downloaded whole files)
+                        let cov: u64 = scans.iter().filter(|s| full.iter().any(|a| a.uri == s.uri)).map(|s| s.covering_bytes_total).sum();
+                        let kept: u64 = scans.iter().filter(|s| full.iter().any(|a| a.uri == s.uri)).map(|s| s.prune.kept_bytes).sum();
+                        scan_ms += mb(cov) * c.browser_ms_per_covering_mb + mb(kept) * c.browser_ms_per_input_mb;
+                    }
+                    let mut row_us = c.browser_us_per_result_row;
+                    if !range.is_empty() {
+                        fixed = c.browser_range_fixed_ms;
+                        let rq: f64 = range.iter().map(|a| a.requests_est).sum();
+                        let rb: u64 = range.iter().map(|a| a.fetch_bytes_est).sum();
+                        scan_ms += c.browser_range_ms_per_request * rq + c.browser_range_ms_per_mb * mb(rb);
+                        row_us = c.browser_range_us_per_row;
+                    }
                     CostBreakdown {
-                        fixed_ms: c.browser_fixed_ms + cold,
-                        scan_ms: mb(covering_total) * c.browser_ms_per_covering_mb + mb(input_bytes) * c.browser_ms_per_input_mb,
-                        result_ms: result_rows as f64 * c.browser_us_per_result_row / 1000.0,
-                        transfer_ms: latency + net.download_ms(input_bytes + covering_total),
+                        fixed_ms: fixed + cold,
+                        scan_ms,
+                        result_ms: result_rows as f64 * row_us / 1000.0,
+                        transfer_ms: latency + net.download_ms(fetched),
                         latency_ms: latency,
                         cold_start_ms: cold,
-                        scan_bytes: input_bytes + covering_total,
-                        transfer_bytes: input_bytes + covering_total,
+                        scan_bytes: fetched,
+                        transfer_bytes: fetched,
                     }
                 }
             }

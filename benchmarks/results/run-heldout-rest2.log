@@ -1,0 +1,100 @@
+=== FAST_LAN: heldout-FAST_LAN.json
+
+Running 1 test using 1 worker
+
+ho028 FAST_LAN uniform_30mb_shuffled features f=0.5 warm: planner=duckdb server=104 browser=267
+ho039 FAST_LAN uniform_30mb_shuffled count_by f=0.1 warm: planner=duckdb server=106 browser=196
+ho029 FAST_LAN uniform_10mb_spatial count_by f=0.5 warm: planner=duckdb server=91 browser=120
+ho040 FAST_LAN uniform_10mb_spatial features f=0.5 cold: planner=duckdb server=145 browser=872
+ho030 FAST_LAN uniform_10mb_shuffled features f=0.1 warm: planner=duckdb server=132 browser=257
+ho041 FAST_LAN uniform_10mb_shuffled features f=0.0005 warm: planner=duckdb server=104 browser=92
+ho031 FAST_LAN clustered_10mb_shuffled count_by f=0.5 warm: planner=duckdb server=136 browser=94
+ho032 FAST_LAN uniform_100mb_spatial features f=0.02 warm: planner=duckdb server=234 browser=916
+ho033 FAST_LAN uniform_100mb_shuffled count_by f=0.1 warm: planner=duckdb server=183 browser=776
+ho034 FAST_LAN clustered_100mb_shuffled count_by f=0.5 warm: planner=duckdb server=183 browser=750
+ho035 FAST_LAN clustered_30mb_spatial features f=0.1 warm: planner=duckdb server=153 browser=330
+ho036 FAST_LAN clustered_30mb_spatial count_by f=0.02 warm: planner=duckdb server=91 browser=220
+ho037 FAST_LAN clustered_30mb_shuffled count_by f=0.02 warm: planner=duckdb server=105 browser=192
+ho038 FAST_LAN uniform_30mb_spatial count f=0.02 warm: planner=duckdb server=91 browser=123
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (34.8s)
+
+  1 passed (35.4s)
+=== GOOD_BROADBAND: heldout-GOOD_BROADBAND.json
+
+Running 1 test using 1 worker
+
+ho042 GOOD_BROADBAND clustered_10mb_shuffled features f=0.0005 cold: planner=duckdb server=122 browser=699
+ho053 GOOD_BROADBAND clustered_10mb_shuffled count f=0.5 warm: planner=duckdb server=121 browser=166
+ho043 GOOD_BROADBAND uniform_100mb_spatial count_by f=0.5 warm: planner=duckdb server=136 browser=392
+ho054 GOOD_BROADBAND uniform_100mb_spatial features f=0.0005 warm: planner=duckdb server=126 browser=407
+ho044 GOOD_BROADBAND uniform_100mb_shuffled count_by f=0.1 warm: planner=duckdb server=137 browser=488
+ho055 GOOD_BROADBAND uniform_100mb_shuffled features f=0.0005 warm: planner=duckdb server=384 browser=661
+ho045 GOOD_BROADBAND clustered_100mb_shuffled features f=0.5 warm: planner=duckdb server=179 browser=578
+ho056 GOOD_BROADBAND clustered_100mb_shuffled features f=0.0005 warm: planner=duckdb server=137 browser=482
+ho046 GOOD_BROADBAND uniform_1gb_spatial features f=0.1 cold: planner=duckdb server=686 browser=engine input 632 MB > 220 MB (tab crash threshold)
+ho057 GOOD_BROADBAND uniform_1gb_spatial count f=0.5 warm: planner=duckdb server=324 browser=engine input 1191 MB > 220 MB (tab crash threshold)
+ho047 GOOD_BROADBAND clustered_30mb_spatial count f=0.02 cold: planner=duckdb server=105 browser=693
+ho058 GOOD_BROADBAND clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=186 browser=391
+ho048 GOOD_BROADBAND clustered_30mb_shuffled count_by f=0.0005 warm: planner=duckdb server=107 browser=174
+ho059 GOOD_BROADBAND clustered_30mb_shuffled features f=0.5 warm: planner=duckdb server=174 browser=402
+ho049 GOOD_BROADBAND uniform_30mb_spatial count f=0.0005 warm: planner=duckdb server=105 browser=171
+ho060 GOOD_BROADBAND uniform_30mb_spatial count_by f=0.5 warm: planner=duckdb server=124 browser=249
+ho050 GOOD_BROADBAND uniform_30mb_shuffled features f=0.5 warm: planner=duckdb server=661 browser=2187
+ho061 GOOD_BROADBAND uniform_30mb_shuffled features f=0.1 cold: planner=duckdb server=686 browser=2582
+ho051 GOOD_BROADBAND uniform_10mb_spatial features f=0.02 warm: planner=duckdb server=118 browser=200
+ho052 GOOD_BROADBAND uniform_10mb_shuffled features f=0.1 cold: planner=duckdb server=183 browser=886
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (1.3m)
+
+  1 passed (1.3m)
+=== MOBILE: heldout-MOBILE.json
+
+Running 1 test using 1 worker
+
+ho062 MOBILE clustered_100mb_shuffled features f=0.0005 warm: planner=duckdb server=229 browser=582
+ho073 MOBILE clustered_100mb_shuffled features f=0.02 cold: planner=duckdb server=313 browser=1372
+ho063 MOBILE clustered_30mb_spatial count f=0.02 warm: planner=duckdb server=165 browser=278
+ho064 MOBILE clustered_30mb_spatial features f=0.5 warm: planner=duckdb server=391 browser=465
+ho075 MOBILE clustered_30mb_spatial count_by f=0.02 warm: planner=duckdb server=168 browser=255
+ho065 MOBILE clustered_30mb_shuffled features f=0.5 warm: planner=duckdb server=236 browser=364
+ho076 MOBILE clustered_30mb_shuffled features f=0.0005 warm: planner=duckdb server=162 browser=342
+ho066 MOBILE uniform_30mb_spatial features f=0.5 warm: planner=duckdb server=225 browser=360
+ho077 MOBILE uniform_30mb_spatial features f=0.02 cold: planner=duckdb server=291 browser=952
+ho067 MOBILE uniform_30mb_shuffled features f=0.02 warm: planner=duckdb server=1046 browser=1060
+ho078 MOBILE uniform_30mb_shuffled features f=0.5 warm: planner=duckdb server=389 browser=434
+ho068 MOBILE uniform_10mb_spatial count f=0.1 warm: planner=duckdb server=165 browser=254
+ho079 MOBILE uniform_10mb_spatial count f=0.0005 warm: planner=duckdb server=170 browser=290
+ho069 MOBILE uniform_10mb_shuffled features f=0.5 warm: planner=duckdb server=386 browser=425
+ho080 MOBILE uniform_10mb_shuffled count f=0.1 cold: planner=duckdb server=166 browser=768
+ho070 MOBILE clustered_10mb_shuffled features f=0.02 cold: planner=duckdb server=225 browser=850
+ho081 MOBILE clustered_10mb_shuffled count_by f=0.5 warm: planner=duckdb server=177 browser=257
+ho071 MOBILE uniform_100mb_spatial count_by f=0.5 warm: planner=duckdb server=183 browser=518
+ho072 MOBILE uniform_100mb_shuffled count f=0.02 cold: planner=duckdb server=189 browser=1424
+ho074 MOBILE uniform_1gb_spatial count_by f=0.0005 cold: planner=duckdb server=184 browser=engine input 474 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (1.4m)
+
+  1 passed (1.4m)
+=== HIGH_LATENCY: heldout-HIGH_LATENCY.json
+
+Running 1 test using 1 worker
+
+ho082 HIGH_LATENCY clustered_30mb_shuffled count_by f=0.1 warm: planner=duckdb server=278 browser=461
+ho093 HIGH_LATENCY clustered_30mb_shuffled features f=0.5 warm: planner=duckdb server=586 browser=936
+ho083 HIGH_LATENCY uniform_30mb_spatial features f=0.0005 warm: planner=duckdb server=263 browser=469
+ho094 HIGH_LATENCY uniform_30mb_spatial count_by f=0.0005 warm: planner=duckdb server=263 browser=462
+ho084 HIGH_LATENCY uniform_30mb_shuffled count_by f=0.1 warm: planner=duckdb server=263 browser=446
+ho095 HIGH_LATENCY uniform_30mb_shuffled features f=0.0005 warm: planner=duckdb server=316 browser=600
+ho085 HIGH_LATENCY uniform_10mb_spatial count_by f=0.0005 warm: planner=duckdb server=249 browser=376
+ho096 HIGH_LATENCY uniform_10mb_spatial count_by f=0.02 warm: planner=duckdb server=256 browser=386
+ho086 HIGH_LATENCY uniform_10mb_shuffled count f=0.02 warm: planner=duckdb server=275 browser=417
+ho097 HIGH_LATENCY uniform_10mb_shuffled count f=0.5 warm: planner=duckdb server=260 browser=421
+ho087 HIGH_LATENCY clustered_10mb_shuffled features f=0.0005 warm: planner=duckdb server=252 browser=408
+ho098 HIGH_LATENCY clustered_10mb_shuffled features f=0.02 cold: planner=duckdb server=332 browser=1031
+ho088 HIGH_LATENCY uniform_100mb_spatial features f=0.5 warm: planner=duckdb server=597 browser=877
+ho099 HIGH_LATENCY uniform_100mb_spatial count_by f=0.1 warm: planner=duckdb server=272 browser=647
+ho089 HIGH_LATENCY uniform_100mb_shuffled features f=0.1 warm: planner=duckdb server=3185 browser=2482
+ho090 HIGH_LATENCY clustered_100mb_shuffled count_by f=0.02 warm: planner=duckdb server=274 browser=650
+ho091 HIGH_LATENCY clustered_30mb_spatial count f=0.0005 warm: planner=duckdb server=245 browser=426
+ho092 HIGH_LATENCY clustered_30mb_spatial features f=0.5 warm: planner=duckdb server=557 browser=625
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (1.9m)
+
+  1 passed (1.9m)

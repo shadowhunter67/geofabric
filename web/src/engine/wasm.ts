@@ -69,6 +69,8 @@ export class DuckDbWasmEngine implements ExecutionEngine {
         const worker = new Worker(bundle.mainWorker!);
         const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING), worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        // Range requests only: without this DuckDB-Wasm downloads the WHOLE file on first use (measured, ADR-009)
+        await db.open({ filesystem: { reliableHeadRequests: true, allowFullHTTPReads: false, forceFullHTTPReads: false } });
         this.db = db;
         return db;
       })();
@@ -81,6 +83,7 @@ export class DuckDbWasmEngine implements ExecutionEngine {
    * (`gf_src_N.parquet`), so a runtime probe running next to a user query would overwrite the other's files.
    */
   private queue: Promise<unknown> = Promise.resolve();
+  private seq = 0;
 
   execute(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
     const run = this.queue.then(() => this.executeNow(plan, ctx));
@@ -90,18 +93,34 @@ export class DuckDbWasmEngine implements ExecutionEngine {
 
   private async executeNow(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
     const t0 = performance.now();
-    const { sql, files } = compile(plan, ctx.sources, ctx.maxRows); // throws "unsupported"/"invalid" before any I/O
+    const compiled = compile(plan, ctx.sources, ctx.maxRows); // throws "unsupported"/"invalid" before any I/O
+    // DuckDB caches Parquet metadata by file name: every execution registers its files under names never used before
+    // (reusing `gf_src_0.parquet` for another file produced "No magic bytes found at end of file")
+    const seq = ++this.seq;
+    const files = compiled.files.map((f) => ({ ...f, name: f.name.replace("gf_src_", `gf${seq}_src_`) }));
+    let sql = compiled.sql;
+    compiled.files.forEach((f, i) => { sql = sql.split(`'${f.name}'`).join(`'${files[i].name}'`); });
     const est = ctx.estimatedInputBytes ?? 0;
     if (this.cumulativeInput > 0 && this.cumulativeInput + est > this.recycleBudget) await this.recycle();
     this.cumulativeInput += est;
     const db = await this.instance();
+    const buffered: string[] = [];
     for (const f of files) {
       try {
         await db.dropFile(f.name);
       } catch {
         /* not registered yet */
       }
-      db.registerFileURL(f.name, new URL(f.url, location.href).href, duckdb.DuckDBDataProtocol.HTTP, false);
+      const url = new URL(f.url, location.href).href;
+      if (f.access === "full") {
+        // small file: one request for all of it (dozens of sequential range requests are slower than one download)
+        const r = await fetch(url);
+        if (!r.ok) throw new EngineError("engine", `fetching ${f.uri} failed: HTTP ${r.status}`);
+        await db.registerFileBuffer(f.name, new Uint8Array(await r.arrayBuffer()));
+        buffered.push(f.name);
+      } else {
+        db.registerFileURL(f.name, url, duckdb.DuckDBDataProtocol.HTTP, true);
+      }
     }
     const conn = await db.connect();
     let cancelled: "timeout" | "cancelled" | null = null;
@@ -144,6 +163,9 @@ export class DuckDbWasmEngine implements ExecutionEngine {
       clearTimeout(timer);
       ctx.signal?.removeEventListener("abort", onAbort);
       await conn.close();
+      for (const n of [...buffered, ...files.map((f) => f.name)]) {
+        try { await db.dropFile(n); } catch { /* ignore */ }
+      }
     }
   }
 }

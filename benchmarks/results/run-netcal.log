@@ -1,0 +1,80 @@
+=== LOCAL: netcal-LOCAL.json
+
+Running 1 test using 1 worker
+
+nc000 LOCAL clustered_10mb_spatial count_by f=0.002 warm: planner=duckdb-wasm server=168 browser=76
+nc001 LOCAL clustered_10mb_spatial features f=0.002 warm: planner=duckdb-wasm server=135 browser=105
+nc002 LOCAL clustered_10mb_spatial count_by f=0.05 warm: planner=duckdb-wasm server=175 browser=132
+nc003 LOCAL clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=190 browser=428
+nc004 LOCAL clustered_100mb_spatial count_by f=0.002 warm: planner=duckdb server=150 browser=703
+nc005 LOCAL clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=145 browser=758
+nc006 LOCAL clustered_100mb_spatial count_by f=0.05 warm: planner=duckdb server=152 browser=706
+nc007 LOCAL clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=197 browser=1007
+nc008 LOCAL overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=236 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc009 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=364 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc010 LOCAL overture_buildings_vn_south count_by f=0.05 warm: planner=duckdb server=201 browser=engine input 648 MB > 220 MB (tab crash threshold)
+nc011 LOCAL overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=205 browser=engine input 648 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (28.0s)
+
+  1 passed (28.6s)
+=== GOOD_BROADBAND: netcal-GOOD_BROADBAND.json
+
+Running 1 test using 1 worker
+
+nc012 GOOD_BROADBAND clustered_10mb_spatial count_by f=0.002 warm: planner=duckdb server=167 browser=569
+nc013 GOOD_BROADBAND clustered_10mb_spatial features f=0.002 warm: planner=duckdb server=160 browser=549
+nc014 GOOD_BROADBAND clustered_10mb_spatial count_by f=0.05 warm: planner=duckdb server=151 browser=567
+nc015 GOOD_BROADBAND clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=233 browser=856
+nc016 GOOD_BROADBAND clustered_100mb_spatial count_by f=0.002 warm: planner=duckdb server=161 browser=4681
+nc017 GOOD_BROADBAND clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=192 browser=4573
+nc018 GOOD_BROADBAND clustered_100mb_spatial count_by f=0.05 warm: planner=duckdb server=178 browser=4654
+nc019 GOOD_BROADBAND clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=256 browser=4783
+nc020 GOOD_BROADBAND overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=247 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc021 GOOD_BROADBAND overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=461 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc022 GOOD_BROADBAND overture_buildings_vn_south count_by f=0.05 warm: planner=duckdb server=339 browser=engine input 648 MB > 220 MB (tab crash threshold)
+nc023 GOOD_BROADBAND overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=431 browser=engine input 648 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (1.4m)
+
+  1 passed (1.4m)
+=== MOBILE: netcal-MOBILE.json
+
+Running 1 test using 1 worker
+
+nc024 MOBILE clustered_10mb_spatial count_by f=0.002 warm: planner=duckdb server=242 browser=2885
+nc025 MOBILE clustered_10mb_spatial features f=0.002 warm: planner=duckdb server=230 browser=2886
+nc026 MOBILE clustered_10mb_spatial count_by f=0.05 warm: planner=duckdb server=227 browser=2915
+nc027 MOBILE clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=455 browser=3264
+nc028 MOBILE clustered_100mb_spatial count_by f=0.002 warm: planner=duckdb server=228 browser=27062
+nc029 MOBILE clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=239 browser=27017
+nc030 MOBILE clustered_100mb_spatial count_by f=0.05 warm: planner=duckdb server=228 browser=26965
+nc031 MOBILE clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=502 browser=27211
+nc032 MOBILE overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=325 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc033 MOBILE overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=871 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc034 MOBILE overture_buildings_vn_south count_by f=0.05 warm: planner=duckdb server=395 browser=engine input 648 MB > 220 MB (tab crash threshold)
+nc035 MOBILE overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=847 browser=engine input 648 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (6.6m)
+
+  Slow test file: e2e\heldout.spec.ts (6.6m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (6.6m)
+=== HIGH_LATENCY: netcal-HIGH_LATENCY.json
+
+Running 1 test using 1 worker
+
+nc036 HIGH_LATENCY clustered_10mb_spatial count_by f=0.002 warm: planner=duckdb server=300 browser=4371
+nc037 HIGH_LATENCY clustered_10mb_spatial features f=0.002 warm: planner=duckdb server=296 browser=4357
+nc038 HIGH_LATENCY clustered_10mb_spatial count_by f=0.05 warm: planner=duckdb server=299 browser=4348
+nc039 HIGH_LATENCY clustered_10mb_spatial features f=0.05 warm: planner=duckdb server=625 browser=4705
+nc040 HIGH_LATENCY clustered_100mb_spatial count_by f=0.002 warm: planner=duckdb server=319 browser=Error: page.evaluate: Error: browser engine failed (timeout: browser query interrupted after 30000 ms)
+    at Object.aK [as resolvePlacement] (http://127.0.0.1:8810/assets/index-B2__xwyw.js:819:3903)
+    at async <anonymous>:396:30
+nc041 HIGH_LATENCY clustered_100mb_spatial features f=0.002 warm: planner=duckdb server=318 browser=239
+nc042 HIGH_LATENCY clustered_100mb_spatial count_by f=0.05 warm: planner=duckdb server=311 browser=242
+nc043 HIGH_LATENCY clustered_100mb_spatial features f=0.05 warm: planner=duckdb server=668 browser=557
+nc044 HIGH_LATENCY overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=389 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc045 HIGH_LATENCY overture_buildings_vn_south features f=0.002 warm: planner=duckdb server=1169 browser=engine input 240 MB > 220 MB (tab crash threshold)
+nc046 HIGH_LATENCY overture_buildings_vn_south count_by f=0.05 warm: planner=duckdb server=473 browser=engine input 648 MB > 220 MB (tab crash threshold)
+nc047 HIGH_LATENCY overture_buildings_vn_south features f=0.05 warm: planner=duckdb server=1169 browser=engine input 648 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (2.4m)
+
+  1 passed (2.4m)

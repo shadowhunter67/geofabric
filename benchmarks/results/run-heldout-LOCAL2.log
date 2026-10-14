@@ -1,0 +1,35 @@
+=== LOCAL: heldout-LOCAL.json
+
+Running 1 test using 1 worker
+
+ho000 LOCAL clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=156 browser=543
+ho010 LOCAL clustered_30mb_spatial features f=0.1 warm: planner=duckdb server=121 browser=261
+ho011 LOCAL clustered_30mb_spatial features f=0.5 cold: planner=duckdb server=116 browser=864
+ho022 LOCAL clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=118 browser=282
+ho001 LOCAL clustered_30mb_shuffled count f=0.1 warm: planner=duckdb server=96 browser=177
+ho012 LOCAL clustered_30mb_shuffled count_by f=0.02 warm: planner=duckdb server=97 browser=181
+ho023 LOCAL clustered_30mb_shuffled count_by f=0.02 cold: planner=duckdb server=102 browser=701
+ho002 LOCAL uniform_30mb_spatial features f=0.1 warm: planner=duckdb server=385 browser=1955
+ho013 LOCAL uniform_30mb_spatial features f=0.1 cold: planner=duckdb server=724 browser=4540
+ho024 LOCAL uniform_30mb_spatial count f=0.02 warm: planner=duckdb server=136 browser=290
+ho003 LOCAL uniform_30mb_shuffled count_by f=0.5 warm: planner=duckdb server=159 browser=264
+ho014 LOCAL uniform_30mb_shuffled count_by f=0.0005 warm: planner=duckdb server=193 browser=387
+ho025 LOCAL uniform_30mb_shuffled features f=0.1 warm: planner=duckdb server=843 browser=3981
+ho004 LOCAL uniform_10mb_spatial count_by f=0.5 warm: planner=duckdb-wasm server=157 browser=134
+ho015 LOCAL uniform_10mb_spatial features f=0.0005 warm: planner=duckdb-wasm server=151 browser=128
+ho026 LOCAL uniform_10mb_spatial features f=0.02 cold: planner=duckdb server=215 browser=1787
+ho005 LOCAL uniform_10mb_shuffled count f=0.5 warm: planner=duckdb-wasm server=159 browser=148
+ho016 LOCAL uniform_10mb_shuffled features f=0.1 warm: planner=duckdb server=196 browser=446
+ho027 LOCAL uniform_10mb_shuffled count_by f=0.5 warm: planner=duckdb-wasm server=146 browser=190
+ho006 LOCAL clustered_10mb_shuffled count f=0.5 warm: planner=duckdb-wasm server=92 browser=119
+ho017 LOCAL clustered_10mb_shuffled features f=0.5 warm: planner=duckdb server=133 browser=269
+ho007 LOCAL uniform_100mb_spatial count_by f=0.5 warm: planner=duckdb server=105 browser=565
+ho018 LOCAL uniform_100mb_spatial count_by f=0.0005 cold: planner=duckdb server=104 browser=721
+ho008 LOCAL uniform_100mb_shuffled count_by f=0.1 cold: planner=duckdb server=105 browser=982
+ho019 LOCAL uniform_100mb_shuffled features f=0.5 warm: planner=duckdb server=101 browser=455
+ho009 LOCAL clustered_100mb_shuffled features f=0.0005 warm: planner=duckdb server=123 browser=433
+ho020 LOCAL clustered_100mb_shuffled count_by f=0.02 warm: planner=duckdb server=168 browser=456
+ho021 LOCAL uniform_1gb_spatial count_by f=0.1 cold: planner=duckdb server=152 browser=engine input 632 MB > 220 MB (tab crash threshold)
+  ok 1 e2e\heldout.spec.ts:25:1 › held-out: planner decision vs measured server/browser time (1.9m)
+
+  1 passed (1.9m)

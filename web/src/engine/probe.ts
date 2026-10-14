@@ -71,11 +71,12 @@ export async function runProbe(engine: DuckDbWasmEngine, session: string): Promi
   const dm = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? null;
   const heap = (performance as PerfWithMemory).memory?.jsHeapSizeLimit;
   let runtimeVersion = "unknown";
-  const uri = (cls: keyof typeof FIXTURES) => `probe:${cls}`;
+  const uri = (cls: keyof typeof FIXTURES | "plain_wkb_range") => `probe:${cls}`;
   const ctx = (): ExecutionContext => ({
     sources: {
-      [uri("plain_wkb")]: { url: FIXTURES.plain_wkb, covering: COVERING },
-      [uri("duckdb_typed")]: { url: FIXTURES.duckdb_typed, covering: COVERING },
+      [uri("plain_wkb")]: { url: FIXTURES.plain_wkb, covering: COVERING, access: "full" },
+      [uri("duckdb_typed")]: { url: FIXTURES.duckdb_typed, covering: COVERING, access: "full" },
+      [uri("plain_wkb_range")]: { url: FIXTURES.plain_wkb, covering: COVERING, access: "range" },
     },
     timeoutMs: STEP_TIMEOUT_MS - 2_000,
     maxRows: 1000,
@@ -126,13 +127,13 @@ export async function runProbe(engine: DuckDbWasmEngine, session: string): Promi
       }
     });
     await run("extension_load", false, async () => {
+      // information only: which extensions this build ships (parquet is built in and loads on first use)
       const conn = await d.connect();
       try {
-        const t = await conn.query("SELECT extension_name AS e, loaded AS l FROM duckdb_extensions() WHERE extension_name IN ('parquet', 'spatial')");
+        const t = await conn.query("SELECT extension_name AS e, installed AS i FROM duckdb_extensions() WHERE extension_name IN ('parquet', 'spatial')");
         const rows: string[] = [];
-        for (let i = 0; i < t.numRows; i++) rows.push(`${t.get(i)?.e}=${t.get(i)?.l ? "loaded" : "not loaded"}`);
-        if (!rows.some((r) => r === "parquet=loaded")) throw new Error(`parquet extension not loaded (${rows.join(", ")})`);
-        return rows.join(", ");
+        for (let i = 0; i < t.numRows; i++) rows.push(`${t.get(i)?.e}=${t.get(i)?.i ? "built in" : "absent"}`);
+        return rows.join(", ") || "no extension list";
       } finally {
         await conn.close();
       }
@@ -141,6 +142,12 @@ export async function runProbe(engine: DuckDbWasmEngine, session: string): Promi
       const rows = await scalar(chain(uri("plain_wkb"), count));
       if (rows !== 64) throw new Error(`expected 64 rows, read ${rows}`);
       return "compiled plan read 64 rows over HTTP range requests";
+    });
+    await run("http_range", false, async () => {
+      // the large-file path: HTTP range requests (HEAD + ranged GETs) must reach the gateway and return the right bytes
+      const rows = await scalar(chain(uri("plain_wkb_range"), bbox, count));
+      if (rows !== 64) throw new Error(`range-mode read returned ${rows} of 64 rows`);
+      return "range-request reads work";
     });
     await run("geometry_wkb", true, async () => `decoded ${await geometryOf("plain_wkb")} from streamed WKB bytes`);
     await run("covering", true, async () => {

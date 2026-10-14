@@ -41,6 +41,8 @@ pub mod checks {
     pub const PARQUET: &str = "parquet";
     pub const GEOMETRY_WKB: &str = "geometry_wkb";
     pub const COVERING: &str = "covering";
+    /// HTTP range requests reach the file endpoint and return the right bytes (needed for large files).
+    pub const HTTP_RANGE: &str = "http_range";
     /// Prefix; one check per [`geo_source_geoparquet::ReadClass`]: `read_class:plain_wkb`, `read_class:duckdb_typed`.
     pub const READ_CLASS: &str = "read_class:";
 }

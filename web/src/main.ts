@@ -42,6 +42,7 @@ interface Assessment {
   health: Record<string, Health>;
   probes: Record<string, { status: string; usable: boolean; age_ms: number | null; failed_checks: string[]; memory_class: string | null; engine_version: string | null; runtime_version: string | null }>;
   fallback: { engine: string; reason: string; max_fallbacks: number } | null; policy: string[];
+  browser_access: { uri: string; strategy: "full" | "range"; file_bytes: number; requests_est: number; fetch_bytes_est: number }[];
 }
 interface Physical {
   engine: string; placement?: "server" | "browser"; decisions: Decision[]; steps: { label: string; detail: string }[];
@@ -262,7 +263,7 @@ function bindSources(r: RunResp): Record<string, SourceBinding> {
   const out: Record<string, SourceBinding> = {};
   for (const [uri, url] of Object.entries(r.source_urls ?? {})) {
     const scan = r.physical.scans.find((x) => x.uri === uri);
-    out[uri] = { url, covering: scan?.covering ?? null };
+    out[uri] = { url, covering: scan?.covering ?? null, access: r.physical.assessment?.browser_access?.find((a) => a.uri === uri)?.strategy ?? "range" };
   }
   return out;
 }
