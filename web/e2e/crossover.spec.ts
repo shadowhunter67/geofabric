@@ -55,8 +55,8 @@ const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length
 test("server vs browser: time, planner prediction and result agreement", async ({ context }) => {
   let page = await context.newPage();
   const open = async () => {
-    await page.goto("/?e2e=1");
-    await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 60_000 });
+    await page.goto("/?e2e=1&mode=developer&lang=en");
+    await expect(page.getByTestId("status")).toContainText("results", { timeout: 120_000 });
   };
   await open();
   const rows: Record<string, unknown>[] = [];
