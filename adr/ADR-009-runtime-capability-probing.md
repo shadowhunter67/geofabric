@@ -1,6 +1,6 @@
 # ADR-009 — Runtime capability probing (static capabilities ≠ what the runtime does)
 
-Status: Proposed (2026-10-14)
+Status: Accepted (2026-10-15), scoped to the measured Chromium family (Chrome 155 and Edge 155, one Windows machine). Firefox and Safari are treated as Unknown by policy until probed. Not a claim about other devices.
 
 **Decision.** The planner keeps three layers apart: (1) *static capabilities* — what an engine is designed for (`EngineDescriptor::capabilities`); (2) a *runtime probe* — what this runtime instance demonstrably does right now; (3) *observed health* — how real queries have been going (ADR-010). The browser engine probes itself (`web/src/engine/probe.ts`) after the page loads and reports a `ProbeReport` to the gateway (`POST /api/probe`). The probe runs the engine's **real execution path** — the PlanGraph→SQL compiler and the streaming result reader — on two tiny fixture files (`web/public/probe/`, one per GeoParquet writer class) and one tiny plan per operation kind, so a defect anywhere on that path shows up in the probe instead of in a user's query.
 
@@ -17,3 +17,13 @@ Checks: `worker`, `init` (instantiate DuckDB-Wasm, `SELECT version()`), `arrow`,
 **Evidence.** 20 planner unit tests, 12 hardening tests on real footers (probe failure, class unreadable, stale probe, unhealthy engine, known incompatibility, network profiles, cold start, risk by memory class), 12 gateway tests (probe validation, reports, state, simulated network), 7 browser tests (real Chrome: probe passes, pre-rejection, UI fields, bounded fallback), TS unit tests, and the measurement campaign in `REPORT-GEOFABRIC-PLANNER-HARDENING.md` (all browser runs digest-equal to the server).
 
 **Limits.** The probe tests *this* tab's engine on tiny files; it cannot prove a 1 GB file fits in memory — the memory model (ADR-010, risk score) is an estimate whose single anchor is "the old whole-file downloads of 1 GB+ crashed the tab; ≤ 100 MB did not". Memory class scaling below 8 GB devices is an assumption. A probe is a snapshot: tab memory pressure after the probe is not seen until a run fails (health, ADR-010). Status stays Proposed until a second browser/device has been probed.
+
+## Round II addendum (2026-10-15) — why Accepted, and what the scope is
+
+- **Range access measured.** The browser engine reads large files by HTTP range requests (`db.open` filesystem options above), strictly sequential. Fixed cost per request, per MB and per row were refitted *without* the gateway network simulation (the simulation added 10–15 ms per request on Windows, which had inflated the earlier constants).
+- **Safety envelope measured on Chrome and Edge** (`benchmarks/results/envelope-{chrome,msedge}.json`): no tab crash up to about 976 MB fetched; heavy *results* are the slow part (100 000 rows: 10–34 s; JS heap about 430 MB on the Overture subset). Operating envelope for an 8 GB-class device: safe fetch 300 MB, unsafe fetch 1200 MB, safe result 150 MB, unsafe result 1000 MB. These are operating limits for the planner, not magic thresholds; above ~1 GB was not tested; scaling by `deviceMemory/8` below 8 GB is an assumption.
+- **Safety classes:** Safe / Risky / Unsafe / Unknown. *Unsafe* is never run automatically; *Unknown* (unprobed runtime, other browser families) is never chosen on cost alone; *Risky* needs at least a 30 % cost advantage.
+- **DeviceProfile** (memory class, JS heap limit, engine versions, probe timing) comes from the probe only. No fingerprinting: nothing is collected that the planner does not use.
+- **Held-out v5** (100 cases, five Chrome-throttled networks, probe active): 0 browser crashes, 0 digest mismatches in 40 checked, 0 unsafe choices, 2 cases skipped above the envelope.
+
+**Limits that remain.** The "second browser" is Edge 155 on the same machine: the same Chromium engine, not an independent engine or device. That is why the scope above is a *family on one machine*, and why nothing is claimed about Firefox, Safari, phones or low-memory devices.

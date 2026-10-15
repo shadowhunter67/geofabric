@@ -1,0 +1,3396 @@
+{
+ "network": "MOBILE",
+ "rows": [
+  {
+   "case": {
+    "id": "h3062",
+    "set": "heldout-v3",
+    "dataset": "clustered_30mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.05572,
+    "bbox": [
+     102.560611,
+     18.600323,
+     104.921127,
+     22.377149
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "clustered_30mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9214126252616522,
+    "engine_confidence": 0.9214126252616522,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 1,
+     "cardinality": 57,
+     "cardinality_high": 85,
+     "cardinality_low": 37,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 0.9636494463083249,
+      "samples": 6,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0286247891079128,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.4% of the rows (from column statistics)",
+      "spatially incoherent file (coherence 0.04): row-group boxes overlap, estimates are looser",
+      "correction 0.96 from 6 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 58.562428314826334,
+     "row_groups_kept": 39,
+     "row_groups_total": 39,
+     "rows": 1,
+     "selected_after_correction": 56.43365162005337,
+     "spatial_coherence": 0.03793041742651301
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 165.49041745967867,
+      "rejected_because": [],
+      "confidence": 0.9214126252616522,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 30320273,
+       "scan_ms": 5.75421745967865,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 8343.602269079336,
+      "rejected_because": [],
+      "confidence": 0.8522402944997378,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 30320273,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.024096388022104898,
+       "memory_input_bytes": 30320273,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3887,
+       "safety": "safe",
+       "score": 0.12169553235240216
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 0.096,
+       "scan_bytes": 30320273,
+       "scan_ms": 89.1001357460022,
+       "transfer_bytes": 30320273,
+       "transfer_ms": 8235.406133333334
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 30320273,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 30320273,
+      "fetch_bytes_upper": 30320273,
+      "file_bytes": 30320273,
+      "requests_est": 1,
+      "row_bytes": 77.74428974358975,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_30mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 14097120,
+    "kept_bytes": 30320273
+   },
+   "server": {
+    "ms": [
+     114.20000000298023,
+     105.29999999701977
+    ],
+    "median": 114.20000000298023,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     8530,
+     8551,
+     8554
+    ],
+    "rows": 1,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     30365515,
+     30365515,
+     30365515
+    ],
+    "median": 8554,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3074",
+    "set": "heldout-v3",
+    "dataset": "clustered_30mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.05808,
+    "bbox": [
+     105.692301,
+     20.143977,
+     108.102315,
+     24
+    ],
+    "kind": "count_by",
+    "limit": null,
+    "group_by": "category",
+    "filter": {
+     "column": "category",
+     "op": "ne",
+     "value": "other"
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "cold"
+   },
+   "dataset": "clustered_30mb_shuffled_s3",
+   "warm_at_plan": false,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.842717366871605,
+    "engine_confidence": 0.842717366871605,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 3,
+     "cardinality": 7525,
+     "cardinality_high": 11288,
+     "cardinality_low": 5016,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0024629074848848,
+      "samples": 18,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0286247891079128,
+     "group_basis": "statistics",
+     "high": 8,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 8,
+     "notes": [
+      "attribute filter keeps ~87.5% of the rows (from column statistics)",
+      "spatially incoherent file (coherence 0.04): row-group boxes overlap, estimates are looser",
+      "correction 1.00 from 18 runs of this class (interval ×/÷1.5)",
+      "group count ≤ 8 from statistics history"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 7506.230250145286,
+     "row_groups_kept": 39,
+     "row_groups_total": 39,
+     "rows": 8,
+     "selected_after_correction": 7524.717400811637,
+     "spatial_coherence": 0.03793041742651301
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 166.17501745967866,
+      "rejected_because": [],
+      "confidence": 0.842717366871605,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.1424,
+       "scan_bytes": 30320273,
+       "scan_ms": 5.75421745967865,
+       "transfer_bytes": 2400,
+       "transfer_ms": 77.2784
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 9744.274269079337,
+      "rejected_because": [],
+      "confidence": 0.7900885985059717,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 30320273,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.024096388022104898,
+       "memory_input_bytes": 30320273,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00008,
+       "result_upper_bytes": 31097,
+       "safety": "safe",
+       "score": 0.12175701427995678
+      },
+      "cost": {
+       "cold_start_ms": 1400,
+       "fixed_ms": 1419,
+       "latency_ms": 150,
+       "result_ms": 0.768,
+       "scan_bytes": 30320273,
+       "scan_ms": 89.1001357460022,
+       "transfer_bytes": 30320273,
+       "transfer_ms": 8235.406133333334
+      }
+     }
+    ],
+    "result_rows_estimate": 8,
+    "input_bytes": 30320273,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 30320273,
+      "fetch_bytes_upper": 30320273,
+      "file_bytes": 30320273,
+      "requests_est": 1,
+      "row_bytes": 77.74428974358975,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_30mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 14097120,
+    "kept_bytes": 30320273
+   },
+   "server": {
+    "ms": [
+     107.5,
+     96.3999999910593
+    ],
+    "median": 107.5,
+    "rows": 7
+   },
+   "browser": {
+    "ms": [
+     18912,
+     8557,
+     8569
+    ],
+    "rows": 7,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     30365515,
+     30365515,
+     30365515
+    ],
+    "cold_ms": 18912,
+    "median": 18912,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3063",
+    "set": "heldout-v3",
+    "dataset": "clustered_100mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.03213,
+    "bbox": [
+     107.243191,
+     8,
+     109.035654,
+     10.86794
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "cold"
+   },
+   "dataset": "clustered_100mb_spatial_s3",
+   "warm_at_plan": false,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9206244131989184,
+    "engine_confidence": 0.9206244131989184,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 2,
+     "cardinality": 8158,
+     "cardinality_high": 12237,
+     "cardinality_low": 5438,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.000688399648093,
+      "samples": 8,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 30.90676031076306,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=high|skew=peaked|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.4% of the rows (from column statistics)",
+      "skewed density across row groups (max/median 31x)",
+      "correction 1.00 from 8 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 8151.853197608414,
+     "row_groups_kept": 6,
+     "row_groups_total": 65,
+     "rows": 1,
+     "selected_after_correction": 8157.4649304809545,
+     "spatial_coherence": 0.9808385139423021
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 161.45546764488222,
+      "rejected_because": [],
+      "confidence": 0.9206244131989184,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 9059210,
+       "scan_ms": 1.7192676448822022,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 9508.106538417562,
+      "rejected_because": [],
+      "confidence": 0.8649035909097935,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 15793643,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.01255165974299113,
+       "memory_input_bytes": 12012764,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3786,
+       "safety": "safe",
+       "score": 0.11130538080375418
+      },
+      "cost": {
+       "cold_start_ms": 1400,
+       "fixed_ms": 1412,
+       "latency_ms": 4695,
+       "result_ms": 0.169,
+       "scan_bytes": 12012764,
+       "scan_ms": 197.5338050842285,
+       "transfer_bytes": 12012764,
+       "transfer_ms": 7898.403733333334
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 9059210,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 12012764,
+      "fetch_bytes_upper": 15793643,
+      "file_bytes": 98451829,
+      "requests_est": 61.599999999999994,
+      "row_bytes": 75.73217615384615,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_100mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 46165214,
+    "kept_bytes": 9059210
+   },
+   "server": {
+    "ms": [
+     97.20000000298023,
+     94.90000000596046
+    ],
+    "median": 97.20000000298023,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     15997,
+     5607,
+     5603
+    ],
+    "rows": 1,
+    "file_requests": [
+     24,
+     24,
+     24
+    ],
+    "file_bytes": [
+     11777005,
+     11777005,
+     11777005
+    ],
+    "cold_ms": 15997,
+    "median": 15997,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3075",
+    "set": "heldout-v3",
+    "dataset": "clustered_100mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.12057,
+    "bbox": [
+     106.527748,
+     14.905256,
+     110,
+     20.460859
+    ],
+    "kind": "features",
+    "limit": 300,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "clustered_100mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.917112043693917,
+    "engine_confidence": 0.917112043693917,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 3,
+     "cardinality": 28040,
+     "cardinality_high": 42060,
+     "cardinality_low": 18693,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.001362653977652,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 30.90676031076306,
+     "group_basis": null,
+     "high": 300,
+     "layout": "coh=high|skew=peaked|cov=declared|hist=yes|filt=no",
+     "limit_certain": true,
+     "low": 300,
+     "notes": [
+      "skewed density across row groups (max/median 31x)",
+      "correction 1.00 from 16 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 28001.778202547866,
+     "row_groups_kept": 8,
+     "row_groups_total": 65,
+     "rows": 300,
+     "selected_after_correction": 28039.934936996895,
+     "spatial_coherence": 0.9808385139423021
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 191.28589121379855,
+      "rejected_because": [],
+      "confidence": 0.917112043693917,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 5.34,
+       "scan_bytes": 12158693,
+       "scan_ms": 2.307491213798523,
+       "transfer_bytes": 90000,
+       "transfer_ms": 100.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 1788.4974285217286,
+      "rejected_because": [],
+      "confidence": 0.8562040442831921,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 1519836,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.0012078571319580078,
+       "memory_input_bytes": 1519836,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.003,
+       "result_upper_bytes": 1135982,
+       "safety": "safe",
+       "score": 0.103783810204506
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 12,
+       "latency_ms": 1275,
+       "result_ms": 50.7,
+       "scan_bytes": 1519836,
+       "scan_ms": 45.50782852172851,
+       "transfer_bytes": 1519836,
+       "transfer_ms": 1680.2896
+      }
+     }
+    ],
+    "result_rows_estimate": 300,
+    "input_bytes": 12158693,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 1519836,
+      "fetch_bytes_upper": 1519836,
+      "file_bytes": 98451829,
+      "requests_est": 16,
+      "row_bytes": 75.73217615384615,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_100mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 46165214,
+    "kept_bytes": 12158693
+   },
+   "server": {
+    "ms": [
+     134.29999999701977,
+     127.19999998807907
+    ],
+    "median": 134.29999999701977,
+    "rows": 300
+   },
+   "browser": {
+    "ms": [
+     6703,
+     6682,
+     6704
+    ],
+    "rows": 300,
+    "file_requests": [
+     17,
+     17,
+     17
+    ],
+    "file_bytes": [
+     17772700,
+     17772700,
+     17772700
+    ],
+    "median": 6704,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3064",
+    "set": "heldout-v3",
+    "dataset": "clustered_100mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.0014,
+    "bbox": [
+     103.475892,
+     14.982659,
+     103.849607,
+     15.580603
+    ],
+    "kind": "features",
+    "limit": 1500,
+    "group_by": null,
+    "filter": {
+     "column": "category",
+     "op": "eq",
+     "value": "school"
+    },
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "clustered_100mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9115858050930588,
+    "engine_confidence": 0.9115858050930588,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 2,
+     "cardinality": 2536,
+     "cardinality_high": 3804,
+     "cardinality_low": 1690,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 0.9980622297649547,
+      "samples": 15,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0260494161819422,
+     "group_basis": null,
+     "high": 1500,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": true,
+     "low": 1500,
+     "notes": [
+      "attribute filter keeps ~12.5% of the rows (from column statistics)",
+      "spatially incoherent file (coherence 0.04): row-group boxes overlap, estimates are looser",
+      "correction 1.00 from 15 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 2540.3947888361477,
+     "row_groups_kept": 65,
+     "row_groups_total": 65,
+     "rows": 1500,
+     "selected_after_correction": 2535.472087429077,
+     "spatial_coherence": 0.04047717307126997
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 325.52387723960874,
+      "rejected_because": [],
+      "confidence": 0.9115858050930588,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 26.7,
+       "scan_bytes": 101092618,
+       "scan_ms": 19.185477239608765,
+       "transfer_bytes": 450000,
+       "transfer_ms": 196.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 53315.132171839396,
+      "rejected_because": [],
+      "confidence": 0.8537759384724567,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 69908351,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.055558165709177654,
+       "memory_input_bytes": 60655570,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.015,
+       "result_upper_bytes": 5832266,
+       "safety": "safe",
+       "score": 0.16275231390118605
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 12,
+       "latency_ms": 35475,
+       "result_ms": 253.5,
+       "scan_bytes": 60655570,
+       "scan_ms": 1399.8135051727295,
+       "transfer_bytes": 60655570,
+       "transfer_ms": 51649.818666666666
+      }
+     }
+    ],
+    "result_rows_estimate": 1500,
+    "input_bytes": 101092618,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 60655570,
+      "fetch_bytes_upper": 69908351,
+      "file_bytes": 101092618,
+      "requests_est": 472,
+      "row_bytes": 77.76355230769231,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_100mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 47636089,
+    "kept_bytes": 101092618
+   },
+   "server": {
+    "ms": [
+     333.1000000089407,
+     335.6000000089407
+    ],
+    "median": 335.6000000089407,
+    "rows": 1500
+   },
+   "browser": {
+    "ms": [
+     24465,
+     24557,
+     24543
+    ],
+    "rows": 1500,
+    "file_requests": [
+     36,
+     36,
+     36
+    ],
+    "file_bytes": [
+     74723245,
+     74723245,
+     74723245
+    ],
+    "median": 24557,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3076",
+    "set": "heldout-v3",
+    "dataset": "clustered_100mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00382,
+    "bbox": [
+     106.541316,
+     17.220433,
+     107.159341,
+     18.209272
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "cold"
+   },
+   "dataset": "clustered_100mb_shuffled_s3",
+   "warm_at_plan": false,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9237575363389959,
+    "engine_confidence": 0.9237575363389959,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 0,
+     "cardinality": 90,
+     "cardinality_high": 153,
+     "cardinality_low": 52,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1,
+      "samples": 9,
+      "spread": 1.6978774650451414
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0260494161819422,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.4% of the rows (from column statistics)",
+      "spatially incoherent file (coherence 0.04): row-group boxes overlap, estimates are looser",
+      "correction 1.00 from 9 runs of this class (interval ×/÷1.7)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 89.55193164790418,
+     "row_groups_kept": 65,
+     "row_groups_total": 65,
+     "rows": 1,
+     "selected_after_correction": 89.55193164790418,
+     "spatial_coherence": 0.04047717307126997
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 178.92167723960875,
+      "rejected_because": [],
+      "confidence": 0.9237575363389959,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 101092618,
+       "scan_ms": 19.185477239608765,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 78028.04396241759,
+      "rejected_because": [],
+      "confidence": 0.8547573821128395,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 103114470,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.08194801807403565,
+       "memory_input_bytes": 103114470,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3888,
+       "safety": "safe",
+       "score": 0.17376147873446934
+      },
+      "cost": {
+       "cold_start_ms": 1400,
+       "fixed_ms": 1412,
+       "latency_ms": 47175,
+       "result_ms": 0.169,
+       "scan_bytes": 103114470,
+       "scan_ms": 1943.6829624176025,
+       "transfer_bytes": 103114470,
+       "transfer_ms": 74672.192
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 101092618,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 103114470,
+      "fetch_bytes_upper": 103114470,
+      "file_bytes": 101092618,
+      "requests_est": 628,
+      "row_bytes": 77.76355230769231,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_100mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 47636089,
+    "kept_bytes": 101092618
+   },
+   "server": {
+    "ms": [
+     112.59999999403954,
+     115.20000000298023
+    ],
+    "median": 115.20000000298023,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     50624,
+     39992,
+     39920
+    ],
+    "rows": 1,
+    "file_requests": [
+     140,
+     140,
+     140
+    ],
+    "file_bytes": [
+     97771756,
+     97771756,
+     97771756
+    ],
+    "cold_ms": 50624,
+    "median": 50624,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3065",
+    "set": "heldout-v3",
+    "dataset": "uniform_10mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.18299,
+    "bbox": [
+     100,
+     17.155642,
+     104.277724,
+     24
+    ],
+    "kind": "features",
+    "limit": 1500,
+    "group_by": null,
+    "filter": {
+     "column": "category",
+     "op": "eq",
+     "value": "school"
+    },
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_10mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9089111521188761,
+    "engine_confidence": 0.9089111521188761,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 3,
+     "cardinality": 3045,
+     "cardinality_high": 4567,
+     "cardinality_low": 2029,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 1.000212080326329,
+      "samples": 12,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.6652893665867234,
+     "group_basis": null,
+     "high": 1500,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": true,
+     "low": 1500,
+     "notes": [
+      "attribute filter keeps ~12.7% of the rows (from column statistics)",
+      "correction 1.00 from 12 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 3043.699199110104,
+     "row_groups_kept": 7,
+     "row_groups_total": 26,
+     "rows": 1500,
+     "selected_after_correction": 3044.3447078294985,
+     "spatial_coherence": 0.9426957950203392
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 306.84194263305665,
+      "rejected_because": [],
+      "confidence": 0.9089111521188761,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 26.7,
+       "scan_bytes": 2653280,
+       "scan_ms": 0.5035426330566406,
+       "transfer_bytes": 450000,
+       "transfer_ms": 196.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2971.607493303935,
+      "rejected_because": [],
+      "confidence": 0.8564309889417756,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 9876070,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007848795255025227,
+       "memory_input_bytes": 9876070,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.015,
+       "result_upper_bytes": 5697732,
+       "safety": "safe",
+       "score": 0.12045795699357986
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 144,
+       "scan_bytes": 9876070,
+       "scan_ms": 24.988826637268065,
+       "transfer_bytes": 9876070,
+       "transfer_ms": 2783.6186666666667
+      }
+     }
+    ],
+    "result_rows_estimate": 1500,
+    "input_bytes": 2653280,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 9876070,
+      "fetch_bytes_upper": 9876070,
+      "file_bytes": 9876070,
+      "requests_est": 1,
+      "row_bytes": 75.96976923076923,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_10mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4584346,
+    "kept_bytes": 2653280
+   },
+   "server": {
+    "ms": [
+     271.70000000298023,
+     256.5
+    ],
+    "median": 271.70000000298023,
+    "rows": 1500
+   },
+   "browser": {
+    "ms": [
+     3103,
+     3119,
+     3123
+    ],
+    "rows": 1500,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     9906379,
+     9906379,
+     9906379
+    ],
+    "median": 3123,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3077",
+    "set": "heldout-v3",
+    "dataset": "uniform_10mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.07864,
+    "bbox": [
+     100,
+     8,
+     102.804336,
+     12.486938
+    ],
+    "kind": "features",
+    "limit": 1500,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_10mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9089003702015254,
+    "engine_confidence": 0.9089003702015254,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 3,
+     "cardinality": 10170,
+     "cardinality_high": 15255,
+     "cardinality_low": 6779,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0015760931122932,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.6652893665867234,
+     "group_basis": null,
+     "high": 1500,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": true,
+     "low": 1500,
+     "notes": [
+      "correction 1.00 from 16 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 10153.674164950253,
+     "row_groups_kept": 6,
+     "row_groups_total": 26,
+     "rows": 1500,
+     "selected_after_correction": 10169.6773008661,
+     "spatial_coherence": 0.9426957950203392
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 306.77156322803495,
+      "rejected_because": [],
+      "confidence": 0.9089003702015254,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 26.7,
+       "scan_bytes": 2282435,
+       "scan_ms": 0.43316322803497315,
+       "transfer_bytes": 450000,
+       "transfer_ms": 196.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2971.4023673998518,
+      "rejected_because": [],
+      "confidence": 0.8564256747535941,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 9876070,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007848795255025227,
+       "memory_input_bytes": 9876070,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.015,
+       "result_upper_bytes": 5697732,
+       "safety": "safe",
+       "score": 0.12045795699357986
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 144,
+       "scan_bytes": 9876070,
+       "scan_ms": 24.783700733184816,
+       "transfer_bytes": 9876070,
+       "transfer_ms": 2783.6186666666667
+      }
+     }
+    ],
+    "result_rows_estimate": 1500,
+    "input_bytes": 2282435,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 9876070,
+      "fetch_bytes_upper": 9876070,
+      "file_bytes": 9876070,
+      "requests_est": 1,
+      "row_bytes": 75.96976923076923,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_10mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4584346,
+    "kept_bytes": 2282435
+   },
+   "server": {
+    "ms": [
+     261.19999998807907,
+     257.79999999701977
+    ],
+    "median": 261.19999998807907,
+    "rows": 1500
+   },
+   "browser": {
+    "ms": [
+     3091,
+     3106,
+     3107
+    ],
+    "rows": 1500,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     9906379,
+     9906379,
+     9906379
+    ],
+    "median": 3107,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3066",
+    "set": "heldout-v3",
+    "dataset": "uniform_10mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00137,
+    "bbox": [
+     101.025615,
+     12.954968,
+     101.395431,
+     13.546673
+    ],
+    "kind": "features",
+    "limit": 1500,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_10mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.8398224069404719,
+    "engine_confidence": 0.8398224069404719,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 2,
+     "cardinality": 198,
+     "cardinality_high": 297,
+     "cardinality_low": 131,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0075891797753551,
+      "samples": 14,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0015131106230155,
+     "group_basis": null,
+     "high": 297,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 131,
+     "notes": [
+      "spatially incoherent file (coherence 0.00): row-group boxes overlap, estimates are looser",
+      "correction 1.01 from 14 runs of this class (interval ×/÷1.5)"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 196.28386319553107,
+     "row_groups_kept": 26,
+     "row_groups_total": 26,
+     "rows": 198,
+     "selected_after_correction": 197.77349672032315,
+     "spatial_coherence": 0.0011614554689631973
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 180.90623719387054,
+      "rejected_because": [],
+      "confidence": 0.8398224069404719,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 3.5244,
+       "scan_bytes": 10029641,
+       "scan_ms": 1.9034371938705446,
+       "transfer_bytes": 59400,
+       "transfer_ms": 92.47840000000001
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2892.0392296399436,
+      "rejected_because": [],
+      "confidence": 0.7803351804632485,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 10029641,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007970842520395914,
+       "memory_input_bytes": 10029641,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00297,
+       "result_upper_bytes": 1145693,
+       "safety": "safe",
+       "score": 0.10982545220629936
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 19.008,
+       "scan_bytes": 10029641,
+       "scan_ms": 29.460296306610104,
+       "transfer_bytes": 10029641,
+       "transfer_ms": 2824.5709333333334
+      }
+     }
+    ],
+    "result_rows_estimate": 198,
+    "input_bytes": 10029641,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 10029641,
+      "fetch_bytes_upper": 10029641,
+      "file_bytes": 10029641,
+      "requests_est": 1,
+      "row_bytes": 77.15108461538462,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_10mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4660626,
+    "kept_bytes": 10029641
+   },
+   "server": {
+    "ms": [
+     121.90000000596046,
+     126.5
+    ],
+    "median": 126.5,
+    "rows": 198
+   },
+   "browser": {
+    "ms": [
+     3065,
+     3045,
+     3051
+    ],
+    "rows": 198,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     10059951,
+     10059951,
+     10059951
+    ],
+    "median": 3051,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3078",
+    "set": "heldout-v3",
+    "dataset": "uniform_10mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.58936,
+    "bbox": [
+     100.337669,
+     8,
+     108.014655,
+     20.283178
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_10mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9206613323789503,
+    "engine_confidence": 0.9206613323789503,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 3,
+     "cardinality": 11946,
+     "cardinality_high": 17919,
+     "cardinality_low": 7963,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0024629074848848,
+      "samples": 18,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0015131106230155,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.5% of the rows (from column statistics)",
+      "spatially incoherent file (coherence 0.00): row-group boxes overlap, estimates are looser",
+      "correction 1.00 from 18 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 11916.40282618645,
+     "row_groups_kept": 26,
+     "row_groups_total": 26,
+     "rows": 1,
+     "selected_after_correction": 11945.751823899966,
+     "spatial_coherence": 0.0011614554689631973
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 161.63963719387056,
+      "rejected_because": [],
+      "confidence": 0.9206613323789503,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 10029641,
+       "scan_ms": 1.9034371938705446,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2873.1272296399434,
+      "rejected_because": [],
+      "confidence": 0.8525722073496244,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 10029641,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007970842520395914,
+       "memory_input_bytes": 10029641,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3857,
+       "safety": "safe",
+       "score": 0.10718268653077356
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 0.096,
+       "scan_bytes": 10029641,
+       "scan_ms": 29.460296306610104,
+       "transfer_bytes": 10029641,
+       "transfer_ms": 2824.5709333333334
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 10029641,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 10029641,
+      "fetch_bytes_upper": 10029641,
+      "file_bytes": 10029641,
+      "requests_est": 1,
+      "row_bytes": 77.15108461538462,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_10mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4660626,
+    "kept_bytes": 10029641
+   },
+   "server": {
+    "ms": [
+     94.5,
+     98.79999999701977
+    ],
+    "median": 98.79999999701977,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     3016,
+     3002,
+     2979
+    ],
+    "rows": 1,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     10059951,
+     10059951,
+     10059951
+    ],
+    "median": 3002,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3067",
+    "set": "heldout-v3",
+    "dataset": "uniform_30mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.56695,
+    "bbox": [
+     100,
+     11.262003,
+     107.529634,
+     23.309418
+    ],
+    "kind": "features",
+    "limit": 300,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_30mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9176896422561576,
+    "engine_confidence": 0.9176896422561576,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 4,
+     "cardinality": 221551,
+     "cardinality_high": 332327,
+     "cardinality_low": 147700,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 1.000646614650703,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.7525179881638815,
+     "group_basis": null,
+     "high": 300,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": true,
+     "low": 300,
+     "notes": [
+      "correction 1.00 from 16 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 221407.54790106302,
+     "row_groups_kept": 37,
+     "row_groups_total": 39,
+     "rows": 300,
+     "selected_after_correction": 221550.71326531205,
+     "spatial_coherence": 0.9572687948754471
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 194.35293248310091,
+      "rejected_because": [],
+      "confidence": 0.9176896422561576,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 5.34,
+       "scan_bytes": 28319627,
+       "scan_ms": 5.374532483100891,
+       "transfer_bytes": 90000,
+       "transfer_ms": 100.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 8244.807418892162,
+      "rejected_because": [],
+      "confidence": 0.8525247190014716,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 29850421,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.02372298320134481,
+       "memory_input_bytes": 29850421,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.003,
+       "result_upper_bytes": 1148093,
+       "safety": "safe",
+       "score": 0.12398663282656675
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 28.8,
+       "scan_bytes": 29850421,
+       "scan_ms": 86.89515222549439,
+       "transfer_bytes": 29850421,
+       "transfer_ms": 8110.112266666667
+      }
+     }
+    ],
+    "result_rows_estimate": 300,
+    "input_bytes": 28319627,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 29850421,
+      "fetch_bytes_upper": 29850421,
+      "file_bytes": 29850421,
+      "requests_est": 1,
+      "row_bytes": 76.53954102564103,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_30mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 13883046,
+    "kept_bytes": 28319627
+   },
+   "server": {
+    "ms": [
+     129,
+     143.70000000298023
+    ],
+    "median": 143.70000000298023,
+    "rows": 300
+   },
+   "browser": {
+    "ms": [
+     8486,
+     8491,
+     8446
+    ],
+    "rows": 300,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     29895663,
+     29895663,
+     29895663
+    ],
+    "median": 8491,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3079",
+    "set": "heldout-v3",
+    "dataset": "uniform_30mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.0693,
+    "bbox": [
+     107.367543,
+     8,
+     110,
+     12.211931
+    ],
+    "kind": "features",
+    "limit": 8000,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_30mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.899932404085444,
+    "engine_confidence": 0.899932404085444,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 3,
+     "cardinality": 26994,
+     "cardinality_high": 40491,
+     "cardinality_low": 17995,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0015760931122932,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.7525179881638815,
+     "group_basis": null,
+     "high": 8000,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": true,
+     "low": 8000,
+     "notes": [
+      "correction 1.00 from 16 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 26951.38138465142,
+     "row_groups_kept": 7,
+     "row_groups_total": 39,
+     "rows": 8000,
+     "selected_after_correction": 26993.859271218556,
+     "spatial_coherence": 0.9572687948754471
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 943.0572534078599,
+      "rejected_because": [],
+      "confidence": 0.899932404085444,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 142.4,
+       "scan_bytes": 5368569,
+       "scan_ms": 1.0188534078598024,
+       "transfer_bytes": 2400000,
+       "transfer_ms": 716.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 8971.31247485377,
+      "rejected_because": [],
+      "confidence": 0.8590972849384007,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 29850421,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.02919751739501953,
+       "memory_input_bytes": 29850421,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.08,
+       "result_upper_bytes": 30615816,
+       "safety": "safe",
+       "score": 0.19617554440307605
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 768,
+       "scan_bytes": 29850421,
+       "scan_ms": 74.20020818710327,
+       "transfer_bytes": 29850421,
+       "transfer_ms": 8110.112266666667
+      }
+     }
+    ],
+    "result_rows_estimate": 8000,
+    "input_bytes": 5368569,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 29850421,
+      "fetch_bytes_upper": 29850421,
+      "file_bytes": 29850421,
+      "requests_est": 1,
+      "row_bytes": 76.53954102564103,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_30mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 13883046,
+    "kept_bytes": 5368569
+   },
+   "server": {
+    "ms": [
+     920.7999999970198,
+     929.5
+    ],
+    "median": 929.5,
+    "rows": 8000
+   },
+   "browser": {
+    "ms": [
+     9142,
+     9204,
+     9123
+    ],
+    "rows": 8000,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     29895663,
+     29895663,
+     29895663
+    ],
+    "median": 9204,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3068",
+    "set": "heldout-v3",
+    "dataset": "uniform_30mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00215,
+    "bbox": [
+     103.990615,
+     15.028119,
+     104.454572,
+     15.77045
+    ],
+    "kind": "features",
+    "limit": 40000,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_30mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.8354054456758796,
+    "engine_confidence": 0.8354054456758796,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 2,
+     "cardinality": 828,
+     "cardinality_high": 1241,
+     "cardinality_low": 551,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0075891797753551,
+      "samples": 14,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0006529295644178,
+     "group_basis": null,
+     "high": 1241,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 551,
+     "notes": [
+      "spatially incoherent file (coherence 0.00): row-group boxes overlap, estimates are looser",
+      "correction 1.01 from 14 runs of this class (interval ×/÷1.5)"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 820.8133100887196,
+     "row_groups_kept": 39,
+     "row_groups_total": 39,
+     "rows": 828,
+     "selected_after_correction": 827.0426098609872,
+     "spatial_coherence": 0.0006022500387494745
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 246.38568925361633,
+      "rejected_because": [],
+      "confidence": 0.8354054456758796,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 14.738400000000002,
+       "scan_bytes": 30397582,
+       "scan_ms": 5.768889253616333,
+       "transfer_bytes": 248400,
+       "transfer_ms": 142.8784
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 8443.910267400615,
+      "rejected_because": [],
+      "confidence": 0.7802523528639074,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 30397582,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.024157827695210774,
+       "memory_input_bytes": 30397582,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.01241,
+       "result_upper_bytes": 4836333,
+       "safety": "safe",
+       "score": 0.13264122614816187
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 79.488,
+       "scan_bytes": 30397582,
+       "scan_ms": 89.40040073394775,
+       "transfer_bytes": 30397582,
+       "transfer_ms": 8256.021866666668
+      }
+     }
+    ],
+    "result_rows_estimate": 828,
+    "input_bytes": 30397582,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 30397582,
+      "fetch_bytes_upper": 30397582,
+      "file_bytes": 30397582,
+      "requests_est": 1,
+      "row_bytes": 77.94251794871795,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_30mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 14147308,
+    "kept_bytes": 30397582
+   },
+   "server": {
+    "ms": [
+     274.8999999910593,
+     274
+    ],
+    "median": 274.8999999910593,
+    "rows": 833
+   },
+   "browser": {
+    "ms": [
+     8759,
+     8930,
+     8767
+    ],
+    "rows": 833,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     30442824,
+     30442824,
+     30442824
+    ],
+    "median": 8930,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3080",
+    "set": "heldout-v3",
+    "dataset": "uniform_30mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00055,
+    "bbox": [
+     109.718587,
+     20.630205,
+     109.953263,
+     21.005686
+    ],
+    "kind": "count_by",
+    "limit": null,
+    "group_by": "category",
+    "filter": null,
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "cold"
+   },
+   "dataset": "uniform_30mb_shuffled_s3",
+   "warm_at_plan": false,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.842719917138357,
+    "engine_confidence": 0.842719917138357,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 1,
+     "cardinality": 196,
+     "cardinality_high": 294,
+     "cardinality_low": 130,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.025634872536088,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0006529295644178,
+     "group_basis": "statistics",
+     "high": 8,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 7,
+     "notes": [
+      "spatially incoherent file (coherence 0.00): row-group boxes overlap, estimates are looser",
+      "correction 1.03 from 16 runs of this class (interval ×/÷1.5)",
+      "group count ≤ 8 from statistics history"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 190.96202608510166,
+     "row_groups_kept": 39,
+     "row_groups_total": 39,
+     "rows": 8,
+     "selected_after_correction": 195.85731328302634,
+     "spatial_coherence": 0.0006022500387494745
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 166.18968925361634,
+      "rejected_because": [],
+      "confidence": 0.842719917138357,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.1424,
+       "scan_bytes": 30397582,
+       "scan_ms": 5.768889253616333,
+       "transfer_bytes": 2400,
+       "transfer_ms": 77.2784
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 9765.190267400616,
+      "rejected_because": [],
+      "confidence": 0.7900670464404111,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 30397582,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.024157827695210774,
+       "memory_input_bytes": 30397582,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00008,
+       "result_upper_bytes": 31177,
+       "safety": "safe",
+       "score": 0.12181230556209566
+      },
+      "cost": {
+       "cold_start_ms": 1400,
+       "fixed_ms": 1419,
+       "latency_ms": 150,
+       "result_ms": 0.768,
+       "scan_bytes": 30397582,
+       "scan_ms": 89.40040073394775,
+       "transfer_bytes": 30397582,
+       "transfer_ms": 8256.021866666668
+      }
+     }
+    ],
+    "result_rows_estimate": 8,
+    "input_bytes": 30397582,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 30397582,
+      "fetch_bytes_upper": 30397582,
+      "file_bytes": 30397582,
+      "requests_est": 1,
+      "row_bytes": 77.94251794871795,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_30mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 14147308,
+    "kept_bytes": 30397582
+   },
+   "server": {
+    "ms": [
+     107.09999999403954,
+     85.5
+    ],
+    "median": 107.09999999403954,
+    "rows": 8
+   },
+   "browser": {
+    "ms": [
+     19148,
+     8646,
+     8617
+    ],
+    "rows": 8,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     30442824,
+     30442824,
+     30442824
+    ],
+    "cold_ms": 19148,
+    "median": 19148,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3069",
+    "set": "heldout-v3",
+    "dataset": "uniform_100mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.03692,
+    "bbox": [
+     104.370084,
+     20.925666,
+     106.291543,
+     24
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_100mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9208004232577374,
+    "engine_confidence": 0.9208004232577374,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 2,
+     "cardinality": 7426,
+     "cardinality_high": 11139,
+     "cardinality_low": 4950,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 0.9979407321875827,
+      "samples": 12,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.998472118196792,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.4% of the rows (from column statistics)",
+      "correction 1.00 from 12 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 7440.905407724681,
+     "row_groups_kept": 9,
+     "row_groups_total": 65,
+     "rows": 1,
+     "selected_after_correction": 7425.582590723312,
+     "spatial_coherence": 0.974673382334659
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 162.3376544944763,
+      "rejected_because": [],
+      "confidence": 0.9208004232577374,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 13707652,
+       "scan_ms": 2.6014544944763185,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 11602.187546679686,
+      "rejected_because": [],
+      "confidence": 0.8533155166154166,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 21406617,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.01701245069503784,
+       "memory_input_bytes": 16682112,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3813,
+       "safety": "safe",
+       "score": 0.11532005251347777
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 12,
+       "latency_ms": 6854.999999999999,
+       "result_ms": 0.169,
+       "scan_bytes": 16682112,
+       "scan_ms": 286.45534667968747,
+       "transfer_bytes": 16682112,
+       "transfer_ms": 11303.563199999999
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 13707652,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 16682112,
+      "fetch_bytes_upper": 21406617,
+      "file_bytes": 99148698,
+      "requests_est": 90.39999999999999,
+      "row_bytes": 76.26822923076924,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_100mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 46671769,
+    "kept_bytes": 13707652
+   },
+   "server": {
+    "ms": [
+     95.40000000596046,
+     107.8999999910593
+    ],
+    "median": 107.8999999910593,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     7666,
+     7589,
+     7735
+    ],
+    "rows": 1,
+    "file_requests": [
+     36,
+     36,
+     36
+    ],
+    "file_bytes": [
+     15150990,
+     15150990,
+     15150990
+    ],
+    "median": 7735,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3081",
+    "set": "heldout-v3",
+    "dataset": "uniform_100mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.03683,
+    "bbox": [
+     101.964999,
+     19.352479,
+     103.884222,
+     22.423236
+    ],
+    "kind": "features",
+    "limit": 300,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_100mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9173328501021758,
+    "engine_confidence": 0.9173328501021758,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": true,
+     "bucket": 3,
+     "cardinality": 48165,
+     "cardinality_high": 72247,
+     "cardinality_low": 32109,
+     "cardinality_quality": "good",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0015760931122932,
+      "samples": 16,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.998472118196792,
+     "group_basis": null,
+     "high": 300,
+     "layout": "coh=high|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": true,
+     "low": 300,
+     "notes": [
+      "correction 1.00 from 16 runs of this class (interval ×/÷1.5)",
+      "result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 48088.26104812041,
+     "row_groups_kept": 12,
+     "row_groups_total": 65,
+     "rows": 300,
+     "selected_after_correction": 48164.05262514051,
+     "spatial_coherence": 0.974673382334659
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 192.44558484783175,
+      "rejected_because": [],
+      "confidence": 0.9173328501021758,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 5.34,
+       "scan_bytes": 18269381,
+       "scan_ms": 3.467184847831726,
+       "transfer_bytes": 90000,
+       "transfer_ms": 100.6384
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 1789.2034276448567,
+      "rejected_because": [],
+      "confidence": 0.8562025148855135,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 1522448,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.0012099329630533855,
+       "memory_input_bytes": 1522448,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.003,
+       "result_upper_bytes": 1144023,
+       "safety": "safe",
+       "score": 0.10378567284774787
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 12,
+       "latency_ms": 1275,
+       "result_ms": 50.7,
+       "scan_bytes": 1522448,
+       "scan_ms": 45.517294311523436,
+       "transfer_bytes": 1522448,
+       "transfer_ms": 1680.9861333333333
+      }
+     }
+    ],
+    "result_rows_estimate": 300,
+    "input_bytes": 18269381,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 1522448,
+      "fetch_bytes_upper": 1522448,
+      "file_bytes": 99148698,
+      "requests_est": 16,
+      "row_bytes": 76.26822923076924,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_100mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 46671769,
+    "kept_bytes": 18269381
+   },
+   "server": {
+    "ms": [
+     144.5,
+     149.69999998807907
+    ],
+    "median": 149.69999998807907,
+    "rows": 300
+   },
+   "browser": {
+    "ms": [
+     1734,
+     1713,
+     1723
+    ],
+    "rows": 300,
+    "file_requests": [
+     8,
+     8,
+     8
+    ],
+    "file_bytes": [
+     3022573,
+     3022573,
+     3022573
+    ],
+    "median": 1723,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3070",
+    "set": "heldout-v3",
+    "dataset": "uniform_100mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00583,
+    "bbox": [
+     103.207293,
+     18.507672,
+     103.970874,
+     19.729401
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": null,
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "uniform_100mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9237656635172673,
+    "engine_confidence": 0.9237656635172673,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 2,
+     "cardinality": 7542,
+     "cardinality_high": 11313,
+     "cardinality_low": 5027,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1.0075891797753551,
+      "samples": 14,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.000342349422847,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "spatially incoherent file (coherence 0.00): row-group boxes overlap, estimates are looser",
+      "correction 1.01 from 14 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 7484.730686620992,
+     "row_groups_kept": 65,
+     "row_groups_total": 65,
+     "rows": 1,
+     "selected_after_correction": 7541.5336533718755,
+     "spatial_coherence": 0.00038122397771589434
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 178.97238525505065,
+      "rejected_because": [],
+      "confidence": 0.9237656635172673,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 101359810,
+       "scan_ms": 19.23618525505066,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 76701.70788930156,
+      "rejected_because": [],
+      "confidence": 0.8532965314965749,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 103387006,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.08216461022694906,
+       "memory_input_bytes": 103387006,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3898,
+       "safety": "safe",
+       "score": 0.17395640972276205
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 12,
+       "latency_ms": 47175,
+       "result_ms": 0.169,
+       "scan_bytes": 103387006,
+       "scan_ms": 1944.6706226348876,
+       "transfer_bytes": 103387006,
+       "transfer_ms": 74744.86826666667
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 101359810,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 103387006,
+      "fetch_bytes_upper": 103387006,
+      "file_bytes": 101359810,
+      "requests_est": 628,
+      "row_bytes": 77.96908461538462,
+      "strategy": "range",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\uniform_100mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 47804108,
+    "kept_bytes": 101359810
+   },
+   "server": {
+    "ms": [
+     127.79999999701977,
+     113.30000001192093
+    ],
+    "median": 127.79999999701977,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     39705,
+     40155,
+     39724
+    ],
+    "rows": 1,
+    "file_requests": [
+     136,
+     136,
+     136
+    ],
+    "file_bytes": [
+     98145460,
+     98145460,
+     98145460
+    ],
+    "median": 40155,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3071",
+    "set": "heldout-v3",
+    "dataset": "clustered_10mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00359,
+    "bbox": [
+     107.735096,
+     19.833118,
+     108.33443,
+     20.792053
+    ],
+    "kind": "features",
+    "limit": 300,
+    "group_by": null,
+    "filter": null,
+    "deterministic": false,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "clustered_10mb_spatial_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.8416526948820942,
+    "engine_confidence": 0.8416526948820942,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 0,
+     "cardinality": 11,
+     "cardinality_high": 16,
+     "cardinality_low": 6,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1,
+      "samples": 12,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 23.22613096738083,
+     "group_basis": null,
+     "high": 16,
+     "layout": "coh=high|skew=peaked|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 6,
+     "notes": [
+      "skewed density across row groups (max/median 23x)",
+      "correction 1.00 from 12 runs of this class (interval ×/÷1.5)"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 10.404127055918059,
+     "row_groups_kept": 1,
+     "row_groups_total": 26,
+     "rows": 11,
+     "selected_after_correction": 10.404127055918059,
+     "spatial_coherence": 0.967228221737993
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 160.78636296863556,
+      "rejected_because": [],
+      "confidence": 0.8416526948820942,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.1958,
+       "scan_bytes": 380243,
+       "scan_ms": 0.07216296863555909,
+       "transfer_bytes": 3300,
+       "transfer_ms": 77.5184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2806.640997517141,
+      "rejected_because": [],
+      "confidence": 0.7797328881829674,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 9799187,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007787694136301676,
+       "memory_input_bytes": 9799187,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00016,
+       "result_upper_bytes": 60302,
+       "safety": "safe",
+       "score": 0.10715180329471596
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 1.056,
+       "scan_bytes": 9799187,
+       "scan_ms": 23.468464183807374,
+       "transfer_bytes": 9799187,
+       "transfer_ms": 2763.1165333333333
+      }
+     }
+    ],
+    "result_rows_estimate": 11,
+    "input_bytes": 380243,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 9799187,
+      "fetch_bytes_upper": 9799187,
+      "file_bytes": 9799187,
+      "requests_est": 1,
+      "row_bytes": 75.37836153846153,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_10mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4533072,
+    "kept_bytes": 380243
+   },
+   "server": {
+    "ms": [
+     100.20000000298023,
+     108.79999999701977
+    ],
+    "median": 108.79999999701977,
+    "rows": 9
+   },
+   "browser": {
+    "ms": [
+     2963,
+     2922,
+     2899
+    ],
+    "rows": 9,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     9829496,
+     9829496,
+     9829496
+    ],
+    "median": 2922,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3072",
+    "set": "heldout-v3",
+    "dataset": "clustered_10mb_shuffled_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00045,
+    "bbox": [
+     107.428748,
+     13.593749,
+     107.640698,
+     13.932868
+    ],
+    "kind": "count_by",
+    "limit": null,
+    "group_by": "category",
+    "filter": null,
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "warm"
+   },
+   "dataset": "clustered_10mb_shuffled_s3",
+   "warm_at_plan": true,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.8421199781342467,
+    "engine_confidence": 0.8421199781342467,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 0,
+     "cardinality": 0,
+     "cardinality_high": 0,
+     "cardinality_low": 0,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1,
+      "samples": 9,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 1.0183753650447473,
+     "group_basis": "statistics",
+     "high": 1,
+     "layout": "coh=low|skew=flat|cov=declared|hist=yes|filt=no",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "spatially incoherent file (coherence 0.05): row-group boxes overlap, estimates are looser",
+      "correction 1.00 from 9 runs of this class (interval ×/÷1.5)",
+      "group count ≤ 1 from statistics history"
+     ],
+     "null_fraction": 0,
+     "quality": "fair",
+     "raw_selected": 0,
+     "row_groups_kept": 26,
+     "row_groups_total": 26,
+     "rows": 1,
+     "selected_after_correction": 0,
+     "spatial_coherence": 0.052145827449488424
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 161.6349495985031,
+      "rejected_because": [],
+      "confidence": 0.8421199781342467,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 10004941,
+       "scan_ms": 1.8987495985031129,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 2866.4459627726237,
+      "rejected_because": [],
+      "confidence": 0.779840804523293,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 10004941,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.007951212724049887,
+       "memory_input_bytes": 10004941,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3848,
+       "safety": "safe",
+       "score": 0.10716501989073035
+      },
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 19,
+       "latency_ms": 150,
+       "result_ms": 0.096,
+       "scan_bytes": 10004941,
+       "scan_ms": 29.365696105957028,
+       "transfer_bytes": 10004941,
+       "transfer_ms": 2817.984266666667
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 10004941,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 10004941,
+      "fetch_bytes_upper": 10004941,
+      "file_bytes": 10004941,
+      "requests_est": 1,
+      "row_bytes": 76.96108461538462,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_10mb_shuffled_s3.parquet"
+     }
+    ],
+    "covering_bytes": 4644851,
+    "kept_bytes": 10004941
+   },
+   "server": {
+    "ms": [
+     96.29999999701977,
+     93.40000000596046
+    ],
+    "median": 96.29999999701977,
+    "rows": 0
+   },
+   "browser": {
+    "ms": [
+     3000,
+     2974,
+     2984
+    ],
+    "rows": 0,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     10035252,
+     10035252,
+     10035252
+    ],
+    "median": 2984,
+    "digest_match": true,
+    "rows_match": true
+   }
+  },
+  {
+   "case": {
+    "id": "h3073",
+    "set": "heldout-v3",
+    "dataset": "clustered_30mb_spatial_s3",
+    "crs": "EPSG:4326",
+    "fraction": 0.00785,
+    "bbox": [
+     108.061832,
+     14.582074,
+     108.947563,
+     15.999244
+    ],
+    "kind": "count",
+    "limit": null,
+    "group_by": null,
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 20
+    },
+    "deterministic": true,
+    "network": "MOBILE",
+    "browser_state": "cold"
+   },
+   "dataset": "clustered_30mb_spatial_s3",
+   "warm_at_plan": false,
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9203048710372587,
+    "engine_confidence": 0.9203048710372587,
+    "margin_factor": 1,
+    "estimate": {
+     "bounded_by_limit": false,
+     "bucket": 0,
+     "cardinality": 16,
+     "cardinality_high": 24,
+     "cardinality_low": 10,
+     "cardinality_quality": "fair",
+     "correction": {
+      "basis": "class",
+      "factor": 1,
+      "samples": 12,
+      "spread": 1.5
+     },
+     "covering_quality": "declared",
+     "density_skew": 92.75521774009015,
+     "group_basis": null,
+     "high": 1,
+     "layout": "coh=high|skew=peaked|cov=declared|hist=yes|filt=yes",
+     "limit_certain": false,
+     "low": 1,
+     "notes": [
+      "attribute filter keeps ~15.4% of the rows (from column statistics)",
+      "skewed density across row groups (max/median 93x)",
+      "correction 1.00 from 12 runs of this class (interval ×/÷1.5)",
+      "ungrouped aggregate: exactly one row"
+     ],
+     "null_fraction": 0,
+     "quality": "good",
+     "raw_selected": 15.770645156889785,
+     "row_groups_kept": 1,
+     "row_groups_total": 39,
+     "rows": 1,
+     "selected_after_correction": 15.770645156889785,
+     "spatial_coherence": 0.9728898927744987
+    },
+    "policy": [],
+    "network": "MOBILE",
+    "candidates": [
+     {
+      "engine": "duckdb",
+      "feasible": true,
+      "score_ms": 159.88052328033447,
+      "rejected_because": [],
+      "confidence": 0.9203048710372587,
+      "risk": null,
+      "cost": {
+       "cold_start_ms": 0,
+       "fixed_ms": 83,
+       "latency_ms": 75,
+       "result_ms": 0.0178,
+       "scan_bytes": 760472,
+       "scan_ms": 0.14432328033447267,
+       "transfer_bytes": 300,
+       "transfer_ms": 76.7184
+      }
+     },
+     {
+      "engine": "duckdb-wasm",
+      "feasible": true,
+      "score_ms": 9544.0298141833,
+      "rejected_because": [],
+      "confidence": 0.8638757604308603,
+      "risk": {
+       "envelope": {
+        "basis": "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)",
+        "safe_fetch_bytes": 314572800,
+        "safe_result_bytes": 157286400,
+        "unsafe_fetch_bytes": 1258291200,
+        "unsafe_result_bytes": 1048576000
+       },
+       "fetch_upper_bytes": 29640154,
+       "format": 0,
+       "health": 0.1,
+       "memory": 0.023555878003438314,
+       "memory_input_bytes": 29640154,
+       "probe": 0,
+       "reasons": [],
+       "result_rows": 0.00001,
+       "result_upper_bytes": 3800,
+       "safety": "safe",
+       "score": 0.12120907820019233
+      },
+      "cost": {
+       "cold_start_ms": 1400,
+       "fixed_ms": 1419,
+       "latency_ms": 150,
+       "result_ms": 0.096,
+       "scan_bytes": 29640154,
+       "scan_ms": 70.89274751663208,
+       "transfer_bytes": 29640154,
+       "transfer_ms": 8054.041066666667
+      }
+     }
+    ],
+    "result_rows_estimate": 1,
+    "input_bytes": 760472,
+    "browser_access": [
+     {
+      "fetch_bytes_est": 29640154,
+      "fetch_bytes_upper": 29640154,
+      "file_bytes": 29640154,
+      "requests_est": 1,
+      "row_bytes": 76.00039487179487,
+      "strategy": "full",
+      "uri": "\\\\?\\E:\\Lập trình\\lập trình\\6-du-an-khac\\geofabric\\benchmarks\\data\\clustered_30mb_spatial_s3.parquet"
+     }
+    ],
+    "covering_bytes": 13735197,
+    "kept_bytes": 760472
+   },
+   "server": {
+    "ms": [
+     97.40000000596046,
+     97.79999999701977
+    ],
+    "median": 97.79999999701977,
+    "rows": 1
+   },
+   "browser": {
+    "ms": [
+     18791,
+     8375,
+     8395
+    ],
+    "rows": 1,
+    "file_requests": [
+     1,
+     1,
+     1
+    ],
+    "file_bytes": [
+     29685396,
+     29685396,
+     29685396
+    ],
+    "cold_ms": 18791,
+    "median": 18791,
+    "digest_match": true,
+    "rows_match": true
+   }
+  }
+ ]
+}
