@@ -1,6 +1,6 @@
 # REPORT-GEOFABRIC-PLANNER-HARDENING
 
-Phase: planner hardening (probe · estimator v2 · held-out evaluation · network model · health/fallback · confidence · UI). Date: 2026-10-14/15. Branch `main`, commit @@COMMIT@@. **Stopped for review; no PostGIS work was started.**
+Phase: planner hardening (probe · estimator v2 · held-out evaluation · network model · health/fallback · confidence · UI). Date: 2026-10-14/15. Branch `main`, commit 53957f4. **Stopped for review; no PostGIS work was started.**
 
 ## 1. Executive Summary
 
@@ -21,7 +21,7 @@ Phase: planner hardening (probe · estimator v2 · held-out evaluation · networ
 
 ## 2. Repository State
 
-- `main` @@COMMIT@@; working tree clean. New: `crates/geo-planner/src/{failure,probe,network,estimator,confidence,state}.rs`; gateway endpoints `/api/{probe,probe/invalidate,report,state,state/reset,telemetry,stats,network}` and flags `--network --simulate-network --telemetry --no-learn`; web `engine/{probe,probe-model,failure}.ts`; Execution Plan panel; held-out harness (`web/e2e/heldout.spec.ts`, `web/playwright.heldout.config.ts`, `benchmarks/{make_heldout_cases,make_cal2_cases,make_netcal_cases,build_calibration,run_heldout,analyze_heldout,make_report_tables,nnls_fit}.py`); fixtures `web/public/probe/*.parquet` (8 KB each); ADR-009, ADR-010, RFC-004 (proposal), ADR-008 correction, RFC-003 v1.1 section; `docs/claude/planner-hardening.md`.
+- `main` 53957f4; working tree clean. New: `crates/geo-planner/src/{failure,probe,network,estimator,confidence,state}.rs`; gateway endpoints `/api/{probe,probe/invalidate,report,state,state/reset,telemetry,stats,network}` and flags `--network --simulate-network --telemetry --no-learn`; web `engine/{probe,probe-model,failure}.ts`; Execution Plan panel; held-out harness (`web/e2e/heldout.spec.ts`, `web/playwright.heldout.config.ts`, `benchmarks/{make_heldout_cases,make_cal2_cases,make_netcal_cases,build_calibration,run_heldout,analyze_heldout,make_report_tables,nnls_fit}.py`); fixtures `web/public/probe/*.parquet` (8 KB each); ADR-009, ADR-010, RFC-004 (proposal), ADR-008 correction, RFC-003 v1.1 section; `docs/claude/planner-hardening.md`.
 - IR 0.2 / PlanGraph: unchanged (no serialized-format change). `EngineDescriptor`/`ExecutionEngine` separation kept.
 - Data: existing synthetic 10/100 MB/1 GB files and the 1.45 GB Overture subset; one new generator size, 30 MB (4 files, 30 MB each) — a size nothing was fitted on. No 10 GB, no PostGIS, gateway still localhost-only without auth (the new `/api/state/reset` is a dev/test aid under the same trust model).
 - Codex: not used this phase (the work was integration-heavy and the small tasks would have cost more review than writing).
