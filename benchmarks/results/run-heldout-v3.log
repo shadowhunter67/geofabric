@@ -1,0 +1,136 @@
+=== LOCAL: heldout-LOCAL.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+h3000 LOCAL clustered_10mb_spatial_s2 count f=0.0232 cold: planner=duckdb server=80 browser=616
+h3012 LOCAL clustered_10mb_spatial_s2 features f=0.00037 warm: planner=duckdb-wasm server=92 browser=48
+h3024 LOCAL clustered_10mb_spatial_s2 count_by f=0.32926 warm: planner=duckdb-wasm server=83 browser=47
+h3001 LOCAL clustered_10mb_shuffled_s2 features f=0.21677 warm: planner=duckdb server=680 browser=3853
+h3013 LOCAL clustered_10mb_shuffled_s2 count_by f=0.18545 warm: planner=duckdb-wasm server=78 browser=48
+h3025 LOCAL clustered_10mb_shuffled_s2 features f=0.00211 cold: planner=duckdb server=85 browser=564
+h3002 LOCAL clustered_30mb_spatial_s2 features f=0.03899 warm: planner=duckdb server=87 browser=92
+h3014 LOCAL clustered_30mb_spatial_s2 count f=0.09423 warm: planner=duckdb server=84 browser=88
+h3026 LOCAL clustered_30mb_spatial_s2 count_by f=0.01986 warm: planner=duckdb server=96 browser=55
+h3003 LOCAL clustered_30mb_shuffled_s2 count_by f=0.0072 warm: planner=duckdb server=88 browser=79
+h3015 LOCAL clustered_30mb_shuffled_s2 features f=0.00137 warm: planner=duckdb server=92 browser=112
+h3027 LOCAL clustered_30mb_shuffled_s2 features f=0.59457 warm: planner=duckdb server=102 browser=190
+h3004 LOCAL clustered_100mb_spatial_s2 count f=0.00048 warm: planner=duckdb server=84 browser=67
+h3016 LOCAL clustered_100mb_spatial_s2 features f=0.00036 warm: planner=duckdb server=81 browser=36
+h3005 LOCAL clustered_100mb_shuffled_s2 features f=0.00342 warm: planner=duckdb server=106 browser=561
+h3017 LOCAL clustered_100mb_shuffled_s2 features f=0.03617 warm: planner=duckdb server=705 browser=3969
+h3006 LOCAL uniform_10mb_spatial_s2 count f=0.13374 warm: planner=duckdb-wasm server=78 browser=72
+h3018 LOCAL uniform_10mb_spatial_s2 features f=0.01266 warm: planner=duckdb server=106 browser=199
+h3007 LOCAL uniform_10mb_shuffled_s2 count_by f=0.00103 warm: planner=duckdb-wasm server=94 browser=66
+h3019 LOCAL uniform_10mb_shuffled_s2 count_by f=0.04491 cold: planner=duckdb server=105 browser=607
+h3008 LOCAL uniform_30mb_spatial_s2 features f=0.03891 cold: planner=duckdb server=104 browser=845
+h3020 LOCAL uniform_30mb_spatial_s2 count_by f=0.00088 cold: planner=duckdb server=84 browser=687
+h3009 LOCAL uniform_30mb_shuffled_s2 features f=0.0005 warm: planner=duckdb server=158 browser=282
+h3021 LOCAL uniform_30mb_shuffled_s2 features f=0.00802 warm: planner=duckdb server=223 browser=468
+h3010 LOCAL uniform_100mb_spatial_s2 count f=0.00126 cold: planner=duckdb server=85 browser=733
+h3022 LOCAL uniform_100mb_spatial_s2 features f=0.22543 warm: planner=duckdb server=90 browser=98
+h3011 LOCAL uniform_100mb_shuffled_s2 features f=0.17788 warm: planner=duckdb server=2390 browser=838
+h3023 LOCAL uniform_100mb_shuffled_s2 count_by f=0.00115 warm: planner=duckdb server=1381 browser=1033
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.8m)
+
+  1 skipped
+  1 passed (1.8m)
+=== FAST_LAN: heldout-FAST_LAN.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+h3028 FAST_LAN clustered_100mb_shuffled_s2 features f=0.0004 warm: planner=duckdb server=379 browser=4086
+h3040 FAST_LAN clustered_100mb_shuffled_s2 count_by f=0.01241 warm: planner=duckdb server=183 browser=4983
+h3029 FAST_LAN uniform_10mb_spatial_s2 features f=0.00039 warm: planner=duckdb server=152 browser=203
+h3041 FAST_LAN uniform_10mb_spatial_s2 features f=0.08577 warm: planner=duckdb server=176 browser=240
+h3030 FAST_LAN uniform_10mb_shuffled_s2 count_by f=0.06572 warm: planner=duckdb server=163 browser=221
+h3031 FAST_LAN uniform_30mb_spatial_s2 count_by f=0.00215 warm: planner=duckdb server=143 browser=421
+h3032 FAST_LAN uniform_30mb_shuffled_s2 features f=0.00249 warm: planner=duckdb server=207 browser=681
+h3033 FAST_LAN uniform_100mb_spatial_s2 count f=0.00638 warm: planner=duckdb server=181 browser=615
+h3034 FAST_LAN uniform_100mb_shuffled_s2 count f=0.00037 warm: planner=duckdb server=169 browser=5092
+h3035 FAST_LAN clustered_10mb_spatial_s2 count_by f=0.69736 warm: planner=duckdb server=103 browser=188
+h3036 FAST_LAN clustered_10mb_shuffled_s2 features f=0.04789 warm: planner=duckdb server=147 browser=347
+h3037 FAST_LAN clustered_30mb_spatial_s2 features f=0.00124 warm: planner=duckdb server=111 browser=385
+h3038 FAST_LAN clustered_30mb_shuffled_s2 count_by f=0.03115 cold: planner=duckdb server=110 browser=1272
+h3039 FAST_LAN clustered_100mb_spatial_s2 count f=0.06653 warm: planner=duckdb server=97 browser=731
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.4m)
+
+  1 skipped
+  1 passed (1.4m)
+=== GOOD_BROADBAND: heldout-GOOD_BROADBAND.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+h3042 GOOD_BROADBAND uniform_100mb_spatial_s2 count_by f=0.00096 warm: planner=duckdb server=150 browser=1047
+h3054 GOOD_BROADBAND uniform_100mb_spatial_s2 count_by f=0.00144 warm: planner=duckdb server=134 browser=1537
+h3043 GOOD_BROADBAND clustered_1gb_shuffled count f=0.00075 warm: planner=duckdb server=439 browser=browser fetch 978 MB > 300 MB (tab crash threshold)
+h3046 GOOD_BROADBAND clustered_1gb_shuffled count_by f=0.68234 warm: planner=duckdb server=430 browser=browser fetch 978 MB > 300 MB (tab crash threshold)
+h3044 GOOD_BROADBAND clustered_10mb_spatial_s2 count_by f=0.0199 warm: planner=duckdb server=129 browser=544
+h3045 GOOD_BROADBAND clustered_10mb_shuffled_s2 count_by f=0.48412 warm: planner=duckdb server=113 browser=556
+h3057 GOOD_BROADBAND clustered_10mb_shuffled_s2 count_by f=0.02793 warm: planner=duckdb server=112 browser=543
+h3047 GOOD_BROADBAND clustered_30mb_shuffled_s2 count_by f=0.07929 warm: planner=duckdb server=126 browser=1442
+h3059 GOOD_BROADBAND clustered_30mb_shuffled_s2 count_by f=0.02566 cold: planner=duckdb server=127 browser=3539
+h3048 GOOD_BROADBAND clustered_100mb_spatial_s2 features f=0.00192 warm: planner=duckdb server=133 browser=1345
+h3060 GOOD_BROADBAND clustered_100mb_spatial_s2 count f=0.05097 warm: planner=duckdb server=112 browser=1669
+h3049 GOOD_BROADBAND clustered_100mb_shuffled_s2 features f=0.13047 cold: planner=duckdb server=355 browser=4373
+h3061 GOOD_BROADBAND clustered_100mb_shuffled_s2 count f=0.00851 warm: planner=duckdb server=149 browser=10309
+h3050 GOOD_BROADBAND uniform_10mb_spatial_s2 features f=0.49471 warm: planner=duckdb server=158 browser=612
+h3051 GOOD_BROADBAND uniform_1gb_shuffled count f=0.01166 warm: planner=duckdb server=481 browser=browser fetch 980 MB > 300 MB (tab crash threshold)
+h3056 GOOD_BROADBAND uniform_1gb_shuffled features f=0.17171 warm: planner=duckdb server=233 browser=1018
+h3052 GOOD_BROADBAND uniform_30mb_spatial_s2 count f=0.00082 warm: planner=duckdb server=121 browser=1370
+h3053 GOOD_BROADBAND uniform_30mb_shuffled_s2 count f=0.01565 warm: planner=duckdb server=112 browser=1445
+h3055 GOOD_BROADBAND uniform_100mb_shuffled_s2 features f=0.00049 warm: planner=duckdb server=226 browser=8423
+h3058 GOOD_BROADBAND clustered_30mb_spatial_s2 count_by f=0.09055 warm: planner=duckdb server=148 browser=1466
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (2.5m)
+
+  1 skipped
+  1 passed (2.5m)
+=== MOBILE: heldout-MOBILE.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+h3062 MOBILE clustered_30mb_shuffled_s2 features f=0.01663 warm: planner=duckdb server=165 browser=8638
+h3074 MOBILE clustered_30mb_shuffled_s2 count_by f=0.13034 warm: planner=duckdb server=175 browser=8646
+h3063 MOBILE clustered_100mb_spatial_s2 features f=0.02491 cold: planner=duckdb server=246 browser=17626
+h3075 MOBILE clustered_100mb_spatial_s2 count f=0.00256 warm: planner=duckdb server=153 browser=2734
+h3064 MOBILE clustered_100mb_shuffled_s2 features f=0.00353 cold: planner=duckdb server=5073 browser=38299
+h3076 MOBILE clustered_100mb_shuffled_s2 features f=0.00036 cold: planner=duckdb server=123 browser=49943
+h3065 MOBILE uniform_10mb_spatial_s2 count_by f=0.0816 cold: planner=duckdb server=172 browser=13639
+h3077 MOBILE uniform_10mb_spatial_s2 features f=0.4172 warm: planner=duckdb server=331 browser=3234
+h3066 MOBILE uniform_10mb_shuffled_s2 count_by f=0.01333 warm: planner=duckdb server=166 browser=3026
+h3078 MOBILE uniform_10mb_shuffled_s2 count_by f=0.01945 cold: planner=duckdb server=166 browser=13746
+h3067 MOBILE uniform_30mb_spatial_s2 count f=0.0005 cold: planner=duckdb server=178 browser=19232
+h3079 MOBILE uniform_30mb_spatial_s2 features f=0.02465 cold: planner=duckdb server=1258 browser=20854
+h3068 MOBILE uniform_30mb_shuffled_s2 count_by f=0.0279 warm: planner=duckdb server=194 browser=8622
+h3080 MOBILE uniform_30mb_shuffled_s2 features f=0.00072 warm: planner=duckdb server=325 browser=9045
+h3069 MOBILE uniform_100mb_spatial_s2 count_by f=0.0012 warm: planner=duckdb server=224 browser=4809
+h3081 MOBILE uniform_100mb_spatial_s2 features f=0.01773 warm: planner=duckdb server=135 browser=2457
+h3070 MOBILE uniform_100mb_shuffled_s2 count_by f=0.00201 warm: planner=duckdb server=196 browser=40337
+h3071 MOBILE clustered_10mb_spatial_s2 count_by f=0.00234 warm: planner=duckdb server=85 browser=2957
+h3072 MOBILE clustered_10mb_shuffled_s2 count_by f=0.10824 cold: planner=duckdb server=98 browser=13700
+h3073 MOBILE clustered_30mb_spatial_s2 features f=0.01479 warm: planner=duckdb server=333 browser=8530
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (13.1m)
+
+  Slow test file: e2e\heldout.spec.ts (13.1m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 skipped
+  1 passed (13.1m)
+The system cannot find the path specified.
+=== HIGH_LATENCY: heldout-HIGH_LATENCY.json
+Traceback (most recent call last):
+  File "E:\L\u1eadp tr�nh\l\u1eadp tr�nh\6-du-an-khac\geofabric\benchmarks\run_heldout.py", line 71, in <module>
+    main()
+  File "E:\L\u1eadp tr�nh\l\u1eadp tr�nh\6-du-an-khac\geofabric\benchmarks\run_heldout.py", line 61, in main
+    subprocess.run(["npx.cmd", "playwright", "test", "-c", "playwright.heldout.config.ts"], cwd=ROOT / "web", env=e, check=False)
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified

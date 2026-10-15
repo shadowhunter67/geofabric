@@ -144,7 +144,6 @@ pub struct Calibration {
     by_class: BTreeMap<(String, u8), Vec<f64>>,
     /// Observed group counts per (source, column).
     groups: BTreeMap<(String, String), Vec<f64>>,
-    all_groups: Vec<f64>,
     familiarity: BTreeMap<String, usize>,
     pub observations: usize,
 }
@@ -185,7 +184,6 @@ impl Calibration {
                 // grouped result below its LIMIT = the true group count
                 if !o.censored {
                     c.groups.entry((o.source.clone(), g.clone())).or_default().push(o.actual_rows as f64);
-                    c.all_groups.push(o.actual_rows as f64);
                 }
             }
         }
@@ -222,16 +220,16 @@ impl Calibration {
 
     /// Cardinality of a GROUP BY column: the largest group count ever observed for it on this source (a window can
     /// only show a subset of the groups, so the maximum is the best lower bound of the cardinality); without own
-    /// history, the median of the per-column maxima over all sources. The result has at most `min(cardinality, rows)` groups.
+    /// history, the median of the per-source maxima of a column **with the same name** on other sources. Never another
+    /// column's history (a v3 held-out run showed the cost: `height` has hundreds of groups, `category` eight).
+    /// The result has at most `min(cardinality, rows)` groups.
     pub fn group_count(&self, source: &str, column: &str) -> Option<(f64, &'static str)> {
         let max = |v: &Vec<f64>| v.iter().cloned().fold(0.0f64, f64::max);
         if let Some(v) = self.groups.get(&(source.to_string(), column.to_string())).filter(|v| !v.is_empty()) {
             return Some((max(v), "source"));
         }
-        (self.all_groups.len() >= 3).then(|| {
-            let mut maxima: Vec<f64> = self.groups.values().map(max).collect();
-            (median(&mut maxima), "global")
-        })
+        let mut maxima: Vec<f64> = self.groups.iter().filter(|((_, c), v)| c == column && !v.is_empty()).map(|(_, v)| max(v)).collect();
+        (maxima.len() >= 2).then(|| (median(&mut maxima), "global"))
     }
 }
 
@@ -580,9 +578,14 @@ mod tests {
     fn group_counts_are_learned() {
         let mut o = obs("A", "x", 100.0, 8, false);
         o.group_by = Some("category".into());
-        let cal = Calibration::fit(&vec![o.clone(), o.clone(), o]);
+        let cal = Calibration::fit(&[o.clone(), o.clone(), o.clone()]);
         assert_eq!(cal.group_count("A", "category"), Some((8.0, "source")));
-        assert_eq!(cal.group_count("Z", "x").map(|g| g.1), Some("global"));
+        assert_eq!(cal.group_count("Z", "category"), None, "one other source is not enough to generalise");
+        let mut o2 = obs("B", "x", 100.0, 8, false);
+        o2.group_by = Some("category".into());
+        let cal2 = Calibration::fit(&[o.clone(), o2]);
+        assert_eq!(cal2.group_count("Z", "category").map(|g| g.1), Some("global"));
+        assert_eq!(cal2.group_count("Z", "height"), None, "another column's history never answers for this one");
     }
 
     fn test_scan() -> SourceScan {

@@ -1,0 +1,15 @@
+=== HIGH_LATENCY: heldout-HIGH_LATENCY.json
+Traceback (most recent call last):
+  File "E:\L\u1eadp trình\l\u1eadp trình\6-du-an-khac\geofabric\benchmarks\run_heldout.py", line 71, in <module>
+    main()
+  File "E:\L\u1eadp trình\l\u1eadp trình\6-du-an-khac\geofabric\benchmarks\run_heldout.py", line 61, in main
+    subprocess.run(["npx.cmd", "playwright", "test", "-c", "playwright.heldout.config.ts"], cwd=ROOT / "web", env=e, check=False)
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified

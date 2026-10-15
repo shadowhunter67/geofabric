@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { openApp, tab } from "./helpers.ts";
 
 // Planner hardening (ADR-009/010) in a real browser: runtime probe, health, fallback taxonomy, UI fields.
 // Needs: `npm run build`, benchmarks/data (10mb files). The gateway is shared between tests: every test
@@ -30,8 +31,7 @@ async function get(page: Page, path: string) {
 }
 
 async function open(page: Page) {
-  await page.goto("/?e2e=1");
-  await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 30_000 });
+  await openApp(page);
   // the startup probe finishes shortly after the map loaded
   await page.waitForFunction(() => window.__gf.state.probe !== null, null, { timeout: 60_000 });
 }
@@ -65,11 +65,11 @@ test("probe result drives pre-rejection: a file class this runtime cannot read i
 });
 
 test("Execution Plan shows engine, confidence, health, runtime probe, network profile, risk and fallback", async ({ page }) => {
-  await page.getByRole("tab", { name: "SQL / Ask" }).click();
-  await page.getByLabel("Engine").selectOption("duckdb-wasm");
-  await page.getByRole("button", { name: "Run viewport query" }).click();
-  await expect(page.locator("header .status")).toContainText("duckdb-wasm", { timeout: 30_000 });
-  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  await tab(page, "query").click();
+  await page.getByTestId("q-where").selectOption("duckdb-wasm");
+  await page.getByTestId("q-run").click();
+  await expect(page.getByTestId("status")).toContainText("duckdb-wasm", { timeout: 30_000 });
+  await tab(page, "execution").click();
   const a = page.getByTestId("assessment");
   await expect(a).toContainText("Engine");
   await expect(a.getByTestId("confidence-badge")).toContainText(/Confidence|Medium|High/);
@@ -79,7 +79,8 @@ test("Execution Plan shows engine, confidence, health, runtime probe, network pr
   await expect(a.getByTestId("probe-badge")).toContainText("Observed");
   await expect(a).toContainText("Network profile");
   await expect(a).toContainText("LOCAL");
-  await expect(a.getByTestId("risk")).toContainText("crash threshold");
+  await expect(a.getByTestId("safety-badge")).toContainText(/Safe|Risky|Unknown/);
+  await expect(a.getByTestId("risk")).toContainText("MB");
   await expect(a).toContainText("Fallback");
   await expect(a).toContainText("Estimated");
   await expect(a.getByTestId("estimate-vs-actual")).toContainText("rows");

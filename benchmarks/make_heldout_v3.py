@@ -18,7 +18,8 @@ import sys
 
 SYN = [100.0, 8.0, 110.0, 24.0]
 SEED = int(os.environ.get("HO_SEED", "20261016"))
-S2 = [f"{d}_{s}_{o}_s2" for d in ("clustered", "uniform") for s in ("10mb", "30mb", "100mb") for o in ("spatial", "shuffled")]
+SUFFIX = os.environ.get("HO_SUFFIX", "_s2")
+S2 = [f"{d}_{s}_{o}{SUFFIX}" for d in ("clustered", "uniform") for s in ("10mb", "30mb", "100mb") for o in ("spatial", "shuffled")]
 EXTRA = ["clustered_1gb_shuffled", "uniform_1gb_shuffled"]
 QUERIES = [
     ("features", 300, None, None, False), ("features", 1500, None, None, False), ("features", 8000, None, None, False), ("features", 40000, None, None, False),

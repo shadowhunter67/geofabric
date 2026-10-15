@@ -34,10 +34,11 @@ def ef(est, act):
 def summary(factors, over=None, cover=None):
     if not factors:
         return None
-    s = {"n": len(factors), "median": round(statistics.median(factors), 2), "p90": round(q(factors, 0.9), 2), "max": round(max(factors), 2)}
+    s = {"n": len(factors), "median": round(statistics.median(factors), 2), "p90": round(q(factors, 0.9), 2), "p95": round(q(factors, 0.95), 2), "max": round(max(factors), 2)}
     if over is not None:
         s["over_rate"] = round(sum(1 for o in over if o > 0) / len(over), 2)
         s["under_rate"] = round(sum(1 for o in over if o < 0) / len(over), 2)
+        s["large_under_rate_gt5x"] = round(sum(1 for f, o in zip(factors, over) if o < 0 and f > 5) / len(over), 3)
     if cover is not None:
         s["interval_coverage"] = round(sum(cover) / len(cover), 2)
     return s
@@ -55,6 +56,8 @@ def load(results_dir, prefix="heldout"):
         if f.endswith("-summary.json") or f.endswith("-cases.json") or "range-features" in f:
             continue
         d = json.load(open(f))
+        if "rows" not in d:
+            continue
         rows += [dict(r, network=d["network"]) for r in d["rows"]]
     return rows
 
@@ -63,6 +66,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=os.path.join(os.path.dirname(__file__), "results"))
     ap.add_argument("--prefix", default="heldout")
+    ap.add_argument("--cardinality", help="results/heldout-cardinality.json from eval_cardinality.py")
     ap.add_argument("--uncalibrated", help="gateway without telemetry, for the v1-equivalent estimator")
     a = ap.parse_args()
     rows = load(a.results, a.prefix)
@@ -89,6 +93,13 @@ def main():
             v1.append((e["rows"], r["server"]["rows"], e["low"], e["high"]))
         out["estimator_uncalibrated"] = summary([ef(e, t) for e, t, *_ in v1], [e - t for e, t, *_ in v1], [lo <= t <= hi for e, t, lo, hi in v1])
     out["estimator_v2_cases"] = est_rows
+    if a.cardinality:
+        card = json.load(open(a.cardinality))
+        cs = [card[x["id"]] for x in est_rows if x["id"] in card]
+        out["cardinality"] = summary([ef(c["est"], c["actual"]) for c in cs], [c["est"] - c["actual"] for c in cs], [c["low"] <= c["actual"] <= c["high"] for c in cs])
+        out["cardinality_above_interval_rate"] = round(sum(1 for c in cs if c["actual"] > c["high"]) / max(1, len(cs)), 3)
+        out["cardinality_by_layout"] = {k: summary([ef(c["est"], c["actual"]) for c in cs if c["layout"] == k]) for k in sorted({c["layout"] for c in cs})}
+        out["cardinality_cases"] = [dict(id=x["id"], **card[x["id"]]) for x in est_rows if x["id"] in card]
 
     # ---------- time model ----------
     te = {"duckdb": [], "duckdb-wasm": []}

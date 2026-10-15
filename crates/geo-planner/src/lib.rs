@@ -98,8 +98,10 @@ pub struct CostModel {
     /// Files up to this size are downloaded whole into the tab (1 request); larger ones are read with HTTP range
     /// requests. The client follows `assessment.browser_access` (single source of truth). ADR-009.
     pub browser_full_fetch_max_bytes: u64,
-    /// Range mode, fitted on the cal2 grid (27 runs, LOCAL; median error 1.04x given the true request/byte counts):
-    /// local ms = fixed + per_request * requests + per_mb * fetched MB + per_row * rows.
+    /// Range mode, fitted on the 46 envelope runs (Chrome + Edge, 1 GB+ sources, LOCAL, NO simulated network; median error
+    /// 1.14x given the true request/byte/row counts): local ms = fixed + per_request * requests + per_mb * fetched MB + per_row * rows.
+    /// (An earlier fit gave 14.5 ms/request and 14.1 ms/MB: those runs went through the gateway's network simulation, whose
+    /// 0-latency sleeps cost 10-15 ms per request on Windows. The planner then over-estimated range-mode browser time up to 7x.)
     pub browser_range_fixed_ms: f64,
     pub browser_range_ms_per_request: f64,
     pub browser_range_ms_per_mb: f64,
@@ -144,10 +146,10 @@ impl Default for CostModel {
             range_request_parallelism: 4.0,
             browser_cold_start_ms: 1400.0,
             browser_full_fetch_max_bytes: 32 << 20,
-            browser_range_fixed_ms: 19.0,
-            browser_range_ms_per_request: 14.5,
-            browser_range_ms_per_mb: 14.1,
-            browser_range_us_per_row: 104.0,
+            browser_range_fixed_ms: 12.0,
+            browser_range_ms_per_request: 2.5,
+            browser_range_ms_per_mb: 3.8,
+            browser_range_us_per_row: 169.0,
             browser_range_requests_per_rg_aggregate: 9.6,
             browser_range_requests_per_rg_features: 12.0,
             browser_fetch_overhead_share: 0.03,

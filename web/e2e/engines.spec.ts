@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openApp, tab } from "./helpers.ts";
 
 // Cross-engine tests: the SAME logical plan (IR 0.2) runs on the server engine (DuckDB, via the gateway)
 // and on the browser engine (DuckDB-Wasm, in the page) and must produce the same canonical digest.
@@ -48,8 +49,7 @@ async function both(page: import("@playwright/test").Page, req: Record<string, u
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/?e2e=1");
-  await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 30_000 });
+  await openApp(page);
 });
 
 test("same plan, two engines, same result: features in a viewport", async ({ page }) => {
@@ -89,11 +89,11 @@ test("browser disabled -> DuckDB", async ({ page }) => {
 });
 
 test("UI: choosing the browser engine runs the query locally and shows the planner decision", async ({ page }) => {
-  await page.getByRole("tab", { name: "SQL / Ask" }).click();
-  await page.getByLabel("Engine").selectOption("duckdb-wasm");
-  await page.getByRole("button", { name: "Run viewport query" }).click();
-  await expect(page.locator("header .status")).toContainText("duckdb-wasm", { timeout: 60_000 });
-  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  await tab(page, "query").click();
+  await page.getByTestId("q-where").selectOption("duckdb-wasm");
+  await page.getByTestId("q-run").click();
+  await expect(page.getByTestId("status")).toContainText("duckdb-wasm", { timeout: 60_000 });
+  await tab(page, "execution").click();
   const panel = page.getByTestId("planner-panel");
   await expect(panel).toBeVisible();
   await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb-wasm");
@@ -101,12 +101,12 @@ test("UI: choosing the browser engine runs the query locally and shows the plann
   await expect(panel.getByTestId("engine-alternative")).toHaveAttribute("data-engine", "duckdb");
   await expect(panel).toContainText("Estimated transfer to the browser");
   // results are real: table rows and a digest line
-  await page.getByRole("tab", { name: "Results" }).click();
+  await tab(page, "results").click();
   expect(await page.locator(".tabbody table tbody tr").count()).toBeGreaterThan(0);
 });
 
 test("UI: auto mode shows the server engine, the browser alternative and the reason", async ({ page }) => {
-  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  await tab(page, "execution").click();
   const panel = page.getByTestId("planner-panel");
   await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
   await expect(panel).toContainText("Server");
@@ -120,11 +120,11 @@ test("UI: when the browser engine fails, the query is re-run on the server and t
   await page.evaluate(() => {
     (window as unknown as { __gf: { wasm: { execute: () => Promise<never> } } }).__gf.wasm.execute = () => Promise.reject(new Error("injected browser failure"));
   });
-  await page.getByRole("tab", { name: "SQL / Ask" }).click();
-  await page.getByLabel("Engine").selectOption("duckdb-wasm");
-  await page.getByRole("button", { name: "Run viewport query" }).click();
-  await expect(page.locator("header .status")).toContainText("duckdb", { timeout: 30_000 });
-  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  await tab(page, "query").click();
+  await page.getByTestId("q-where").selectOption("duckdb-wasm");
+  await page.getByTestId("q-run").click();
+  await expect(page.getByTestId("status")).toContainText("duckdb", { timeout: 30_000 });
+  await tab(page, "execution").click();
   const panel = page.getByTestId("planner-panel");
   await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
   await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure");

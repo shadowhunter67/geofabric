@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openApp, tab } from "./helpers.ts";
 
 // Types of the e2e hook exposed by the app when ?e2e=1 (test-only).
 interface GF {
@@ -18,23 +19,26 @@ test("core flow: map, sources, run, results, execution plan, inspector", async (
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
 
-  await page.goto("/?e2e=1");
+  await openApp(page, { wait: false });
+
+  // the inspector takes no room until something is selected
+  await expect(page.locator("section.right")).toBeHidden();
 
   // 1. app loads, map container + canvas rendered
   await expect(page.locator("#map")).toBeVisible();
   await expect(page.locator("#map canvas.maplibregl-canvas")).toBeVisible();
 
   // 2. dataset listed (with CRS metadata)
-  const source = page.locator("aside .item", { hasText: "clustered_10mb_spatial" });
+  const source = page.locator('[data-testid="dataset"][data-id="clustered_10mb_spatial"]');
   await expect(source).toBeVisible();
   await expect(source).toContainText("EPSG:4326");
 
   // 3. the first query runs automatically on selection; status shows rows + engine
-  await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 30_000 });
-  await expect(page.locator("header .status")).toContainText("duckdb");
+  await expect(page.getByTestId("status")).toContainText("results ·", { timeout: 30_000 });
+  await expect(page.getByTestId("status")).toContainText("duckdb");
 
   // 4. Execution Plan tab: pipeline steps + metrics with provenance badges
-  await page.getByRole("tab", { name: "Execution Plan" }).click();
+  await tab(page, "execution").click();
   await expect(page.getByText("Read GeoParquet metadata")).toBeVisible();
   await expect(page.getByText("Compile logical plan")).toBeVisible();
   await expect(page.getByText("Planner decisions")).toBeVisible();
@@ -48,7 +52,7 @@ test("core flow: map, sources, run, results, execution plan, inspector", async (
   await expect(page.locator('[data-metric="Rows returned"]')).toHaveAttribute("data-source", "engine_observed");
 
   // 5. Results tab shows rows
-  await page.getByRole("tab", { name: "Results" }).click();
+  await tab(page, "results").click();
   await expect(page.locator(".tabbody table th", { hasText: "category" })).toBeVisible();
   expect(await page.locator(".tabbody table tbody tr").count()).toBeGreaterThan(0);
 
@@ -62,8 +66,8 @@ test("core flow: map, sources, run, results, execution plan, inspector", async (
   await page.evaluate((b) => {
     window.__gf.map.fitBounds([[b.w, b.s], [b.e, b.n]], { padding: 220, maxZoom: 17, duration: 0 });
   }, centre);
-  await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.locator("header .status")).toContainText("rows ·");
+  await page.getByTestId("run").click();
+  await expect(page.getByTestId("status")).toContainText("results ·");
   await page.evaluate(() => new Promise<void>((res) => { window.__gf.map.once("idle", () => res()); window.__gf.map.triggerRepaint(); }));
   const px = await page.evaluate((b) => window.__gf.map.project([(b.w + b.e) / 2, (b.s + b.n) / 2]), centre);
   const box = (await page.locator("#map canvas.maplibregl-canvas").boundingBox())!;
@@ -71,11 +75,12 @@ test("core flow: map, sources, run, results, execution plan, inspector", async (
 
   // 7. Inspector opens with properties
   const inspector = page.locator("section.right");
+  await expect(inspector).toBeVisible();
   await expect(inspector).toContainText("Properties");
-  await expect(inspector).toContainText("geometry type");
+  await expect(inspector).toContainText("Geometry");
   await expect(inspector).toContainText("category");
   await expect(inspector).toContainText("EPSG:4326");
-  await expect(inspector).toContainText("Lineage");
+  await expect(inspector).toContainText("Processing history");
 
   expect(errors, `uncaught page errors: ${errors.join("; ")}`).toEqual([]);
 });

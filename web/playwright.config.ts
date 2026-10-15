@@ -7,11 +7,12 @@ const PORT = 8798;
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: /(heldout|envelope|crossover)\.spec\.ts/,
   timeout: 60_000,
   workers: 1, // one browser at a time (RAM discipline)
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: `http://127.0.0.1:${PORT}`, channel: "chrome", headless: true, viewport: { width: 1500, height: 900 } },
+  use: { baseURL: `http://127.0.0.1:${PORT}`, channel: (process.env.PW_CHANNEL ?? "chrome") as "chrome" | "msedge", headless: true, viewport: { width: 1500, height: 900 } },
   webServer: {
     // run from the repo root; builds the gateway on first use
     // GATEWAY_BIN=target/release/geo-gateway.exe for timing runs (release build, no cargo)

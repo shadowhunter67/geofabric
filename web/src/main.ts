@@ -2,92 +2,54 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
-import { DuckDbWasmEngine } from "./engine/wasm.ts";
 import { compile } from "./engine/sqlgen.ts";
-import { resultDigest } from "./engine/digest.ts";
-import { wkbToGeoJSON } from "./engine/wkb.ts";
-import { EngineError } from "./engine/contract.ts";
-import type { PlanGraph, SourceBinding } from "./engine/contract.ts";
-import { isFresh, runProbe, sessionId, usable } from "./engine/probe.ts";
-import type { ProbeReport } from "./engine/probe.ts";
-import { classifyFailure, fallbackAllowed } from "./engine/failure.ts";
-import type { FailureClass } from "./engine/failure.ts";
-
-// ---------- types ----------
-interface Column { name: string; type: string }
-interface SourceMeta {
-  id: string; format: string; size_bytes: number; rows: number; row_groups: number; crs: string; crs_known: boolean;
-  geometry_column: string; geometry_type: string; bbox: [number, number, number, number] | null; has_covering: boolean;
-  columns: Column[]; error?: string;
-}
-interface Decision { rule: string; subject: string; outcome: string; reason: string }
-interface Factor { name: string; value: number; weight: number; detail: string }
-interface Confidence { score: number; label: "high" | "medium" | "low"; factors: Factor[] }
-interface Risk { score: number; memory: number; result_rows: number; probe: number; health: number; format: number; memory_input_bytes: number; crash_threshold_bytes: number; threshold_basis: string }
-interface Health { state: "healthy" | "degraded" | "unhealthy" | "unknown"; reason: string; events: number; failures: number; last_failure: string | null }
-interface Candidate {
-  engine: string; kind: "server" | "browser"; feasible: boolean; score_ms: number | null;
-  cost: { fixed_ms: number; scan_ms: number; transfer_ms: number; latency_ms: number; cold_start_ms: number; scan_bytes: number; transfer_bytes: number } | null;
-  reasons: string[]; rejected_because: string[];
-  confidence: Confidence | null; risk: Risk | null; health: Health; probe_status: string;
-}
-interface Estimate {
-  rows: number; low: number; high: number; quality: "poor" | "fair" | "good"; covering_quality: string; raw_selected: number;
-  correction: { factor: number; samples: number; basis: string }; spatial_coherence: number | null; row_groups_total: number; row_groups_kept: number;
-  limit_bound: boolean; notes: string[];
-}
-interface Assessment {
-  confidence: Confidence; engine_confidence: number; margin_factor: number; estimate: Estimate;
-  network: { name: string; rtt_ms: number; down_mbps: number; up_mbps: number; origin: string };
-  health: Record<string, Health>;
-  probes: Record<string, { status: string; usable: boolean; age_ms: number | null; failed_checks: string[]; memory_class: string | null; engine_version: string | null; runtime_version: string | null }>;
-  fallback: { engine: string; reason: string; max_fallbacks: number } | null; policy: string[];
-  browser_access: { uri: string; strategy: "full" | "range"; file_bytes: number; requests_est: number; fetch_bytes_est: number }[];
-}
-interface Physical {
-  engine: string; placement?: "server" | "browser"; decisions: Decision[]; steps: { label: string; detail: string }[];
-  assessment: Assessment;
-  candidates?: Candidate[]; input_bytes_upper_bound?: number; result_rows_estimate?: number;
-  scans: { uri: string; covering?: { xmin: string; ymin: string; xmax: string; ymax: string; declared: boolean } | null;
-    prune: { kept: number[]; skipped: number; total_row_groups: number; total_rows: number; kept_rows: number; kept_bytes: number; total_bytes: number } }[];
-}
-interface Metric<T> { value: T | null; source: string }
-interface Metrics {
-  elapsed_ms: Metric<number>; rows_returned: Metric<number>; row_groups_total: Metric<number>;
-  row_groups_skipped: Metric<number>; rows_scanned_upper_bound: Metric<number>;
-  estimated_bytes_upper_bound: Metric<number>; bytes_read: Metric<number>; peak_memory_bytes: Metric<number>;
-  notes: string[];
-}
-interface RunResp {
-  fallback?: { from: string; reason: string; class: FailureClass };
-  placement?: "server" | "browser"; result_digest?: { count: number; sha256: string };
-  source_urls?: Record<string, string>; limits?: { max_rows: number; timeout_ms: number };
-  plan_id: string; ir: unknown; physical: Physical; lineage: { id: string; op: string }[];
-  columns: { name: string; type: string; geometry: boolean }[]; rows: Record<string, unknown>[]; rows_total: number;
-  geojson: GeoJSON.FeatureCollection | null; metrics: Metrics;
-  timing: { plan_and_overhead_ms: Metric<number>; total_ms: Metric<number>; boundary_conversion_ms: Metric<number> };
-}
+import type { PlanGraph } from "./engine/contract.ts";
+import { usable } from "./engine/probe.ts";
+import { createPlacement } from "./placement.ts";
+import { getLang, LANGS, onLangChange, setLang, t } from "./ui/i18n.ts";
+import type { Key, Lang } from "./ui/i18n.ts";
+import { datasetLabel, fieldLabel, fmtBytes, fmtDate, fmtInt, fmtMs, fmtPct, geometryLabel } from "./ui/labels.ts";
+import { pipelineSteps, summarize } from "./ui/explain.ts";
+import { icon } from "./ui/icons.ts";
+import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
 // ---------- tiny DOM helper (text only: file contents are untrusted) ----------
-type Child = Node | string | null | undefined;
+type Child = Node | string | null | undefined | Child[];
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...kids: Child[]): HTMLElementTagNameMap[K] {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
     if (k === "class") n.className = String(v);
     else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v as EventListener);
-    else if (v !== undefined && v !== false) n.setAttribute(k, v === true ? "" : String(v));
+    else if (v !== undefined && v !== false && v !== null) n.setAttribute(k, v === true ? "" : String(v));
   }
-  for (const c of kids) if (c != null) n.append(typeof c === "string" ? document.createTextNode(c) : c);
+  const add = (c: Child): void => {
+    if (c == null) return;
+    if (Array.isArray(c)) c.forEach(add);
+    else n.append(typeof c === "string" ? document.createTextNode(c) : c);
+  };
+  kids.forEach(add);
   return n;
 }
-const fmtBytes = (b: number | null | undefined) => b == null ? "—" : b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
-const fmtMs = (v: number) => v < 1000 ? `${v.toFixed(1)} ms` : `${(v / 1000).toFixed(2)} s`;
+
+// ---------- settings (persisted per viewer; every access is guarded: storage may be blocked) ----------
+type Mode = "explorer" | "developer";
+const params = new URLSearchParams(location.search);
+function stored(k: string): string | null {
+  try { return localStorage.getItem(k); } catch { return null; }
+}
+function store(k: string, v: string): void {
+  try { localStorage.setItem(k, v); } catch { /* blocked */ }
+}
+const initialMode: Mode = (params.get("mode") ?? stored("gf.mode")) === "developer" ? "developer" : "explorer";
+const initialLang: Lang = ((params.get("lang") ?? stored("gf.lang")) === "en" ? "en" : "vi");
+setLang(initialLang);
 
 // ---------- state ----------
 const S = {
   sources: [] as SourceMeta[],
   cur: null as SourceMeta | null,
   last: null as RunResp | null,
+  lastChosen: false,
   derived: [] as { label: string; resp: RunResp }[],
   logs: [] as string[],
   tab: "query",
@@ -100,32 +62,36 @@ const S = {
   busy: false,
   engine: "auto",
   allowBrowser: true,
-  probe: null as ProbeReport | null,
-  probing: null as Promise<void> | null,
   network: "LOCAL",
+  mode: initialMode,
+  expanded: new Set<string>(),
+  advancedOpen: false,
+  status: { key: "status.ready" as Key, params: {} as Record<string, string | number> },
 };
-const SESSION = sessionId();
+const DEV = () => S.mode === "developer";
+
+const placement = createPlacement({
+  log: (m, e) => log(m, e),
+  onProbe: () => { if (S.tab === "execution") renderTab(); if (DEV()) renderHeader(); },
+});
+const wasm = placement.wasm;
 
 // ---------- layout ----------
 const app = document.getElementById("app")!;
-const statusEl = el("span", { class: "status" }, "idle");
-const runBtn = el("button", { class: "primary", onclick: () => void run() }, "Run");
-const settingsPop = el("div", { class: "card", style: "position:absolute;right:10px;top:40px;z-index:5;display:none;min-width:240px" });
-const header = el("header", {},
-  el("div", { class: "brand" }, "Geo", el("span", {}, "Fabric")),
-  runBtn,
-  el("button", { onclick: () => setTab("profile") }, "Profile"),
-  el("button", { onclick: () => { settingsPop.style.display = settingsPop.style.display === "none" ? "block" : "none"; } }, "Settings"),
-  el("div", { class: "spacer" }),
-  statusEl,
-);
-const left = el("aside", {});
-const mapDiv = el("div", { id: "map" });
+const statusEl = el("span", { class: "status", role: "status", "aria-live": "polite", "data-testid": "status" });
+const header = el("header", { role: "banner" });
+const left = el("aside", { class: "left" });
+const mapDiv = el("div", { id: "map", role: "region" });
 const right = el("section", { class: "right" });
-const tabsEl = el("div", { class: "tabs" });
-const tabBody = el("div", { class: "tabbody" });
-const bottom = el("div", { class: "bottom" }, tabsEl, tabBody);
-app.append(header, left, mapDiv, right, bottom, settingsPop);
+const tabsEl = el("div", { class: "tabs", role: "tablist" });
+const tabBody = el("div", { class: "tabbody", role: "tabpanel", tabindex: "0" });
+const pipeEl = el("div", { class: "pipeline", "data-testid": "pipeline" });
+const resizer = el("div", { class: "resizer", role: "separator", "aria-orientation": "horizontal", tabindex: "0" });
+const bottom = el("div", { class: "bottom", role: "region" }, resizer, tabsEl, tabBody, pipeEl);
+const legendEl = el("div", { class: "legend" });
+const popover = el("div", { class: "popover", hidden: true, role: "dialog" });
+app.append(header, left, mapDiv, right, bottom, popover);
+mapDiv.append(legendEl);
 
 function log(msg: string, isErr = false) {
   S.logs.push(`${new Date().toISOString().slice(11, 23)} ${isErr ? "ERROR " : ""}${msg}`);
@@ -133,16 +99,126 @@ function log(msg: string, isErr = false) {
   if (S.tab === "logs") renderTab();
 }
 
-// ---------- settings ----------
-settingsPop.append(
-  el("label", {}, el("input", { type: "checkbox", onchange: (e: Event) => { S.liveRequery = (e.target as HTMLInputElement).checked; } }), " Re-query when the map moves"),
-  el("label", { class: "net" }, "Assumed network ",
-    el("select", { "data-testid": "network-select", onchange: (e: Event) => void setNetwork((e.target as HTMLSelectElement).value) },
-      ...["LOCAL", "FAST_LAN", "GOOD_BROADBAND", "MOBILE", "HIGH_LATENCY"].map((n) => el("option", { value: n }, n)))),
-  el("div", { class: "note" }, "What the planner assumes about the link between you and the data (presets are assumptions, not measurements; LOCAL = this host)."),
-  el("div", { class: "note" }, "Basemap: none (offline; no external tile requests)."),
-  el("div", { class: "note" }, "Mode: Developer (SQL is not exposed; submit logical IR)."),
-);
+function setStatus(key: Key, p: Record<string, string | number> = {}) {
+  S.status = { key, params: p };
+  renderStatus();
+}
+function renderStatus() {
+  statusEl.textContent = t(S.status.key, S.status.params);
+}
+
+// ---------- bottom panel height (drag or keyboard) ----------
+const root = document.documentElement;
+let bottomH = Number(stored("gf.bottomH")) || 0;
+function applyBottomH(h?: number) {
+  const max = Math.round(window.innerHeight * 0.55);
+  const dflt = Math.min(300, Math.round(window.innerHeight * 0.36));
+  bottomH = Math.max(170, Math.min(max, h ?? (bottomH || dflt)));
+  root.style.setProperty("--bottom-h", `${bottomH}px`);
+  requestAnimationFrame(() => map?.resize());
+}
+resizer.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  const move = (ev: PointerEvent) => applyBottomH(window.innerHeight - ev.clientY);
+  const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); store("gf.bottomH", String(bottomH)); };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+});
+resizer.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    e.preventDefault();
+    applyBottomH(bottomH + (e.key === "ArrowUp" ? 24 : -24));
+    store("gf.bottomH", String(bottomH));
+  }
+});
+window.addEventListener("resize", () => applyBottomH());
+
+// ---------- header ----------
+function renderHeader() {
+  const modeBtn = (m: Mode) =>
+    el("button", { type: "button", class: `mode${S.mode === m ? " on" : ""}`, "aria-pressed": S.mode === m, "data-testid": `mode-${m}`, onclick: () => setMode(m) }, t(m === "explorer" ? "mode.explorer" : "mode.developer"));
+  const langSel = el("select", { "aria-label": t("lang.label"), title: t("lang.label"), "data-testid": "lang", onchange: (e: Event) => changeLang((e.target as HTMLSelectElement).value as Lang) },
+    ...LANGS.map((l) => el("option", { value: l, selected: l === getLang() }, l === "vi" ? "Tiếng Việt" : "English")));
+  const runBtn = el("button", { type: "button", class: "primary", id: "run", "data-testid": "run", title: t("top.run"), onclick: () => void run() }, t("top.run"));
+  runBtn.disabled = S.busy;
+  const open = (k: string) => !popover.hidden && popover.dataset.kind === k;
+  const settingsBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("settings"), "data-testid": "settings", title: t("top.settings"), onclick: () => togglePopover("settings") }, t("top.settings"));
+  const helpBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("help"), "data-testid": "help", title: t("top.help"), onclick: () => togglePopover("help") }, t("top.help"));
+  header.replaceChildren(
+    el("div", { class: "brand" }, "Geo", el("span", {}, "Fabric")),
+    el("div", { class: "modes", role: "group", "aria-label": t("mode.label") }, modeBtn("explorer"), modeBtn("developer")),
+    langSel,
+    runBtn,
+    settingsBtn,
+    helpBtn,
+    el("div", { class: "spacer" }),
+    DEV() ? devStrip() : null,
+    statusEl,
+  );
+  renderStatus();
+}
+
+/** Developer-only strip: the engine, the network the planner assumes and the runtime probe. */
+function devStrip(): HTMLElement {
+  const pr = placement.state.probe;
+  return el("div", { class: "devstrip", "data-testid": "dev-strip" },
+    el("span", {}, `${t("top.engine")}: ${S.engine === "auto" ? "auto" : S.engine}`),
+    el("span", {}, `${t("top.network")}: ${S.network}`),
+    el("span", {}, `${t("top.probe")}: ${pr ? (usable(pr) ? "OK" : "FAILED") : placement.state.probing ? "…" : "—"}`));
+}
+
+function setMode(m: Mode) {
+  if (S.mode === m) return;
+  S.mode = m;
+  store("gf.mode", m);
+  if (!DEV() && S.tab === "profile") S.tab = "query";
+  renderAll();
+}
+function changeLang(l: Lang) {
+  store("gf.lang", l);
+  setLang(l); // onLangChange re-renders everything
+}
+onLangChange(() => { document.documentElement.lang = getLang(); renderAll(); });
+
+function togglePopover(kind: "settings" | "help") {
+  if (!popover.hidden && popover.dataset.kind === kind) { closePopover(); return; }
+  popover.dataset.kind = kind;
+  popover.hidden = false;
+  renderPopover();
+  renderHeader();
+}
+function closePopover() { popover.hidden = true; delete popover.dataset.kind; renderHeader(); }
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !popover.hidden) closePopover(); });
+
+function renderPopover() {
+  if (popover.hidden) return;
+  const kind = popover.dataset.kind;
+  popover.setAttribute("aria-label", t(kind === "help" ? "help.title" : "settings.title"));
+  if (kind === "help") {
+    popover.replaceChildren(el("h3", {}, t("help.title")), el("div", { class: "help-body" }, t("help.body")), el("button", { type: "button", onclick: closePopover }, t("help.close")));
+    return;
+  }
+  popover.replaceChildren(
+    el("h3", {}, t("settings.title")),
+    el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.liveRequery, onchange: (e: Event) => { S.liveRequery = (e.target as HTMLInputElement).checked; } }), t("settings.live")),
+    DEV() ? el("label", { class: "net" }, t("settings.network"),
+      el("select", { "data-testid": "network-select", onchange: (e: Event) => void setNetwork((e.target as HTMLSelectElement).value) },
+        ...["LOCAL", "FAST_LAN", "GOOD_BROADBAND", "MOBILE", "HIGH_LATENCY"].map((n) => el("option", { value: n, selected: n === S.network }, n)))) : null,
+    DEV() ? el("div", { class: "note" }, t("settings.network_note")) : null,
+    el("div", { class: "note" }, t("settings.basemap")),
+    el("div", { class: "note" }, t("settings.mode_note")),
+    el("button", { type: "button", onclick: closePopover }, t("help.close")),
+  );
+}
+
+async function setNetwork(name: string) {
+  try {
+    await api("/api/network", { profile: name });
+    S.network = name;
+    log(`planner network profile: ${name}`);
+    renderHeader();
+  } catch (e) { log(String(e), true); }
+}
 
 // ---------- map ----------
 maplibregl.setWorkerUrl(workerUrl);
@@ -176,19 +252,20 @@ map.on("load", () => {
     });
   }
   void loadSources();
-  void probeRuntime("startup");
+  void placement.probeRuntime("startup");
 });
-mapDiv.append(el("div", { class: "legend" },
-  el("i", { style: "background:#e0a84a" }), "result  ", el("i", { style: "background:#5fbf8a" }), "row group read  ",
-  el("i", { style: "background:#6b7782" }), "row group pruned",
-));
+function renderLegend() {
+  legendEl.replaceChildren(
+    el("i", { style: "background:#e0a84a" }), t("map.legend.result"), "  ",
+    el("i", { style: "background:#5fbf8a" }), t(DEV() ? "map.legend.read_dev" : "map.legend.read"), "  ",
+    el("i", { style: "background:#6b7782" }), t(DEV() ? "map.legend.skipped_dev" : "map.legend.skipped"));
+}
 let moveTimer: number | undefined;
 map.on("moveend", () => {
   if (!S.liveRequery || !S.cur || S.busy) return;
   window.clearTimeout(moveTimer);
   moveTimer = window.setTimeout(() => void run(), 400);
 });
-
 function setData(id: string, data: GeoJSON.FeatureCollection) {
   (map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(data);
 }
@@ -214,7 +291,7 @@ async function loadSources() {
     if (first) await selectSource(first);
   } catch (e) {
     log(String(e), true);
-    statusEl.textContent = "gateway unreachable";
+    setStatus("status.unreachable");
   }
 }
 
@@ -255,165 +332,30 @@ function currentRequest() {
   };
 }
 
-
-// ---------- engine placement: the planner decides, the browser engine runs only when chosen ----------
-const wasm = new DuckDbWasmEngine();
-
-function bindSources(r: RunResp): Record<string, SourceBinding> {
-  const out: Record<string, SourceBinding> = {};
-  for (const [uri, url] of Object.entries(r.source_urls ?? {})) {
-    const scan = r.physical.scans.find((x) => x.uri === uri);
-    out[uri] = { url, covering: scan?.covering ?? null, access: r.physical.assessment?.browser_access?.find((a) => a.uri === uri)?.strategy ?? "range" };
-  }
-  return out;
-}
-
-// ---------- runtime probe, reports (ADR-009/010) ----------
-/** Probe the browser engine and tell the planner. Re-runs on reload (new session), TTL expiry and after a fatal failure. */
-function probeRuntime(reason: string): Promise<void> {
-  if (S.probing) return S.probing;
-  S.probing = (async () => {
-    try {
-      const report = await runProbe(wasm, SESSION);
-      S.probe = report;
-      await api("/api/probe", report);
-      log(`runtime probe (${reason}): ${usable(report) ? "usable" : "NOT usable"}, ${report.checks.filter((c) => c.ok).length}/${report.checks.length} checks, ${report.duration_ms.toFixed(0)} ms, memory class ${report.memory_class}`);
-    } catch (e) {
-      log(`runtime probe failed: ${e}`, true);
-    } finally {
-      S.probing = null;
-      if (S.tab === "execution") renderTab();
-    }
-  })();
-  return S.probing;
-}
-
-async function setNetwork(name: string) {
-  try {
-    await api("/api/network", { profile: name });
-    S.network = name;
-    log(`planner network profile: ${name}`);
-  } catch (e) { log(String(e), true); }
-}
-
-/** Fire-and-forget: tell the gateway how a browser run went (health, known incompatibilities, telemetry). */
-function reportRun(r: RunResp, ok: boolean, rowsOrErr: number | string, ms: number, fallback = false) {
-  const scan = r.physical.scans[0];
-  const source = scan ? scan.uri.split(/[\\/]/).pop()!.replace(/\.parquet$/, "") : "";
-  const est = r.physical.assessment?.estimate;
-  const ir = r.ir as PlanGraph;
-  const nodes = Object.values(ir.nodes);
-  const agg = nodes.find((n) => n.op === "aggregate");
-  const lim = nodes.filter((n) => n.op === "limit").map((n) => (n.op === "limit" ? n.n : Infinity));
-  const groupBy = agg && agg.op === "aggregate" && agg.group_by.length ? agg.group_by[0] : undefined;
-  const body = ok
-    ? {
-        engine: r.physical.engine, source, ok: true, kind: groupBy ? "count_by" : agg ? "count" : "features", raw_selected: est?.raw_selected ?? 0,
-        total_rows: r.physical.scans.reduce((a, x) => a + (x.prune?.total_rows ?? 0), 0), est_rows: r.physical.result_rows_estimate ?? 0,
-        actual_rows: rowsOrErr as number, limit: lim.length ? Math.min(...lim) : undefined, group_by: groupBy,
-        est_ms: r.physical.candidates?.find((c) => c.engine === r.physical.engine)?.score_ms ?? undefined, actual_ms: ms, fallback,
-      }
-    : { engine: r.physical.engine, source, ok: false, message: String(rowsOrErr) };
-  void fetch("/api/report", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
-}
-
-/**
- * Browser execution can fail for reasons the planner cannot see from metadata (measured: DuckDB-Wasm
- * cannot read natively-typed Parquet GEOMETRY columns written by DuckDB >= 1.5, e.g. an Overture
- * subset; very large inputs crash the tab). The failure is never hidden: the same request is re-planned
- * with the browser disabled, and the response carries `fallback` so the UI says what happened.
- */
-async function placeWithFallback(first: RunResp, retry: () => Promise<RunResp>): Promise<RunResp> {
-  const t0 = performance.now();
-  try {
-    const res = await resolvePlacement(first);
-    if (first.placement === "browser") reportRun(first, true, res.rows_total, performance.now() - t0);
-    return res;
-  } catch (e) {
-    const reason = e instanceof Error ? e.message : String(e);
-    const cls = classifyFailure(reason);
-    reportRun(first, false, reason, performance.now() - t0);
-    if (!fallbackAllowed(cls)) throw e; // cancelled by the user: no fallback
-    log(`browser engine failed (${cls}), falling back once to the server engine: ${reason}`, true);
-    await wasm.recycle();
-    // a crash/out-of-memory means the runtime we probed is gone: probe the new instance (in the background)
-    if (cls === "ENGINE_CRASH" || cls === "MEMORY") { S.probe = null; void probeRuntime(`after ${cls}`); }
-    const second = await retry();
-    return { ...second, fallback: { from: first.physical.engine, reason, class: cls } };
-  }
-}
-
-/** If the planner placed the plan in the browser, run it there and return a server-shaped response. */
-async function resolvePlacement(r: RunResp): Promise<RunResp> {
-  if (r.placement !== "browser") return r;
-  const t0 = performance.now();
-  const plan = r.ir as PlanGraph;
-  let res;
-  try {
-    res = await wasm.execute(plan, { sources: bindSources(r), timeoutMs: r.limits?.timeout_ms ?? 30000, maxRows: r.limits?.max_rows ?? 100000, estimatedInputBytes: r.physical.input_bytes_upper_bound });
-  } catch (e) {
-    const k = e instanceof EngineError ? `${e.kind}: ` : "";
-    throw new Error(`browser engine failed (${k}${e instanceof Error ? e.message : String(e)})`);
-  }
-  const t1 = performance.now();
-  const srcNode = Object.values(plan.nodes).find((n) => n.op === "source");
-  const geomName = srcNode && srcNode.op === "source" ? srcNode.schema.geometry_columns[0]?.name : undefined;
-  const geomIdx = res.columns.findIndex((c) => c.name === geomName);
-  const scalarCols = res.columns.map((c, i) => ({ c, i })).filter(({ i }) => {
-    const v = res.rows.find((row) => row[i] !== null && row[i] !== undefined)?.[i];
-    return i !== geomIdx && !(v instanceof Uint8Array) && !(typeof v === "object" && v !== null);
-  });
-  const cell = (v: unknown) => (typeof v === "bigint" ? (Number.isSafeInteger(Number(v)) ? Number(v) : v.toString()) : v);
-  const objects = res.rows.map((row) => Object.fromEntries(scalarCols.map(({ c, i }) => [c.name, cell(row[i])])));
-  const features = geomIdx >= 0
-    ? res.rows.map((row, k) => ({ type: "Feature" as const, properties: objects[k], geometry: row[geomIdx] instanceof Uint8Array ? wkbToGeoJSON(row[geomIdx] as Uint8Array) : null }))
-    : null;
-  const digest = await resultDigest(res.rows, res.columns.map((c) => c.type));
-  const t2 = performance.now();
-  const sum = (f: (s: Physical["scans"][number]) => number) => r.physical.scans.reduce((a, s) => a + f(s), 0);
-  const m = (value: number | null, source: string): Metric<number> => ({ value, source });
-  const metrics: Metrics = {
-    elapsed_ms: res.metrics.elapsed_ms, rows_returned: res.metrics.rows_returned,
-    row_groups_total: m(sum((s) => s.prune.total_row_groups), "source_observed"),
-    row_groups_skipped: m(sum((s) => s.prune.skipped), "source_estimated"),
-    rows_scanned_upper_bound: m(sum((s) => s.prune.kept_rows), "source_estimated"),
-    estimated_bytes_upper_bound: m(sum((s) => s.prune.kept_bytes), "source_estimated"),
-    bytes_read: res.metrics.bytes_read, peak_memory_bytes: m(null, "unknown"),
-    notes: ["executed in the browser (DuckDB-Wasm); the server only planned and served authorized Parquet byte ranges", ...res.metrics.notes],
-  };
-  return {
-    ...r,
-    columns: res.columns.map((c, i) => ({ name: c.name, type: c.type, geometry: i === geomIdx })),
-    rows: objects.slice(0, 1000), rows_total: res.rows.length,
-    geojson: features ? { type: "FeatureCollection", features: features.filter((f) => f.geometry) as GeoJSON.Feature[] } : null,
-    metrics, result_digest: digest,
-    timing: {
-      total_ms: m(t2 - t0, "engine_observed"),
-      plan_and_overhead_ms: m(Math.max(0, t1 - t0 - (res.metrics.elapsed_ms.value ?? 0)), "derived"),
-      boundary_conversion_ms: m(t2 - t1, "engine_observed"),
-    },
-  };
-}
-
 async function run() {
   if (!S.cur || S.busy) return;
   if (!["EPSG:4326", "OGC:CRS84"].includes(S.cur.crs)) {
     log(`viewport queries need a lon/lat source (EPSG:4326 or OGC:CRS84) in v0; source CRS: ${S.cur.crs}`, true);
-    statusEl.textContent = "unsupported CRS";
+    setStatus("status.unsupported_crs");
     return;
   }
-  if (!S.probing && !isFresh(S.probe)) void probeRuntime(S.probe ? "ttl expired" : "no probe yet");
-  S.busy = true; runBtn.disabled = true; statusEl.textContent = "running…";
+  placement.ensureFreshProbe();
+  S.busy = true; setRunDisabled(true); setStatus("status.running");
   try {
     const req = currentRequest();
+    S.lastChosen = S.engine !== "auto";
     await handle(
-      await placeWithFallback(await api<RunResp>("/api/query", req), () => api<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
+      await placement.placeWithFallback(await api<RunResp>("/api/query", req), () => api<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
       `${S.kind} @ ${S.cur.id}`,
     );
   } catch (e) {
-    log(String(e), true); statusEl.textContent = "error";
+    log(String(e), true); setStatus("status.error");
     setTab("logs");
-  } finally { S.busy = false; runBtn.disabled = false; }
+  } finally { S.busy = false; setRunDisabled(false); }
+}
+function setRunDisabled(v: boolean) {
+  const b = document.getElementById("run") as HTMLButtonElement | null;
+  if (b) b.disabled = v;
 }
 
 async function handle(r: RunResp, label: string, record = true) {
@@ -434,9 +376,10 @@ async function handle(r: RunResp, label: string, record = true) {
     for (const f of data.features) f.properties!.state = kept.has(f.properties!.index as number) ? "kept" : "skipped";
     rg.setData(data);
   }
-  statusEl.textContent = `${r.rows_total} rows · ${fmtMs(r.timing.total_ms.value ?? 0)} · ${r.physical.engine}`;
-  log(`plan ${r.plan_id.slice(0, 10)} engine=${r.physical.engine} rows=${r.rows_total} skipped(est.)=${r.metrics.row_groups_skipped.value}/${r.metrics.row_groups_total.value}`);
-  renderLeft(); renderRight();
+  setStatus(DEV() ? "status.results_dev" : "status.results", { n: fmtInt(r.rows_total), time: fmtMs(r.timing.total_ms.value ?? 0), engine: r.physical.engine });
+  log(t("log.plan", { plan: r.plan_id.slice(0, 10), engine: r.physical.engine, rows: r.rows_total }) + ` skipped(est.)=${r.metrics.row_groups_skipped.value}/${r.metrics.row_groups_total.value}`);
+  syncInspectorVisibility();
+  renderLeft(); renderRight(); renderPipeline();
   setTab(S.tab === "query" ? "execution" : S.tab);
 }
 
@@ -455,91 +398,127 @@ function measure(g: GeoJSON.Geometry): { area: number; perim: number } | null {
 function select(f: GeoJSON.Feature) {
   S.selected = f;
   map.setFilter("res-sel", ["==", ["get", "__i"], (f.properties?.__i as number) ?? -1]);
+  syncInspectorVisibility();
   renderRight();
+}
+/** The inspector takes no room until there is something to inspect. */
+function syncInspectorVisibility() {
+  const show = S.selected != null;
+  if (app.classList.contains("no-inspector") === show) {
+    app.classList.toggle("no-inspector", !show);
+    requestAnimationFrame(() => map.resize());
+  }
 }
 
 function renderRight() {
-  right.replaceChildren(el("h3", {}, "Inspector"));
+  right.setAttribute("aria-label", t("a11y.inspector"));
+  right.replaceChildren(el("h2", {}, t("inspector.title")));
   const f = S.selected;
-  if (!f) { right.append(el("div", { class: "empty" }, "Click a feature on the map.")); }
-  else {
-    const t = el("table", { class: "kv" });
-    const add = (k: string, v: string) => t.append(el("tr", {}, el("td", {}, k), el("td", {}, v)));
-    for (const [k, v] of Object.entries(f.properties ?? {})) if (k !== "__i") add(k, String(v));
-    add("geometry type", f.geometry.type);
-    add("source", S.cur?.id ?? "—");
-    add("CRS", S.cur?.crs ?? "—");
-    const m = ["EPSG:4326", "OGC:CRS84"].includes(S.cur?.crs ?? "") ? measure(f.geometry) : null;
-    if (m) { add("area ≈", `${m.area.toFixed(1)} m²`); add("perimeter ≈", `${m.perim.toFixed(1)} m`); }
-    right.append(el("h3", {}, "Properties"), t);
-    if (m) right.append(el("div", { class: "note", style: "padding:0 10px" }, `≈ spherical model, WGS84 sphere R=${R} m (not ellipsoidal).`));
-  }
-  right.append(el("h3", {}, "Lineage"));
+  if (!f) { right.append(el("div", { class: "empty" }, t("inspector.empty"))); return; }
+  const tbl = el("table", { class: "kv", "data-testid": "inspector-props" });
+  const add = (k: string, v: string, raw?: string) =>
+    tbl.append(el("tr", {}, el("th", { scope: "row" }, k, DEV() && raw ? el("div", { class: "raw" }, t("inspector.raw_field", { name: raw })) : null), el("td", {}, v)));
+  for (const [k, v] of Object.entries(f.properties ?? {})) if (k !== "__i") add(fieldLabel(k), String(v), k);
+  add(t("inspector.geometry"), geometryLabel(f.geometry.type));
+  add(t("inspector.source"), S.cur ? datasetLabel(S.cur.id).title : "—");
+  add(t("inspector.crs"), S.cur?.crs ?? "—");
+  const m = ["EPSG:4326", "OGC:CRS84"].includes(S.cur?.crs ?? "") ? measure(f.geometry) : null;
+  if (m) { add(t("inspector.area"), `${fmtInt(Math.round(m.area * 10) / 10)} m²`); add(t("inspector.perimeter"), `${fmtInt(Math.round(m.perim * 10) / 10)} m`); }
+  right.append(el("h3", {}, t("inspector.properties")), tbl);
+  if (m) right.append(el("div", { class: "note" }, t("inspector.sphere_note", { r: R })));
+  right.append(el("h3", {}, t("inspector.history")));
   if (S.last) {
-    const ol = el("div", { style: "padding:0 10px 10px" });
-    S.last.lineage.forEach((l, i) => ol.append(el("div", { class: "dec" }, `${i === 0 ? "" : "↓ "}${l.op}  `, el("span", { style: "color:var(--muted)" }, l.id))));
-    ol.append(el("div", { class: "note" }, `plan ${S.last.plan_id.slice(0, 12)}`));
-    right.append(ol);
-  } else right.append(el("div", { class: "empty" }, "No query yet."));
+    const steps = pipelineSteps(S.last.ir as PlanGraph, S.last.physical.placement === "browser" ? "browser" : "server").slice(0, -1);
+    right.append(el("ol", { class: "history", "data-testid": "history" }, ...steps.map((s) => el("li", {}, t(s.title)))));
+    if (DEV()) right.append(el("div", { class: "note" }, `plan ${S.last.plan_id.slice(0, 12)} · ` + S.last.lineage.map((l) => `${l.op} ${l.id}`).join(" → ")));
+  } else right.append(el("div", { class: "empty" }, t("inspector.no_history")));
 }
 
-// ---------- left ----------
+// ---------- left: data ----------
+function row(k: string, v: string) { return el("tr", {}, el("th", { scope: "row" }, k), el("td", {}, v)); }
 function renderLeft() {
-  left.replaceChildren(el("h3", {}, "Data / Layers"), el("h3", {}, "Sources"));
-  if (!S.sources.length) left.append(el("div", { class: "empty" }, "No GeoParquet files in the data directory."));
+  left.setAttribute("aria-label", t("a11y.sources"));
+  const list = el("div", { class: "list", role: "list" });
+  if (!S.sources.length) list.append(el("div", { class: "empty" }, t("data.none")));
   for (const s of S.sources) {
-    if (s.error) { left.append(el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error))); continue; }
-    left.append(el("div", { class: `item${S.cur?.id === s.id ? " sel" : ""}`, tabindex: 0, onclick: () => void selectSource(s) },
-      el("div", { class: "name" }, s.id),
-      el("div", { class: "meta" }, `${s.format} · ${s.geometry_type} · ${s.crs}${s.crs_known ? "" : " (unknown!)"}`),
-      el("div", { class: "meta" }, `${fmtBytes(s.size_bytes)} · ${s.rows.toLocaleString()} rows · ${s.row_groups} rg`),
-    ));
+    if (s.error) { list.append(el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error))); continue; }
+    const lab = datasetLabel(s.id);
+    const open = S.expanded.has(s.id);
+    const traits = [geometryLabel(s.geometry_type === "polygon" ? "Polygon" : s.geometry_type), fmtBytes(s.size_bytes), ...lab.traits];
+    const detail = el("table", { class: "kv detail", "data-testid": "dataset-detail" },
+      row(t("data.format"), s.format), row(t("data.crs"), s.crs), row(t("data.rows"), fmtInt(s.rows)), row(t("data.updated"), fmtDate(s.modified)), row(t("data.origin"), lab.origin),
+      ...(DEV() ? [row(t("data.row_groups"), String(s.row_groups)), row(t("data.covering"), s.has_covering ? t(s.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")), row("id", s.id)] : []));
+    list.append(el("div", { class: `item${S.cur?.id === s.id ? " sel" : ""}`, role: "listitem", "data-testid": "dataset", "data-id": s.id },
+      el("button", { type: "button", class: "pick", "aria-current": S.cur?.id === s.id ? "true" : null, onclick: () => void selectSource(s) },
+        el("span", { class: "name" }, lab.title),
+        el("span", { class: "meta" }, traits.join(" · ")),
+        DEV() ? el("span", { class: "meta raw" }, `${s.id} · ${fmtInt(s.rows)} · ${s.row_groups} rg · ${s.crs}`) : null),
+      el("button", { type: "button", class: "more", "aria-expanded": open, title: t(open ? "data.hide_details" : "data.details"), onclick: () => { if (open) S.expanded.delete(s.id); else S.expanded.add(s.id); renderLeft(); } },
+        icon("chevron", 14), el("span", {}, t(open ? "data.hide_details" : "data.details"))),
+      open ? detail : null));
   }
-  left.append(el("h3", {}, "Derived"));
-  if (!S.derived.length) left.append(el("div", { class: "empty" }, "Results of queries appear here."));
-  S.derived.forEach((d, i) => left.append(el("div", { class: `item${i === 0 ? " sel" : ""}`, onclick: () => void handle(d.resp, d.label, false) },
-    el("div", { class: "name" }, d.label),
-    el("div", { class: "meta" }, `${d.resp.rows_total} rows · ${fmtMs(d.resp.timing.total_ms.value ?? 0)}`),
-  )));
+  const recent = S.derived.length
+    ? el("div", { class: "list", role: "list" }, ...S.derived.map((d, i) => el("div", { class: `item${i === 0 ? " sel" : ""}`, role: "listitem" },
+        el("button", { type: "button", class: "pick", onclick: () => void handle(d.resp, d.label, false) },
+          el("span", { class: "name" }, DEV() ? d.label : datasetLabel(d.label.split("@ ")[1] ?? "").title),
+          el("span", { class: "meta" }, t("status.results", { n: fmtInt(d.resp.rows_total), time: fmtMs(d.resp.timing.total_ms.value ?? 0) }))))))
+    : el("div", { class: "empty" }, t("data.recent_empty"));
+  left.replaceChildren(el("h2", {}, t("data.title")), el("h3", {}, t("data.sources")), list, el("h3", {}, t("data.recent")), recent);
 }
 
 // ---------- tabs ----------
-const TABS: [string, string][] = [["query", "SQL / Ask"], ["results", "Results"], ["execution", "Execution Plan"], ["profile", "Profile"], ["logs", "Logs"]];
-function setTab(t: string) { S.tab = t; renderTab(); }
+function tabList(): [string, Key][] {
+  return [["query", "tab.query"], ["results", "tab.results"], ["execution", "tab.execution"], ...(DEV() ? [["profile", "tab.profile"] as [string, Key]] : []), ["logs", "tab.logs"]];
+}
+function setTab(id: string) { S.tab = id; renderTab(); }
 function renderTab() {
-  tabsEl.replaceChildren(...TABS.map(([id, label]) => el("div", { class: `tab${S.tab === id ? " on" : ""}`, tabindex: 0, role: "tab", onclick: () => setTab(id), onkeydown: (e: KeyboardEvent) => { if (e.key === "Enter") setTab(id); } }, label)));
+  bottom.setAttribute("aria-label", t("a11y.bottom"));
+  resizer.setAttribute("aria-label", t("a11y.resize"));
+  const ids = tabList().map((x) => x[0]);
+  tabsEl.replaceChildren(...tabList().map(([id, key]) =>
+    el("button", { type: "button", role: "tab", class: `tab${S.tab === id ? " on" : ""}`, "aria-selected": S.tab === id, "data-testid": `tab-${id}`, tabindex: S.tab === id ? "0" : "-1",
+      onclick: () => setTab(id),
+      onkeydown: (e: KeyboardEvent) => {
+        const i = ids.indexOf(id);
+        const go = (j: number) => { e.preventDefault(); setTab(ids[(j + ids.length) % ids.length]); (tabsEl.querySelector('[aria-selected="true"]') as HTMLElement | null)?.focus(); };
+        if (e.key === "ArrowRight") go(i + 1);
+        if (e.key === "ArrowLeft") go(i - 1);
+      } }, t(key))));
   tabBody.replaceChildren();
   if (S.tab === "query") tabBody.append(queryTab());
   else if (S.tab === "results") tabBody.append(resultsTab());
   else if (S.tab === "execution") tabBody.append(executionTab());
-  else if (S.tab === "profile") tabBody.append(profileTab());
+  else if (S.tab === "profile" && DEV()) tabBody.append(profileTab());
   else tabBody.append(el("div", { class: "log" }, ...S.logs.map((l) => el("div", { class: l.includes(" ERROR ") ? "err" : "" }, l))));
 }
 
 function queryTab(): HTMLElement {
   const cols = S.cur?.columns.filter((c) => c.type !== "other" && typeof c.type === "string") ?? [];
-  const sel = (opts: [string, string][], val: string, on: (v: string) => void) =>
-    el("select", { onchange: (e: Event) => on((e.target as HTMLSelectElement).value) }, ...opts.map(([v, l]) => el("option", { value: v, selected: v === val }, l)));
-  const colOpts: [string, string][] = [["", "(none)"], ...cols.map((c): [string, string] => [c.name, c.name])];
+  const lab = (text: string, ctl: HTMLElement) => el("label", {}, el("span", {}, text), ctl);
+  const sel = (opts: [string, string][], val: string, on: (v: string) => void, extra: Record<string, unknown> = {}) =>
+    el("select", { ...extra, onchange: (e: Event) => on((e.target as HTMLSelectElement).value) }, ...opts.map(([v, l]) => el("option", { value: v, selected: v === val }, l)));
+  const colOpts: [string, string][] = [["", t("query.none")], ...cols.map((c): [string, string] => [c.name, DEV() ? c.name : fieldLabel(c.name)])];
   const form = el("div", { class: "form" },
-    el("label", {}, "Query", sel([["features", "Features in viewport (bbox)"], ["intersects_features", "Features intersecting viewport polygon"], ["count_by", "Count by column in viewport"]], S.kind, (v) => { S.kind = v; renderTab(); })),
-    el("label", {}, "Filter column", sel(colOpts, S.filter.column, (v) => { S.filter.column = v; })),
-    el("label", {}, "op", sel([["eq", "="], ["ne", "≠"], ["gt", ">"], ["ge", "≥"], ["lt", "<"], ["le", "≤"]], S.filter.op, (v) => { S.filter.op = v; })),
-    el("label", {}, "value", el("input", { value: S.filter.value, oninput: (e: Event) => { S.filter.value = (e.target as HTMLInputElement).value; } })),
-    S.kind === "count_by" ? el("label", {}, "group by", sel(colOpts.slice(1), S.groupBy, (v) => { S.groupBy = v; })) : null,
-    el("label", {}, "feature limit", el("input", { type: "number", min: 1, max: 100000, value: S.limit, onchange: (e: Event) => { S.limit = Math.min(100000, Math.max(1, Number((e.target as HTMLInputElement).value) || 20000)); } })),
-    el("label", {}, "Engine", sel([["auto", "Auto (planner decides)"], ["duckdb", "Server / DuckDB"], ["duckdb-wasm", "Browser / DuckDB-Wasm"]], S.engine, (v) => { S.engine = v; })),
-    el("label", { style: "flex-direction:row;align-items:center;gap:4px" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), "allow browser execution"),
-    el("button", { class: "primary", onclick: () => void run() }, "Run viewport query"),
+    lab(t("query.kind"), sel([["features", t("query.kind.features")], ["intersects_features", t("query.kind.intersects_features")], ["count_by", t("query.kind.count_by")]], S.kind, (v) => { S.kind = v; renderTab(); }, { "data-testid": "q-kind" })),
+    lab(t("query.filter_column"), sel(colOpts, S.filter.column, (v) => { S.filter.column = v; }, { "data-testid": "q-filter-col" })),
+    lab(t("query.filter_op"), sel((["eq", "ne", "gt", "ge", "lt", "le"] as const).map((o): [string, string] => [o, t(`op.${o}` as Key)]), S.filter.op, (v) => { S.filter.op = v; })),
+    lab(t("query.filter_value"), el("input", { value: S.filter.value, oninput: (e: Event) => { S.filter.value = (e.target as HTMLInputElement).value; } })),
+    S.kind === "count_by" ? lab(t("query.group_by"), sel(colOpts.slice(1), S.groupBy, (v) => { S.groupBy = v; })) : null,
+    lab(t("query.limit"), el("input", { type: "number", min: 1, max: 100000, value: S.limit, onchange: (e: Event) => { S.limit = Math.min(100000, Math.max(1, Number((e.target as HTMLInputElement).value) || 20000)); } })),
+    lab(t("query.where"), sel([["auto", t("query.where.auto")], ["duckdb", t("query.where.server")], ["duckdb-wasm", t("query.where.browser")]], S.engine, (v) => { S.engine = v; if (DEV()) renderHeader(); }, { "data-testid": "q-where" })),
+    el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), t("query.allow_browser")),
+    el("button", { type: "button", class: "primary", "data-testid": "q-run", onclick: () => void run() }, t("query.run")),
   );
-  const ta = el("textarea", { class: "ir", spellcheck: false, "aria-label": "Spatial IR JSON" }) as HTMLTextAreaElement;
-  ta.value = S.last ? JSON.stringify(S.last.ir, null, 2) : "";
-  const irBar = el("div", { class: "form", style: "margin-top:8px" },
-    el("button", { onclick: () => void runIr(ta.value, false) }, "Run IR"),
-    el("button", { onclick: () => void runIr(ta.value, true) }, "Explain IR (no execution)"),
-    el("span", { class: "note" }, "Logical IR only: engine-neutral, CRS and units explicit. Raw SQL is intentionally not accepted."),
-  );
-  return el("div", {}, form, el("div", { class: "note" }, "Viewport = current map extent in the source CRS. Each run is compiled to logical IR (below), validated, planned, then executed."), ta, irBar);
+  const out: Child[] = [form, el("div", { class: "note" }, t("query.hint"))];
+  if (DEV()) {
+    const ta = el("textarea", { class: "ir", spellcheck: false, "aria-label": t("query.ir"), "data-testid": "ir" }) as HTMLTextAreaElement;
+    ta.value = S.last ? JSON.stringify(S.last.ir, null, 2) : "";
+    out.push(ta, el("div", { class: "form", style: "margin-top:8px" },
+      el("button", { type: "button", onclick: () => void runIr(ta.value, false) }, t("query.run_ir")),
+      el("button", { type: "button", onclick: () => void runIr(ta.value, true) }, t("query.explain_ir")),
+      el("span", { class: "note" }, t("query.ir_note"))));
+  }
+  return el("div", {}, out);
 }
 
 async function runIr(text: string, explainOnly: boolean) {
@@ -552,73 +531,93 @@ async function runIr(text: string, explainOnly: boolean) {
       setTab("execution");
     } else {
       const body = { ir, engine: S.engine === "auto" ? undefined : S.engine, browser: S.allowBrowser };
-      await handle(await placeWithFallback(await api<RunResp>("/api/ir/run", body), () => api<RunResp>("/api/ir/run", { ir, engine: "duckdb", browser: false })), "IR run");
+      await handle(await placement.placeWithFallback(await api<RunResp>("/api/ir/run", body), () => api<RunResp>("/api/ir/run", { ir, engine: "duckdb", browser: false })), "IR run");
     }
   } catch (e) { log(String(e), true); setTab("logs"); }
 }
 
 function resultsTab(): HTMLElement {
   const r = S.last;
-  if (!r) return el("div", { class: "empty" }, "Run a query.");
+  if (!r) return el("div", { class: "empty" }, t("results.none"));
   const cols = r.columns.filter((c) => !c.geometry && !c.type.startsWith("Struct"));
-  const t = el("table", {}, el("thead", {}, el("tr", {}, ...cols.map((c) => el("th", {}, c.name)))));
+  const thead = el("thead", {}, el("tr", {}, ...cols.map((c) => el("th", { scope: "col" }, DEV() ? c.name : fieldLabel(c.name)))));
   const tb = el("tbody", {});
-  for (const row of r.rows) tb.append(el("tr", {}, ...cols.map((c) => el("td", {}, String(row[c.name] ?? "∅")))));
-  t.append(tb);
-  return el("div", {}, el("div", { class: "note", style: "margin:0 0 6px" }, `${r.rows_total} rows returned${r.rows.length < r.rows_total ? ` (table shows first ${r.rows.length}; map shows all)` : ""}. Geometry columns are drawn on the map.`), t);
+  for (const rw of r.rows) tb.append(el("tr", {}, ...cols.map((c) => el("td", {}, String(rw[c.name] ?? "∅")))));
+  const msg = r.rows.length < r.rows_total ? t("results.summary_partial", { n: fmtInt(r.rows_total), shown: fmtInt(r.rows.length) }) : t("results.summary", { n: fmtInt(r.rows_total) });
+  return el("div", {}, el("div", { class: "note", style: "margin:0 0 6px" }, msg), el("table", { "data-testid": "results-table" }, thead, tb));
 }
 
-const BADGE: Record<string, [string, string]> = {
-  engine_observed: ["Observed", "ok"], source_observed: ["Observed", "ok"],
-  source_estimated: ["Estimated", "est"], planner_estimated: ["Estimated", "est"],
-  derived: ["Derived", "der"], unknown: ["Unavailable", "na"],
-};
-/** A metric card: value + provenance badge. Estimates are never shown as observed facts. */
-function mcard(label: string, m: Metric<number>, fmt: (v: number) => string, prefix = ""): HTMLElement {
-  const [text, cls] = m.value == null ? BADGE.unknown : (BADGE[m.source] ?? BADGE.unknown);
-  return el("div", { class: "card", "data-metric": label, "data-source": m.value == null ? "unknown" : m.source },
-    el("div", { class: "v" }, m.value == null ? "Unknown" : prefix + fmt(m.value)),
-    el("div", { class: "l" }, label, " ", el("span", { class: `badge ${cls}` }, text)));
-}
-const fmtN = (v: number) => v.toLocaleString();
-
-function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
-  const skipped = m.row_groups_skipped.value, total = m.row_groups_total.value;
-  const rg: Metric<number> = { value: skipped, source: m.row_groups_skipped.source };
-  const cards = [
-    mcard("Total (plan + execute + boundary)", tm.total_ms, fmtMs),
-    mcard("Engine execution", m.elapsed_ms, fmtMs),
-    mcard("Rows returned", m.rows_returned, fmtN),
-    mcard("Row groups total", m.row_groups_total, fmtN),
-    mcard(`Row groups skipped (of ${total ?? "?"}; from GeoParquet statistics)`, rg, fmtN),
-    mcard("Rows scanned, upper bound", m.rows_scanned_upper_bound, fmtN, "≤ "),
-    mcard("Bytes read, upper bound", m.estimated_bytes_upper_bound, fmtBytesN, "≤ "),
-    mcard("Bytes read (actual I/O)", m.bytes_read, fmtBytesN),
-    mcard("Peak buffer memory (engine)", m.peak_memory_bytes, fmtBytesN),
-  ];
-  return el("div", { class: "cards" }, ...cards);
-}
-const fmtBytesN = (v: number) => fmtBytes(v);
+// ---------- execution ----------
+const ENGINE_LABEL: Record<string, string> = { "duckdb-wasm": "Local Browser / DuckDB-Wasm", duckdb: "Server / DuckDB" };
 
 function executionTab(): HTMLElement {
   const r = S.last;
-  if (!r) return el("div", { class: "empty" }, "Run a query to see how it executes.");
-  const p = r.physical;
-  const pipe = el("div", { class: "pipe" });
-  const steps = [...p.steps.map((s) => ({ t: s.label, d: s.detail })),
-    { t: "Render", d: `${r.rows_total} rows → table / map (GeoJSON boundary conversion ${fmtMs(r.timing.boundary_conversion_ms.value ?? 0)})` }];
-  steps.forEach((s, i) => {
-    if (i) pipe.append(el("div", { class: "arrow" }, "↓"));
-    pipe.append(el("div", { class: "step" }, el("div", { class: "t" }, s.t), el("div", { class: "d" }, s.d.replace("\\\\?\\", ""))));
-  });
-  const dec = el("div", {}, el("h3", { style: "padding-left:0" }, "Planner decisions"),
-    ...p.decisions.map((d) => el("div", { class: "dec" }, el("span", { class: `o-${d.outcome}` }, `[${d.outcome}] `), `${d.rule} · ${d.subject}: ${d.reason}`)));
-  return el("div", {}, plannerPanel(r), metricCards(r.metrics, r.timing), pipe, dec, ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
+  if (!r) return el("div", { class: "empty" }, t("exec.none"));
+  const sm = summarize(r, S.lastChosen);
+  const whereTxt = (w: "server" | "browser") => t(w === "server" ? "exec.where.server" : "exec.where.browser");
+  const stat = (label: string, value: string, id: string) => el("div", { class: "stat", "data-testid": id }, el("div", { class: "v" }, value), el("div", { class: "l" }, label));
+  const stats = [
+    stat(t("exec.time"), fmtMs(sm.timeMs), "stat-time"),
+    stat(t("exec.results"), fmtInt(sm.rows), "stat-rows"),
+    sm.processBytes != null ? stat(t("exec.data"), `${sm.where === "browser" ? "~" : "≤ "}${fmtBytes(sm.processBytes)}`, "stat-data") : null,
+    sm.memoryBytes != null ? stat(t("exec.memory"), `~${fmtBytes(sm.memoryBytes)}`, "stat-memory") : null,
+  ];
+  const card = el("div", { class: "rec", "data-testid": "exec-summary" },
+    el("div", { class: "rec-head" }, icon("ok"), el("span", {}, t("exec.recommended"))),
+    el("div", { class: "rec-where", "data-testid": "exec-where", "data-where": sm.where }, icon(sm.where), el("b", {}, whereTxt(sm.where))),
+    el("ul", { class: "why" }, ...sm.reasons.map((k) => el("li", {}, icon("ok", 14), el("span", {}, t(k))))),
+    el("div", { class: "stats" }, stats),
+    sm.alt ? el("div", { class: "alt", "data-testid": "exec-alt" }, icon("info", 14), el("span", {}, `${t("exec.alt")}: ${whereTxt(sm.alt.where)} — ${sm.alt.reason ? t("exec.alt.unavailable", { reason: t(sm.alt.reason) }) : t("exec.alt.slower", { time: sm.alt.timeMs != null ? fmtMs(sm.alt.timeMs) : "—" })}`)) : null);
+  const opt = el("div", { class: "opt", "data-testid": "exec-optimize" },
+    el("h3", {}, t("exec.optimize")),
+    sm.skippedFraction != null
+      ? el("ul", {}, el("li", {}, icon("ok", 14), el("span", {}, t("exec.optimize.read_needed"))),
+          el("li", {}, icon("ok", 14), el("span", {}, t("exec.optimize.skipped", { pct: fmtPct(sm.skippedFraction) }))),
+          sm.processBytes != null ? el("li", {}, icon("ok", 14), el("span", {}, t("exec.optimize.process", { size: fmtBytes(sm.processBytes) }))) : null)
+      : el("ul", {}, el("li", {}, icon("info", 14), el("span", {}, t("exec.optimize.none")))));
+  const advanced = el("div", { class: "adv", id: "adv", "data-testid": "advanced", hidden: !DEV() && !S.advancedOpen },
+    plannerPanel(r), metricCards(r.metrics, r.timing), engineSteps(r.physical, r),
+    el("h3", {}, t("dev.planner_decisions")),
+    ...r.physical.decisions.map((d) => el("div", { class: "dec" }, el("span", { class: `o-${d.outcome}` }, `[${d.outcome}] `), `${d.rule} · ${d.subject}: ${d.reason}`)),
+    ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
+  const toggle = DEV() ? null : el("button", { type: "button", class: `adv-toggle${S.advancedOpen ? " open" : ""}`, "data-testid": "advanced-toggle", "aria-expanded": S.advancedOpen, "aria-controls": "adv", onclick: () => { S.advancedOpen = !S.advancedOpen; renderTab(); } },
+    icon("chevron", 14), el("span", {}, t("exec.advanced")));
+  return el("div", { class: "exec" }, card, opt, toggle, advanced);
 }
 
-const ENGINE_LABEL: Record<string, string> = { "duckdb-wasm": "Local Browser / DuckDB-Wasm", duckdb: "Server / DuckDB" };
+function engineSteps(p: Physical, r: RunResp): HTMLElement {
+  const pipe = el("div", { class: "pipe" });
+  const steps = [...p.steps.map((s) => ({ t: s.label, d: s.detail })), { t: "Render", d: `${r.rows_total} rows → table / map (GeoJSON boundary conversion ${fmtMs(r.timing.boundary_conversion_ms.value ?? 0)})` }];
+  steps.forEach((s, i) => {
+    if (i) pipe.append(el("div", { class: "arrow", "aria-hidden": "true" }, "↓"));
+    pipe.append(el("div", { class: "step" }, el("div", { class: "t" }, s.t), el("div", { class: "d" }, s.d.replace("\\\\?\\", ""))));
+  });
+  return pipe;
+}
 
-/** Which engine runs the plan, what the alternatives were, and why. */
+// Developer: metrics with provenance badges
+const BADGE: Record<string, [Key, string]> = {
+  engine_observed: ["metric.badge.observed", "ok"], source_observed: ["metric.badge.observed", "ok"],
+  source_estimated: ["metric.badge.estimated", "est"], planner_estimated: ["metric.badge.estimated", "est"],
+  derived: ["metric.badge.derived", "der"], unknown: ["metric.badge.unavailable", "na"],
+};
+function mcard(label: string, m: Metric<number>, fmt: (v: number) => string, prefix = ""): HTMLElement {
+  const [text, cls] = m.value == null ? BADGE.unknown : (BADGE[m.source] ?? BADGE.unknown);
+  return el("div", { class: "card", "data-metric": label, "data-source": m.value == null ? "unknown" : m.source },
+    el("div", { class: "v" }, m.value == null ? t("metric.unknown") : prefix + fmt(m.value)),
+    el("div", { class: "l" }, label, " ", el("span", { class: `badge ${cls}` }, t(text))));
+}
+function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
+  const skipped = m.row_groups_skipped.value, total = m.row_groups_total.value;
+  const rg: Metric<number> = { value: skipped, source: m.row_groups_skipped.source };
+  return el("div", { class: "cards" },
+    mcard(t("metric.total"), tm.total_ms, fmtMs), mcard(t("metric.engine"), m.elapsed_ms, fmtMs), mcard(t("metric.rows"), m.rows_returned, fmtInt),
+    mcard(t("metric.rg_total"), m.row_groups_total, fmtInt), mcard(t("metric.rg_skipped", { total: total ?? "?" }), rg, fmtInt),
+    mcard(t("metric.rows_scanned"), m.rows_scanned_upper_bound, fmtInt, "≤ "), mcard(t("metric.bytes_ub"), m.estimated_bytes_upper_bound, fmtBytes, "≤ "),
+    mcard(t("metric.bytes_read"), m.bytes_read, fmtBytes), mcard(t("metric.peak"), m.peak_memory_bytes, fmtBytes));
+}
+
+/** Developer: which engine runs the plan, the alternatives, and the planner's assessment of its own decision. */
 function plannerPanel(r: RunResp): HTMLElement {
   const p = r.physical;
   const sel = p.candidates?.find((c) => c.engine === p.engine);
@@ -626,76 +625,109 @@ function plannerPanel(r: RunResp): HTMLElement {
   const where = p.placement === "browser" ? "Local (browser)" : "Server";
   const inputMb = p.input_bytes_upper_bound == null ? "—" : `≤ ${fmtBytes(p.input_bytes_upper_bound)}`;
   const transfer = sel?.cost ? fmtBytes(sel.cost.transfer_bytes) : "—";
-  const box = el("div", { class: "planner", "data-testid": "planner-panel" },
+  return el("div", { class: "planner", "data-testid": "planner-panel" },
     el("div", { class: "row" },
       el("span", { class: `engine ${p.placement ?? "server"}`, "data-testid": "engine-selected", "data-engine": p.engine }, ENGINE_LABEL[p.engine] ?? p.engine),
       el("span", { class: "badge der" }, where),
-      sel?.score_ms != null ? el("span", { class: "note" }, `score ${sel.score_ms.toFixed(1)} ms (lower wins)`) : null),
-    el("div", { class: "kv2" },
-      el("span", {}, "Estimated input"), el("b", {}, inputMb),
-      el("span", {}, p.placement === "browser" ? "Estimated transfer to the browser" : "Estimated result transfer"), el("b", {}, `~${transfer}`)),
-    ...(sel?.reasons ?? []).map((t) => el("div", { class: "dec" }, "✓ ", t)),
-    ...alts.map((c) => el("div", { class: "alt", "data-testid": "engine-alternative", "data-engine": c.engine },
-      el("b", {}, `Alternative: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
-      c.feasible ? `score ${c.score_ms?.toFixed(1)} ms` : "not feasible", c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),
-    r.fallback ? el("div", { class: "dec", "data-testid": "engine-fallback" }, el("span", { class: "o-warning" }, "[fallback] "), `the browser engine failed (${r.fallback.class ?? "?"}: ${r.fallback.reason.slice(0, 160)}); the query was re-run once on the server`) : null,
-    r.result_digest ? el("div", { class: "note" }, `result digest ${r.result_digest.sha256.slice(0, 12)} · count ${r.result_digest.count}`) : null,
+      sel?.score_ms != null ? el("span", { class: "note" }, `${t("dev.score")} ${sel.score_ms.toFixed(1)} ms (${t("dev.lower_wins")})`) : null),
+    el("div", { class: "kv2" }, el("span", {}, t("dev.est_input")), el("b", {}, inputMb),
+      el("span", {}, p.placement === "browser" ? t("dev.est_transfer_browser") : t("dev.est_transfer_server")), el("b", {}, `~${transfer}`)),
+    ...(sel?.reasons ?? []).map((x) => el("div", { class: "dec" }, "✓ ", x)),
+    ...alts.map((c: Candidate) => el("div", { class: "alt dev", "data-testid": "engine-alternative", "data-engine": c.engine },
+      el("b", {}, `${t("dev.alternative")}: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
+      c.feasible ? `${t("dev.score")} ${c.score_ms?.toFixed(1)} ms` : t("dev.not_feasible"), c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),
+    r.fallback ? el("div", { class: "dec", "data-testid": "engine-fallback" }, el("span", { class: "o-warning" }, "⚠ "), t("dev.fallback_occurred", { cls: r.fallback.class ?? "?", reason: r.fallback.reason.slice(0, 160) })) : null,
+    r.result_digest ? el("div", { class: "note" }, t("dev.digest", { hash: r.result_digest.sha256.slice(0, 12), count: r.result_digest.count })) : null,
     assessmentPanel(r));
-  return box;
 }
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 function badge(text: string, cls: string, testid?: string): HTMLElement {
-  return el("span", { class: `badge ${cls}`, "data-testid": testid }, text);
+  const mark = cls === "ok" ? "✓ " : cls === "warn" ? "⚠ " : cls === "bad" ? "✕ " : "";
+  return el("span", { class: `badge ${cls}`, "data-testid": testid }, mark + text);
 }
-const HEALTH_BADGE: Record<string, [string, string]> = { healthy: ["Healthy", "ok"], degraded: ["Degraded", "warn"], unhealthy: ["Unhealthy", "bad"], unknown: ["Unknown", "na"] };
+const HEALTH_BADGE: Record<Health["state"], [Key, string]> = { healthy: ["dev.health.healthy", "ok"], degraded: ["dev.health.degraded", "warn"], unhealthy: ["dev.health.unhealthy", "bad"], unknown: ["dev.health.unknown", "na"] };
 
-/** Planner self-assessment: confidence, health, probe, network, risk and fallback (ADR-009/010). */
 function assessmentPanel(r: RunResp): HTMLElement {
-  const p = r.physical, a = p.assessment;
+  const p = r.physical, a: Assessment | undefined = p.assessment;
   if (!a) return el("div", {});
-  const sel = p.candidates?.find((c) => c.engine === p.engine);
   const browser = p.candidates?.find((c) => c.kind === "browser");
   const probe = a.probes?.["duckdb-wasm"];
-  const kv = (k: string, ...v: (Child | Child[])[]) => [el("span", {}, k), el("b", {}, ...v.flat())] as HTMLElement[];
+  const kv = (k: string, ...v: Child[]) => [el("span", {}, k), el("b", {}, v)] as HTMLElement[];
   const conf = a.confidence;
   const confCls = conf.label === "high" ? "ok" : conf.label === "medium" ? "warn" : "bad";
+  const confText = t(conf.label === "low" ? "dev.low_confidence" : conf.label === "medium" ? "dev.medium_confidence" : "dev.high_confidence");
   const est = a.estimate;
-  const actual = r.rows_total;
-  const factor = (e: number, t: number) => { const x = (e + 1) / (t + 1); return Math.max(x, 1 / x); };
+  const factor = (e: number, tr: number) => { const x = (e + 1) / (tr + 1); return Math.max(x, 1 / x); };
+  const risk = browser?.risk;
+  const dev = placement.state.probe?.device;
   const rows: HTMLElement[] = [
-    ...kv("Engine", ENGINE_LABEL[p.engine] ?? p.engine, " ", badge(p.placement === "browser" ? "Local" : "Server", "der")),
-    ...kv("Confidence", badge(`${conf.label === "low" ? "Low Confidence" : conf.label === "medium" ? "Medium" : "High"} ${pct(conf.score)}`, confCls, "confidence-badge"),
-      el("span", { class: "note", "data-testid": "confidence-factors", title: conf.factors.map((f) => `${f.name} ${f.value.toFixed(2)} (w ${f.weight})`).join("\n") },
-        `  engine ${pct(a.engine_confidence)} × margin ${a.margin_factor.toFixed(2)}`)),
-    ...kv("Health", ...Object.entries(a.health ?? {}).flatMap(([e, h]) => [badge(`${e}: ${HEALTH_BADGE[h.state]?.[0] ?? h.state}`, HEALTH_BADGE[h.state]?.[1] ?? "na", `health-${e}`), " "])),
-    ...kv("Runtime probe", probe ? [badge(probe.status === "fresh" && probe.usable ? "Observed" : probe.status === "missing" ? "Not probed" : probe.status === "stale" ? "Stale" : "Failed", probe.status === "fresh" && probe.usable ? "ok" : "warn", "probe-badge"),
-      el("span", { class: "note" }, probe.age_ms != null ? `  ${(probe.age_ms / 1000).toFixed(0)} s ago · ${probe.memory_class ?? "?"} memory · wasm ${probe.engine_version ?? "?"}${probe.failed_checks.length ? ` · not OK: ${probe.failed_checks.join(", ")}` : ""}` : "  static description only")] : "—"),
-    ...kv("Network profile", `${a.network.name} `, el("span", { class: "note" }, `(rtt ${a.network.rtt_ms} ms · ${a.network.down_mbps} Mbps · ${a.network.origin})`)),
-    ...kv("Result estimate", badge("Estimated", "est"), ` ~${est.rows.toLocaleString()} rows (${est.low.toLocaleString()}–${est.high.toLocaleString()}), quality ${est.quality}`,
-      r.rows_total != null ? [" · ", badge("Observed", "ok"), el("span", { "data-testid": "estimate-vs-actual" }, ` ${actual.toLocaleString()} rows (×${factor(est.rows, actual).toFixed(1)} off)`)] : []),
-    ...kv("Browser risk", browser?.risk ? [`${pct(browser.risk.score)} `, el("span", { class: "note", "data-testid": "risk" }, `memory ${pct(Math.min(browser.risk.memory, 9.99))} of the crash threshold (${fmtBytes(browser.risk.memory_input_bytes)} / ${fmtBytes(browser.risk.crash_threshold_bytes)})`)] : browser && !browser.feasible ? `rejected — ${browser.rejected_because[0]?.slice(0, 120) ?? ""}` : "—"),
-    ...kv("Fallback", a.fallback ? `${ENGINE_LABEL[a.fallback.engine] ?? a.fallback.engine} (at most ${a.fallback.max_fallbacks}, no retry on the same engine)` : p.placement === "browser" ? "none feasible" : "not needed (server plan)"),
+    ...kv(t("dev.engine"), ENGINE_LABEL[p.engine] ?? p.engine, " ", badge(p.placement === "browser" ? "Local" : "Server", "der")),
+    ...kv(t("dev.confidence"), badge(`${confText} ${pct(conf.score)}`, confCls, "confidence-badge"),
+      el("span", { class: "note", "data-testid": "confidence-factors", title: conf.factors.map((f) => `${f.name} ${f.value.toFixed(2)} (w ${f.weight})`).join("\n") }, `  engine ${pct(a.engine_confidence)} × margin ${a.margin_factor.toFixed(2)}`)),
+    ...kv(t("dev.health"), Object.entries(a.health ?? {}).flatMap(([e, h]) => [badge(`${e}: ${t(HEALTH_BADGE[h.state][0])}`, HEALTH_BADGE[h.state][1], `health-${e}`), " "])),
+    ...kv(t("dev.probe"), probe ? [badge(probe.status === "fresh" && probe.usable ? t("dev.observed") : probe.status === "missing" ? t("dev.not_probed") : probe.status === "stale" ? t("dev.stale") : t("dev.failed"), probe.status === "fresh" && probe.usable ? "ok" : "warn", "probe-badge"),
+      el("span", { class: "note" }, probe.age_ms != null ? `  ${(probe.age_ms / 1000).toFixed(0)} s · ${probe.memory_class ?? "?"} · wasm ${probe.engine_version ?? "?"}${dev ? ` · ${dev.browser_family} ${dev.browser_major ?? ""}` : ""}${probe.failed_checks.length ? ` · not OK: ${probe.failed_checks.join(", ")}` : ""}` : "")] : "—"),
+    ...kv(t("dev.network_profile"), `${a.network.name} `, el("span", { class: "note" }, `(rtt ${a.network.rtt_ms} ms · ${a.network.down_mbps} Mbps · ${a.network.origin})`)),
+    ...kv(t("dev.result_estimate"), badge(t("dev.estimated"), "est"), ` ~${fmtInt(est.rows)} (${fmtInt(est.low)}–${fmtInt(est.high)}), ${est.quality}${est.bounded_by_limit ? (est.limit_certain ? " · LIMIT" : " · capped by LIMIT") : ""}`,
+      r.rows_total != null ? [" · ", badge(t("dev.observed"), "ok"), el("span", { "data-testid": "estimate-vs-actual" }, ` ${fmtInt(r.rows_total)} (×${factor(est.rows, r.rows_total).toFixed(1)})`)] : []),
+    ...kv(t("dev.browser_risk"), risk
+      ? [badge(t(`dev.safety.${risk.safety}` as Key), risk.safety === "safe" ? "ok" : risk.safety === "risky" ? "warn" : risk.safety === "unsafe" ? "bad" : "na", "safety-badge"),
+          el("span", { class: "note", "data-testid": "risk" }, ` ${pct(risk.score)} · ≤ ${fmtBytes(risk.fetch_upper_bytes)} / ${fmtBytes(risk.envelope.unsafe_fetch_bytes)}`)]
+      : browser && !browser.feasible ? `✕ ${browser.rejected_because[0]?.slice(0, 120) ?? ""}` : "—"),
+    ...kv(t("dev.fallback"), a.fallback ? t("dev.fallback_text", { engine: ENGINE_LABEL[a.fallback.engine] ?? a.fallback.engine, n: a.fallback.max_fallbacks }) : p.placement === "browser" ? t("dev.fallback_none") : t("dev.fallback_none_server")),
   ];
-  void sel;
-  return el("div", { class: "kv2 assess", "data-testid": "assessment" }, ...rows,
-    ...(a.policy ?? []).map((t) => el("div", { class: "dec", style: "grid-column:1/-1" }, el("span", { class: "o-warning" }, "[policy] "), t)));
+  return el("div", { class: "kv2 assess", "data-testid": "assessment" }, rows,
+    ...(a.policy ?? []).map((x) => el("div", { class: "dec", style: "grid-column:1/-1" }, el("span", { class: "o-warning" }, `${t("dev.policy")} `), x)));
 }
 
 function profileTab(): HTMLElement {
   const r = S.last;
-  if (!r) return el("div", { class: "empty" }, "No profile yet.");
+  if (!r) return el("div", { class: "empty" }, t("profile.none"));
   return el("div", {}, metricCards(r.metrics, r.timing),
     el("table", {}, el("tbody", {},
-      el("tr", {}, el("td", {}, "gateway planning + overhead"), el("td", {}, fmtMs(r.timing.plan_and_overhead_ms.value ?? 0))),
-      el("tr", {}, el("td", {}, "engine execution"), el("td", {}, fmtMs(r.metrics.elapsed_ms.value ?? 0))),
-      el("tr", {}, el("td", {}, "GeoJSON boundary conversion"), el("td", {}, fmtMs(r.timing.boundary_conversion_ms.value ?? 0))))),
-    el("div", { class: "note" }, "CPU / network profiling is not implemented in the MVP; only the numbers above are measured."));
+      el("tr", {}, el("th", { scope: "row" }, t("profile.gateway")), el("td", {}, fmtMs(r.timing.plan_and_overhead_ms.value ?? 0))),
+      el("tr", {}, el("th", { scope: "row" }, t("profile.engine")), el("td", {}, fmtMs(r.metrics.elapsed_ms.value ?? 0))),
+      el("tr", {}, el("th", { scope: "row" }, t("profile.boundary")), el("td", {}, fmtMs(r.timing.boundary_conversion_ms.value ?? 0))))),
+    el("div", { class: "note" }, t("profile.note")));
 }
 
-renderLeft(); renderRight(); renderTab();
+// ---------- bottom pipeline strip ----------
+const ICONED = new Set(["source", "bbox_filter", "intersects", "filter", "project", "aggregate", "sort", "limit", "buffer", "spatial_join", "server", "browser"]);
+function renderPipeline() {
+  const r = S.last;
+  pipeEl.setAttribute("aria-label", t("exec.steps"));
+  if (!r) { pipeEl.replaceChildren(el("span", { class: "empty" }, t("pipe.none"))); return; }
+  const steps = pipelineSteps(r.ir as PlanGraph, r.physical.placement === "browser" ? "browser" : "server");
+  const nodes: Child[] = [];
+  steps.forEach((s, i) => {
+    if (i) nodes.push(el("span", { class: "link", "aria-hidden": "true" }, "→"));
+    nodes.push(el("div", { class: `node${i === steps.length - 1 ? " last" : ""}`, "data-testid": "pipe-node", "data-step": s.key },
+      el("span", { class: "ic" }, icon(ICONED.has(s.key) ? s.key : "filter", 18)),
+      el("span", { class: "tx" }, el("span", { class: "t" }, t(s.title)), el("span", { class: "s" }, t(s.sub)))));
+  });
+  pipeEl.replaceChildren(...nodes.map((n) => n as Node));
+}
 
-// Test hook for the browser smoke test only (?e2e=1): exposes the map and state, nothing else.
-if (new URLSearchParams(location.search).has("e2e")) {
-  (window as unknown as Record<string, unknown>).__gf = { map, state: S, select, setTab, wasm, resultDigest, resolvePlacement, bindSources, probeRuntime, setNetwork, placeWithFallback, reportRun, compile };
+// ---------- everything that depends on language or mode ----------
+function renderAll() {
+  document.body.dataset.mode = S.mode;
+  mapDiv.setAttribute("aria-label", t("a11y.map"));
+  renderHeader(); renderLegend(); renderLeft(); renderRight(); renderTab(); renderPipeline(); renderPopover();
+}
+
+applyBottomH();
+document.documentElement.lang = getLang();
+app.classList.add("no-inspector");
+renderAll();
+
+// Test hook for the browser tests only (?e2e=1): exposes the map and state, nothing else.
+if (params.has("e2e")) {
+  const gf = {
+    map, state: S, select, setTab, setMode, setLang: changeLang, wasm, resolvePlacement: placement.resolvePlacement, bindSources: placement.bindSources,
+    probeRuntime: placement.probeRuntime, placeWithFallback: placement.placeWithFallback, reportRun: placement.reportRun, compile, placement, run,
+  };
+  // tests read `state.probe`; the probe state lives in the placement module
+  Object.defineProperty(S, "probe", { get: () => placement.state.probe, set: (v) => { placement.state.probe = v; }, enumerable: true });
+  (window as unknown as Record<string, unknown>).__gf = gf;
 }

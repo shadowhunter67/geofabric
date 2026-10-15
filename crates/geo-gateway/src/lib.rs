@@ -165,6 +165,22 @@ fn authorized_source(st: &AppState, id: &str) -> Result<AuthorizedSource, ApiErr
         .map_err(|_| err(StatusCode::NOT_FOUND, "no_such_source", id))
 }
 
+/// UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` of a file's last modification (civil-from-days, no date crate).
+fn modified_iso(p: &std::path::Path) -> Option<String> {
+    let secs = std::fs::metadata(p).ok()?.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64;
+    let (days, rem) = (secs.div_euclid(86_400), secs.rem_euclid(86_400));
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = yoe + era * 400 + i64::from(m <= 2);
+    Some(format!("{y:04}-{m:02}-{d:02}T{:02}:{:02}:{:02}Z", rem / 3600, rem % 3600 / 60, rem % 60))
+}
+
 fn list_sources(st: &AppState) -> Vec<Value> {
     let mut out = Vec::new();
     let Ok(rd) = std::fs::read_dir(&st.data_dir) else { return out };
@@ -182,6 +198,7 @@ fn list_sources(st: &AppState) -> Vec<Value> {
                     "row_groups": i.row_groups.len(), "crs": i.crs.to_string(), "crs_known": i.crs.is_known(),
                     "geometry_column": i.geometry_column, "geometry_type": i.geometry_type,
                     "bbox": i.file_bbox, "has_covering": i.covering.is_some(),
+                    "covering_inferred": i.covering.as_ref().is_some_and(|c| !c.declared), "modified": modified_iso(&p),
                     "columns": i.schema.fields.iter().map(|f| json!({"name": f.name, "type": f.data_type})).collect::<Vec<_>>(),
                 }));
             }
