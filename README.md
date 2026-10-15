@@ -2,7 +2,7 @@
 
 > A spatial runtime for cloud-native geospatial computing: a logical Spatial IR, a planner, and replaceable execution engines.
 
-Status: **multi-engine architecture validation done** (PlanGraph DAG, planner v1 choosing between DuckDB on the server and DuckDB-Wasm in the browser, validated on a real 1.45 GB Overture subset). Reports: [core MVP](REPORT-GEOFABRIC-CORE-MVP.md) · [hardening](REPORT-GEOFABRIC-HARDENING.md) · [multi-engine](REPORT-GEOFABRIC-MULTI-ENGINE.md). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
+Status: **planner hardening done (2026-10-15, report: REPORT-GEOFABRIC-PLANNER-HARDENING.md)** · multi-engine architecture validation done (PlanGraph DAG, planner v1 choosing between DuckDB on the server and DuckDB-Wasm in the browser, validated on a real 1.45 GB Overture subset). Reports: [core MVP](REPORT-GEOFABRIC-CORE-MVP.md) · [hardening](REPORT-GEOFABRIC-HARDENING.md) · [multi-engine](REPORT-GEOFABRIC-MULTI-ENGINE.md). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
 
 Read first: [CONSTITUTION.md](CONSTITUTION.md) · [AGENTS.md](AGENTS.md) · [docs/vision.md](docs/vision.md) · [rfcs/](rfcs/) · [adr/](adr/)
 
