@@ -37,8 +37,15 @@ test.describe("Explorer mode (Vietnamese by default)", () => {
     await expect(s.getByTestId("exec-alt")).toContainText("Phương án khác");
     const opt = page.getByTestId("exec-optimize");
     await expect(opt).toContainText("Tối ưu truy vấn");
-    await expect(opt).toContainText("Chỉ đọc dữ liệu cần thiết");
-    await expect(opt).toContainText("%");
+    // the first window covers the whole file: nothing could be skipped, and the summary says so honestly
+    await expect(opt).toContainText(/Truy vấn này phải đọc gần như toàn bộ dữ liệu|Chỉ đọc dữ liệu cần thiết/);
+    // a tight window prunes most of the file: the optimisation is described in plain words, with a percentage
+    await page.evaluate(() => { const [x, y] = [104.5, 12.5]; window.__gf.map.fitBounds([[x - 0.03, y - 0.03], [x + 0.03, y + 0.03]], { duration: 0 }); });
+    await page.getByTestId("run").click();
+    await expect(page.getByTestId("status")).toContainText("kết quả");
+    await tab(page, "execution").click();
+    await expect(page.getByTestId("exec-optimize")).toContainText("Chỉ đọc dữ liệu cần thiết");
+    await expect(page.getByTestId("exec-optimize")).toContainText("%");
     // advanced details are collapsed, then open on request
     await expect(page.getByTestId("advanced")).toBeHidden();
     await page.getByTestId("advanced-toggle").click();
@@ -105,7 +112,7 @@ test.describe("Explorer mode (Vietnamese by default)", () => {
     await tab(page, "query").click();
     await expect(page.getByTestId("ir")).toBeVisible();
     await tab(page, "logs").click();
-    await expect(page.locator(".log")).toContainText("plan");
+    await expect(page.locator(".log")).toContainText(/plan|kế hoạch/);
     await expect(page.getByTestId("dev-strip")).toBeVisible();
     await page.getByTestId("mode-explorer").click();
     await expect(page.getByTestId("dev-strip")).toHaveCount(0);

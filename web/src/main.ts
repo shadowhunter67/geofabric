@@ -20,6 +20,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
   for (const [k, v] of Object.entries(props)) {
     if (k === "class") n.className = String(v);
     else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v as EventListener);
+    else if (k.startsWith("aria-") && typeof v === "boolean") n.setAttribute(k, String(v)); // ARIA states are "true"/"false" strings, never empty
     else if (v !== undefined && v !== false && v !== null) n.setAttribute(k, v === true ? "" : String(v));
   }
   const add = (c: Child): void => {
@@ -29,6 +30,17 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string,
   };
   kids.forEach(add);
   return n;
+}
+
+/** Replace the children of `n` (null/undefined/nested arrays allowed, like `el`). */
+function fill(n: HTMLElement, ...kids: Child[]): void {
+  n.replaceChildren();
+  const add = (c: Child): void => {
+    if (c == null) return;
+    if (Array.isArray(c)) c.forEach(add);
+    else n.append(typeof c === "string" ? document.createTextNode(c) : c);
+  };
+  kids.forEach(add);
 }
 
 // ---------- settings (persisted per viewer; every access is guarded: storage may be blocked) ----------
@@ -144,7 +156,7 @@ function renderHeader() {
   const open = (k: string) => !popover.hidden && popover.dataset.kind === k;
   const settingsBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("settings"), "data-testid": "settings", title: t("top.settings"), onclick: () => togglePopover("settings") }, t("top.settings"));
   const helpBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("help"), "data-testid": "help", title: t("top.help"), onclick: () => togglePopover("help") }, t("top.help"));
-  header.replaceChildren(
+  fill(header,
     el("div", { class: "brand" }, "Geo", el("span", {}, "Fabric")),
     el("div", { class: "modes", role: "group", "aria-label": t("mode.label") }, modeBtn("explorer"), modeBtn("developer")),
     langSel,
@@ -198,7 +210,7 @@ function renderPopover() {
     popover.replaceChildren(el("h3", {}, t("help.title")), el("div", { class: "help-body" }, t("help.body")), el("button", { type: "button", onclick: closePopover }, t("help.close")));
     return;
   }
-  popover.replaceChildren(
+  fill(popover,
     el("h3", {}, t("settings.title")),
     el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.liveRequery, onchange: (e: Event) => { S.liveRequery = (e.target as HTMLInputElement).checked; } }), t("settings.live")),
     DEV() ? el("label", { class: "net" }, t("settings.network"),

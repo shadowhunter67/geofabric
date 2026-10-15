@@ -83,7 +83,7 @@ test("Execution Plan shows engine, confidence, health, runtime probe, network pr
   await expect(a.getByTestId("risk")).toContainText("MB");
   await expect(a).toContainText("Fallback");
   await expect(a).toContainText("Estimated");
-  await expect(a.getByTestId("estimate-vs-actual")).toContainText("rows");
+  await expect(a.getByTestId("estimate-vs-actual")).toContainText(/×\d/);
 });
 
 test("the assumed network profile changes the browser's cost (latency of range requests)", async ({ page }) => {
