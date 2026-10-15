@@ -21,6 +21,15 @@ const SAFE_MB = Number(process.env.HO_SAFE_MB ?? 220); // never run the browser 
 const BROWSER_SAFE_INPUT = SAFE_MB * 1024 * 1024;
 const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
 
+// Chrome-level network throttling (DevTools protocol): the page, its workers (DuckDB-Wasm) and every fetch are throttled by the
+// browser itself, independently of the gateway (HO_CDP=1). Numbers = the planner's profiles.
+const CDP: Record<string, { latency: number; down: number; up: number }> = {
+  FAST_LAN: { latency: 5, down: 1000e6 / 8, up: 1000e6 / 8 },
+  GOOD_BROADBAND: { latency: 20, down: 200e6 / 8, up: 50e6 / 8 },
+  MOBILE: { latency: 70, down: 30e6 / 8, up: 10e6 / 8 },
+  HIGH_LATENCY: { latency: 150, down: 20e6 / 8, up: 5e6 / 8 },
+};
+
 type Cand = { engine: string; feasible: boolean; score_ms: number | null; rejected_because: string[]; confidence: { score: number } | null; risk: unknown; cost: unknown };
 
 test("held-out: planner decision vs measured server/browser time", async ({ context }) => {
@@ -35,6 +44,12 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
     await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 120_000 });
     await page.waitForFunction(() => (window as unknown as { __gf: { state: { probe: unknown } } }).__gf.state.probe !== null, null, { timeout: 120_000 });
     await page.evaluate(() => { window.__gf.wasm.recycleBudget = Number.POSITIVE_INFINITY; });
+    const prof = CDP[net];
+    if (process.env.HO_CDP && prof) {
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: prof.latency, downloadThroughput: prof.down, uploadThroughput: prof.up });
+    }
   };
   const post = (p: string, b: unknown) =>
     page.evaluate(async ([pp, bb]) => {

@@ -10,6 +10,7 @@ Usage: python benchmarks/run_heldout.py LOCAL FAST_LAN GOOD_BROADBAND MOBILE HIG
 Needs: target/release/geo-gateway.exe, web/dist, benchmarks/data, results/heldout-cases.json, results/calibration-set.jsonl,
 DUCKDB_LIB_DIR on PATH (prebuilt libduckdb).
 """
+import json
 import os
 import pathlib
 import subprocess
@@ -40,12 +41,20 @@ def main():
         out = ROOT / "benchmarks" / "results" / f"{os.environ.get('HO_PREFIX', 'heldout')}-{net}.json"
         gw = subprocess.Popen(
             [str(ROOT / "target" / "release" / "geo-gateway.exe"), "--data", "benchmarks/data", "--web", "web/dist", "--port", str(PORT),
-             "--simulate-network", net, "--telemetry", "benchmarks/results/calibration-set.jsonl", "--no-learn"],
+             *(["--network", net] if os.environ.get("HO_CDP") else ["--simulate-network", net]), "--telemetry", "benchmarks/results/" + os.environ.get("HO_CALIBRATION", "calibration-v3.jsonl"), "--no-learn", "--timeout-secs", os.environ.get("HO_TIMEOUT", "90")],
             cwd=ROOT, env=env, stdout=open(ROOT / "benchmarks" / "results" / f"gw-heldout-{net}.log", "w"), stderr=subprocess.STDOUT,
         )
         try:
             if not wait_health(PORT):
                 raise SystemExit(f"gateway for {net} did not start")
+            for _ in range(600):  # the planner needs the spatial histograms (built in the background at startup)
+                try:
+                    st = json.load(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/state", timeout=2))
+                    if st["histograms"]["pending"] == 0:
+                        break
+                except Exception:
+                    pass
+                time.sleep(0.5)
             e = dict(env, HELDOUT="1", HO_BASE=f"http://127.0.0.1:{PORT}", HO_NET=net,
                      HO_CASES=str(ROOT / "benchmarks" / "results" / os.environ.get("HO_CASES_FILE", "heldout-cases.json")), HO_OUT=str(out))
             print(f"=== {net}: {out.name}", flush=True)
