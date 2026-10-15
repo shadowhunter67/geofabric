@@ -37,6 +37,8 @@ def main():
     env = dict(os.environ)
     lib = ROOT / "tools" / ".cache" / "duckdb-1.5.6" / "lib"
     env["PATH"] = str(lib) + os.pathsep + env.get("PATH", "")
+    if wait_health(PORT, 1):  # a stale gateway on this port would silently serve every case (it did, in held-out v4)
+        raise SystemExit(f"port {PORT} is already served by another gateway; stop it by PID first")
     for net in nets:
         out = ROOT / "benchmarks" / "results" / f"{os.environ.get('HO_PREFIX', 'heldout')}-{net}.json"
         gw = subprocess.Popen(
@@ -47,6 +49,11 @@ def main():
         try:
             if not wait_health(PORT):
                 raise SystemExit(f"gateway for {net} did not start")
+            if gw.poll() is not None:
+                raise SystemExit(f"gateway for {net} exited ({gw.returncode}); something else answers on port {PORT}")
+            served = json.load(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/state", timeout=5)).get("network", {})
+            if (served.get("name") if isinstance(served, dict) else served) != net:
+                raise SystemExit(f"gateway reports network {served!r}, expected {net}")
             for _ in range(600):  # the planner needs the spatial histograms (built in the background at startup)
                 try:
                     st = json.load(urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/state", timeout=2))

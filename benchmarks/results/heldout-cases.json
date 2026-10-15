@@ -1,17 +1,17 @@
 {
- "seed": 20261017,
+ "seed": 20261018,
  "cases": [
   {
    "id": "h3000",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00895,
+   "fraction": 0.00142,
    "bbox": [
-    104.372058,
-    19.933489,
-    105.318074,
-    21.447114
+    108.446495,
+    15.735253,
+    108.823946,
+    16.339175
    ],
    "kind": "features",
    "limit": 1500,
@@ -26,12 +26,32 @@
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.02222,
+   "fraction": 0.00166,
    "bbox": [
-    107.811094,
-    16.201562,
-    109.30162,
-    18.586403
+    105.970654,
+    11.771499,
+    106.378405,
+    12.4239
+   ],
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3002",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.08736,
+   "bbox": [
+    107.044249,
+    9.468665,
+    110.0,
+    14.197868
    ],
    "kind": "count_by",
    "limit": null,
@@ -46,40 +66,16 @@
    "browser_state": "warm"
   },
   {
-   "id": "h3002",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00651,
-   "bbox": [
-    100.46042,
-    18.699088,
-    101.267421,
-    19.990289
-   ],
-   "kind": "count",
-   "limit": null,
-   "group_by": null,
-   "filter": {
-    "column": "height",
-    "op": "gt",
-    "value": 20
-   },
-   "deterministic": true,
-   "network": "LOCAL",
-   "browser_state": "cold"
-  },
-  {
    "id": "h3003",
    "set": "heldout-v3",
    "dataset": "clustered_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00979,
+   "fraction": 0.00071,
    "bbox": [
-    100.870609,
-    20.798528,
-    101.860127,
-    22.381757
+    107.754091,
+    11.342136,
+    108.020379,
+    11.768196
    ],
    "kind": "count",
    "limit": null,
@@ -98,12 +94,12 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00033,
+   "fraction": 0.02095,
    "bbox": [
-    107.727152,
-    13.02784,
-    107.908959,
-    13.31873
+    108.081095,
+    8.385133,
+    109.528365,
+    10.700764
    ],
    "kind": "features",
    "limit": 1500,
@@ -118,35 +114,39 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.55581,
+   "fraction": 0.17505,
    "bbox": [
     100.0,
     8.0,
-    107.455253,
-    19.928405
+    104.183931,
+    14.694289
    ],
-   "kind": "features",
-   "limit": 8000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
    "network": "LOCAL",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3006",
    "set": "heldout-v3",
    "dataset": "uniform_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00313,
+   "fraction": 0.00042,
    "bbox": [
-    101.105209,
-    20.211031,
-    101.664598,
-    21.106054
+    103.269834,
+    23.200047,
+    103.474258,
+    23.527126
    ],
    "kind": "features",
-   "limit": 1500,
+   "limit": 300,
    "group_by": null,
    "filter": null,
    "deterministic": false,
@@ -158,82 +158,82 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.33803,
+   "fraction": 0.02391,
    "bbox": [
-    101.259301,
-    9.390636,
-    107.073367,
-    18.693141
+    106.311271,
+    14.117854,
+    107.857639,
+    16.592042
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
    "filter": null,
    "deterministic": false,
    "network": "LOCAL",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3008",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00103,
+   "fraction": 0.0118,
    "bbox": [
-    107.498679,
-    23.271384,
-    107.818917,
-    23.783764
+    107.882918,
+    22.261666,
+    108.969377,
+    24.0
    ],
-   "kind": "count",
+   "kind": "count_by",
    "limit": null,
-   "group_by": null,
-   "filter": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
    "deterministic": true,
    "network": "LOCAL",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3009",
    "set": "heldout-v3",
-   "dataset": "uniform_30mb_shuffled_s3",
+   "dataset": "uniform_1gb_shuffled",
    "crs": "EPSG:4326",
-   "fraction": 0.00031,
+   "fraction": 0.02535,
    "bbox": [
-    107.585994,
-    22.377429,
-    107.762976,
-    22.660601
+    101.179145,
+    21.452525,
+    102.771316,
+    24.0
    ],
    "kind": "features",
-   "limit": 1500,
+   "limit": 40000,
    "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
+   "filter": null,
    "deterministic": false,
    "network": "LOCAL",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3010",
    "set": "heldout-v3",
    "dataset": "uniform_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.11569,
+   "fraction": 0.00691,
    "bbox": [
-    100.059293,
+    100.0,
     8.0,
-    103.460682,
-    13.442222
+    100.8314,
+    9.330239
    ],
-   "kind": "count",
-   "limit": null,
+   "kind": "features",
+   "limit": 40000,
    "group_by": null,
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "LOCAL",
    "browser_state": "warm"
   },
@@ -242,42 +242,46 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00137,
+   "fraction": 0.11928,
    "bbox": [
-    109.02661,
-    23.241034,
-    109.396914,
-    23.833521
+    100.0,
+    18.474004,
+    103.453748,
+    24.0
    ],
-   "kind": "features",
-   "limit": 1500,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
    "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
+    "column": "height",
+    "op": "gt",
+    "value": 20
    },
-   "deterministic": false,
+   "deterministic": true,
    "network": "LOCAL",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3012",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.02147,
+   "fraction": 0.03443,
    "bbox": [
-    108.164387,
-    14.063145,
-    109.629794,
-    16.407797
+    108.14452,
+    12.260001,
+    110.0,
+    15.228769
    ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
    "network": "LOCAL",
    "browser_state": "warm"
   },
@@ -286,12 +290,12 @@
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.0017,
+   "fraction": 0.00665,
    "bbox": [
-    102.758232,
-    15.694621,
-    103.170216,
-    16.353795
+    104.146817,
+    10.354059,
+    104.962098,
+    11.658509
    ],
    "kind": "count",
    "limit": null,
@@ -310,16 +314,16 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.03846,
+   "fraction": 0.01144,
    "bbox": [
-    100.014578,
-    15.678313,
-    101.975602,
-    18.815952
+    100.242867,
+    10.83683,
+    101.312356,
+    12.548013
    ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
    "filter": null,
    "deterministic": false,
    "network": "LOCAL",
@@ -330,18 +334,18 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00943,
+   "fraction": 0.02569,
    "bbox": [
-    101.829858,
-    12.809808,
-    102.800998,
-    14.363631
+    106.464094,
+    21.4355,
+    108.066907,
+    24.0
    ],
    "kind": "count_by",
    "limit": null,
-   "group_by": "category",
+   "group_by": "height",
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "LOCAL",
    "browser_state": "warm"
   },
@@ -350,22 +354,18 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00905,
+   "fraction": 0.11848,
    "bbox": [
-    103.21566,
-    22.477872,
-    104.16699,
-    24.0
+    103.619422,
+    11.762153,
+    107.061561,
+    17.269576
    ],
-   "kind": "features",
-   "limit": 1500,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
-   "deterministic": false,
+   "filter": null,
+   "deterministic": true,
    "network": "LOCAL",
    "browser_state": "warm"
   },
@@ -374,18 +374,22 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.02019,
+   "fraction": 0.00445,
    "bbox": [
-    100.735461,
-    16.147114,
-    102.156497,
-    18.420772
+    104.129467,
+    9.944248,
+    104.796652,
+    11.011744
    ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
    "network": "LOCAL",
    "browser_state": "cold"
   },
@@ -394,12 +398,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00275,
+   "fraction": 0.0011,
    "bbox": [
-    100.228163,
-    19.80188,
-    100.752767,
-    20.641247
+    108.676944,
+    20.824091,
+    109.00881,
+    21.355077
    ],
    "kind": "count",
    "limit": null,
@@ -418,32 +422,32 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00895,
+   "fraction": 0.07765,
    "bbox": [
-    106.937431,
-    13.659321,
-    107.883291,
-    15.172697
+    101.37322,
+    17.539989,
+    104.159743,
+    21.998426
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "LOCAL",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3020",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00578,
+   "fraction": 0.00583,
    "bbox": [
-    103.195548,
-    21.196494,
-    103.956087,
-    22.413355
+    109.236511,
+    13.521536,
+    110.0,
+    14.743118
    ],
    "kind": "count_by",
    "limit": null,
@@ -455,39 +459,19 @@
    },
    "deterministic": true,
    "network": "LOCAL",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3021",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00069,
+   "fraction": 0.02383,
    "bbox": [
-    108.31907,
-    13.573794,
-    108.582681,
-    13.995573
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "LOCAL",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3022",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.01232,
-   "bbox": [
-    108.071806,
-    22.223789,
-    109.181938,
-    24.0
+    102.393635,
+    19.251036,
+    103.937463,
+    21.721162
    ],
    "kind": "count",
    "limit": null,
@@ -499,6 +483,26 @@
    },
    "deterministic": true,
    "network": "LOCAL",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3022",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00362,
+   "bbox": [
+    109.398333,
+    18.540815,
+    110.0,
+    19.503483
+   ],
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
    "browser_state": "warm"
   },
   {
@@ -506,45 +510,41 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01766,
+   "fraction": 0.0008,
    "bbox": [
-    104.538387,
-    14.073,
-    105.867299,
-    16.199258
+    109.537652,
+    18.063671,
+    109.820106,
+    18.515598
    ],
-   "kind": "features",
-   "limit": 1500,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
    "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
+    "column": "height",
+    "op": "gt",
+    "value": 20
    },
-   "deterministic": false,
+   "deterministic": true,
    "network": "LOCAL",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3024",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.02546,
+   "fraction": 0.00246,
    "bbox": [
-    104.14782,
-    11.33767,
-    105.743295,
-    13.89043
+    104.239551,
+    11.717738,
+    104.735418,
+    12.511125
    ],
    "kind": "count_by",
    "limit": null,
    "group_by": "category",
-   "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
-   },
+   "filter": null,
    "deterministic": true,
    "network": "LOCAL",
    "browser_state": "warm"
@@ -554,20 +554,20 @@
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.0176,
+   "fraction": 0.00168,
    "bbox": [
-    103.109292,
-    14.676311,
-    104.435995,
-    16.799036
+    108.092352,
+    18.455954,
+    108.502769,
+    19.112622
    ],
-   "kind": "count",
+   "kind": "count_by",
    "limit": null,
-   "group_by": null,
+   "group_by": "category",
    "filter": {
-    "column": "height",
-    "op": "gt",
-    "value": 20
+    "column": "category",
+    "op": "ne",
+    "value": "other"
    },
    "deterministic": true,
    "network": "LOCAL",
@@ -578,15 +578,15 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00086,
+   "fraction": 0.07432,
    "bbox": [
-    102.917401,
-    9.565111,
-    103.21098,
-    10.034837
+    105.245129,
+    15.476003,
+    107.971337,
+    19.837935
    ],
    "kind": "features",
-   "limit": 40000,
+   "limit": 300,
    "group_by": null,
    "filter": null,
    "deterministic": false,
@@ -598,21 +598,17 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00428,
+   "fraction": 0.57823,
    "bbox": [
-    102.299623,
-    14.882667,
-    102.95347,
-    15.928821
+    100.0,
+    11.833345,
+    107.604159,
+    24.0
    ],
    "kind": "features",
-   "limit": 1500,
+   "limit": 8000,
    "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
+   "filter": null,
    "deterministic": false,
    "network": "LOCAL",
    "browser_state": "warm"
@@ -622,18 +618,18 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01117,
+   "fraction": 0.4436,
    "bbox": [
-    108.943268,
-    13.436389,
-    110.0,
-    15.12716
+    100.0,
+    11.185447,
+    106.66034,
+    21.841991
    ],
-   "kind": "count",
-   "limit": null,
+   "kind": "features",
+   "limit": 8000,
    "group_by": null,
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "FAST_LAN",
    "browser_state": "warm"
   },
@@ -642,18 +638,18 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.19127,
+   "fraction": 0.12555,
    "bbox": [
-    100.0,
-    8.133161,
-    104.373422,
-    15.130637
+    106.45669,
+    8.0,
+    110.0,
+    13.669296
    ],
-   "kind": "count",
-   "limit": null,
+   "kind": "features",
+   "limit": 8000,
    "group_by": null,
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "FAST_LAN",
    "browser_state": "warm"
   },
@@ -662,12 +658,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.10996,
+   "fraction": 0.00951,
    "bbox": [
-    104.832154,
-    18.694313,
-    108.148209,
-    24.0
+    100.0,
+    13.02228,
+    100.975063,
+    14.582381
    ],
    "kind": "features",
    "limit": 1500,
@@ -679,24 +675,28 @@
    },
    "deterministic": false,
    "network": "FAST_LAN",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3031",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.11201,
+   "fraction": 0.00071,
    "bbox": [
-    106.653192,
-    8.08649,
-    110.0,
-    13.441382
+    109.343109,
+    19.737167,
+    109.608795,
+    20.162266
    ],
-   "kind": "count_by",
+   "kind": "count",
    "limit": null,
-   "group_by": "category",
-   "filter": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
    "deterministic": true,
    "network": "FAST_LAN",
    "browser_state": "warm"
@@ -706,32 +706,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.05609,
+   "fraction": 0.50839,
    "bbox": [
-    102.555821,
-    14.758967,
-    104.924064,
-    18.548157
-   ],
-   "kind": "count",
-   "limit": null,
-   "group_by": null,
-   "filter": null,
-   "deterministic": true,
-   "network": "FAST_LAN",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3033",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.25566,
-   "bbox": [
-    100.399239,
-    12.974155,
-    105.455486,
-    21.064151
+    100.754728,
+    8.0,
+    107.884841,
+    19.40818
    ],
    "kind": "features",
    "limit": 1500,
@@ -746,48 +726,68 @@
    "browser_state": "warm"
   },
   {
+   "id": "h3033",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.05099,
+   "bbox": [
+    105.737895,
+    8.839692,
+    107.995921,
+    12.452533
+   ],
+   "kind": "features",
+   "limit": 40000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
    "id": "h3034",
    "set": "heldout-v3",
    "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01246,
+   "fraction": 0.00283,
    "bbox": [
-    100.004005,
-    8.0,
-    101.120283,
-    9.786045
+    108.115117,
+    10.144434,
+    108.647553,
+    10.996332
    ],
-   "kind": "count_by",
+   "kind": "count",
    "limit": null,
-   "group_by": "category",
+   "group_by": null,
    "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
+    "column": "height",
+    "op": "gt",
+    "value": 20
    },
    "deterministic": true,
    "network": "FAST_LAN",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3035",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.07651,
+   "fraction": 0.20977,
    "bbox": [
-    101.028756,
-    18.416293,
-    103.794856,
-    22.842053
+    105.419896,
+    15.804074,
+    110.0,
+    23.13224
    ],
-   "kind": "count_by",
+   "kind": "count",
    "limit": null,
-   "group_by": "category",
+   "group_by": null,
    "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
+    "column": "height",
+    "op": "gt",
+    "value": 20
    },
    "deterministic": true,
    "network": "FAST_LAN",
@@ -798,18 +798,22 @@
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.19912,
+   "fraction": 0.01859,
    "bbox": [
-    100.0,
-    12.689513,
-    104.462258,
-    19.829126
+    100.262991,
+    21.818252,
+    101.626584,
+    24.0
    ],
-   "kind": "count",
-   "limit": null,
+   "kind": "features",
+   "limit": 1500,
    "group_by": null,
-   "filter": null,
-   "deterministic": true,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
    "network": "FAST_LAN",
    "browser_state": "cold"
   },
@@ -818,12 +822,12 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.17184,
+   "fraction": 0.00035,
    "bbox": [
-    102.610838,
-    8.0,
-    106.756239,
-    14.632641
+    107.727885,
+    11.283015,
+    107.915203,
+    11.582723
    ],
    "kind": "count_by",
    "limit": null,
@@ -831,39 +835,103 @@
    "filter": null,
    "deterministic": false,
    "network": "FAST_LAN",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3038",
    "set": "heldout-v3",
    "dataset": "clustered_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00343,
+   "fraction": 0.00037,
    "bbox": [
-    102.780632,
-    11.029152,
-    103.366536,
-    11.966599
+    108.337526,
+    18.400505,
+    108.530742,
+    18.70965
    ],
-   "kind": "features",
-   "limit": 1500,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
-   "filter": null,
-   "deterministic": false,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
    "network": "FAST_LAN",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3039",
    "set": "heldout-v3",
    "dataset": "clustered_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01183,
+   "fraction": 0.01028,
    "bbox": [
-    105.854705,
-    8.0,
-    106.942302,
-    9.740154
+    103.543839,
+    20.164983,
+    104.55775,
+    21.787241
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "FAST_LAN",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3040",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00994,
+   "bbox": [
+    103.337768,
+    22.40463,
+    104.334874,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3041",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00062,
+   "bbox": [
+    102.565047,
+    17.66272,
+    102.81387,
+    18.060836
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "FAST_LAN",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3042",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.39897,
+   "bbox": [
+    103.683566,
+    13.893706,
+    110.0,
+    24.0
    ],
    "kind": "count_by",
    "limit": null,
@@ -874,66 +942,6 @@
     "value": "other"
    },
    "deterministic": true,
-   "network": "FAST_LAN",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3040",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.38523,
-   "bbox": [
-    101.028232,
-    12.346845,
-    107.234952,
-    22.277597
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "FAST_LAN",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3041",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00048,
-   "bbox": [
-    108.935156,
-    19.426297,
-    109.154561,
-    19.777345
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "FAST_LAN",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3042",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.56746,
-   "bbox": [
-    100.0,
-    11.947231,
-    107.532981,
-    24.0
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
    "network": "GOOD_BROADBAND",
    "browser_state": "warm"
   },
@@ -942,12 +950,36 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.08224,
+   "fraction": 0.00714,
    "bbox": [
-    101.481925,
-    8.409322,
-    104.349605,
-    12.99761
+    107.868372,
+    13.404461,
+    108.713646,
+    14.7569
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3044",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.03303,
+   "bbox": [
+    100.0,
+    21.09204,
+    101.817475,
+    24.0
    ],
    "kind": "features",
    "limit": 40000,
@@ -958,41 +990,25 @@
    "browser_state": "warm"
   },
   {
-   "id": "h3044",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.02194,
-   "bbox": [
-    100.128886,
-    8.298087,
-    101.610177,
-    10.668152
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "cold"
-  },
-  {
    "id": "h3045",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00582,
+   "fraction": 0.03412,
    "bbox": [
-    105.145669,
-    22.059641,
-    105.908363,
-    23.279952
+    103.27775,
+    8.864564,
+    105.124908,
+    11.820018
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
    "deterministic": false,
    "network": "GOOD_BROADBAND",
    "browser_state": "warm"
@@ -1002,16 +1018,16 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.2071,
+   "fraction": 0.21397,
    "bbox": [
-    100.0,
-    8.0,
-    104.550862,
-    15.281379
+    105.374328,
+    9.056194,
+    110.0,
+    16.457269
    ],
-   "kind": "features",
-   "limit": 8000,
-   "group_by": null,
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
    "filter": null,
    "deterministic": false,
    "network": "GOOD_BROADBAND",
@@ -1022,16 +1038,16 @@
    "set": "heldout-v3",
    "dataset": "clustered_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00782,
+   "fraction": 0.28961,
    "bbox": [
-    104.398515,
-    9.304991,
-    105.282566,
-    10.719472
+    101.253005,
+    15.389463,
+    106.63459,
+    24.0
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
    "filter": null,
    "deterministic": false,
    "network": "GOOD_BROADBAND",
@@ -1042,32 +1058,36 @@
    "set": "heldout-v3",
    "dataset": "clustered_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00179,
+   "fraction": 0.018,
    "bbox": [
-    107.630233,
-    12.214488,
-    108.053441,
-    12.89162
+    108.009719,
+    10.359789,
+    109.35152,
+    12.506671
    ],
-   "kind": "count",
-   "limit": null,
+   "kind": "features",
+   "limit": 1500,
    "group_by": null,
-   "filter": null,
-   "deterministic": true,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
    "network": "GOOD_BROADBAND",
    "browser_state": "cold"
   },
   {
    "id": "h3049",
    "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
+   "dataset": "clustered_1gb_shuffled",
    "crs": "EPSG:4326",
-   "fraction": 0.53355,
+   "fraction": 0.16246,
    "bbox": [
-    100.0,
+    103.052795,
     8.0,
-    107.304431,
-    19.68709
+    107.083388,
+    14.448948
    ],
    "kind": "count_by",
    "limit": null,
@@ -1082,38 +1102,42 @@
    "set": "heldout-v3",
    "dataset": "uniform_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.21258,
+   "fraction": 0.00364,
    "bbox": [
     100.0,
-    14.981745,
-    104.610648,
-    22.358782
+    19.636793,
+    100.603048,
+    20.60167
    ],
-   "kind": "features",
-   "limit": 1500,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
    "filter": null,
-   "deterministic": false,
+   "deterministic": true,
    "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
+   "browser_state": "cold"
   },
   {
    "id": "h3051",
    "set": "heldout-v3",
    "dataset": "uniform_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00129,
+   "fraction": 0.00053,
    "bbox": [
-    106.722692,
-    22.959632,
-    107.081646,
-    23.533959
+    108.749009,
+    14.280776,
+    108.978402,
+    14.647805
    ],
-   "kind": "features",
-   "limit": 40000,
+   "kind": "count",
+   "limit": null,
    "group_by": null,
-   "filter": null,
-   "deterministic": false,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
    "network": "GOOD_BROADBAND",
    "browser_state": "warm"
   },
@@ -1122,12 +1146,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00535,
+   "fraction": 0.05439,
    "bbox": [
-    107.78502,
-    18.275437,
-    108.516791,
-    19.44627
+    107.667873,
+    15.396208,
+    110.0,
+    19.127611
    ],
    "kind": "count_by",
    "limit": null,
@@ -1142,22 +1166,18 @@
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.04349,
+   "fraction": 0.31987,
    "bbox": [
-    101.887282,
-    15.85103,
-    103.972702,
-    19.187702
+    104.344252,
+    8.0,
+    110.0,
+    17.049196
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
-   },
-   "deterministic": true,
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
    "network": "GOOD_BROADBAND",
    "browser_state": "warm"
   },
@@ -1166,164 +1186,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00106,
+   "fraction": 0.02808,
    "bbox": [
-    102.628181,
-    19.497474,
-    102.954238,
-    20.019165
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3055",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.20929,
-   "bbox": [
-    105.425218,
-    8.0,
-    110.0,
-    15.319651
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3056",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.17487,
-   "bbox": [
-    100.0,
-    14.468077,
-    104.181741,
-    21.158862
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3057",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.12678,
-   "bbox": [
-    106.439322,
-    8.0,
-    110.0,
-    13.697085
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
-   },
-   "deterministic": true,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3058",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00136,
-   "bbox": [
-    102.788915,
-    8.380259,
-    103.157397,
-    8.969829
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
-   },
-   "deterministic": true,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3059",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.13482,
-   "bbox": [
-    101.862863,
-    12.557037,
-    105.534618,
-    18.431846
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3060",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00269,
-   "bbox": [
-    104.252498,
-    10.196329,
-    104.771271,
-    11.026366
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
-   "deterministic": false,
-   "network": "GOOD_BROADBAND",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3061",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00684,
-   "bbox": [
-    105.252909,
-    14.640985,
-    106.079988,
-    15.964312
+    104.153377,
+    11.665759,
+    105.828991,
+    14.34674
    ],
    "kind": "count",
    "limit": null,
@@ -1338,35 +1206,231 @@
    "browser_state": "warm"
   },
   {
-   "id": "h3062",
+   "id": "h3055",
    "set": "heldout-v3",
-   "dataset": "clustered_30mb_shuffled_s3",
+   "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.17554,
+   "fraction": 0.08275,
    "bbox": [
-    101.807689,
-    9.16277,
-    105.997488,
-    15.866448
+    104.340123,
+    13.542571,
+    107.21678,
+    18.145222
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3056",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00107,
+   "bbox": [
+    100.866917,
+    21.467294,
+    101.193843,
+    21.990374
    ],
    "kind": "features",
    "limit": 300,
    "group_by": null,
    "filter": null,
    "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3057",
+   "set": "heldout-v3",
+   "dataset": "clustered_1gb_shuffled",
+   "crs": "EPSG:4326",
+   "fraction": 0.26143,
+   "bbox": [
+    103.754888,
+    9.535082,
+    108.867934,
+    17.715956
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3058",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.04454,
+   "bbox": [
+    100.0,
+    8.0,
+    102.11043,
+    11.376688
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3059",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.62891,
+   "bbox": [
+    102.06959,
+    9.064301,
+    110.0,
+    21.752957
+   ],
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3060",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00359,
+   "bbox": [
+    102.173566,
+    13.948017,
+    102.77273,
+    14.906679
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3061",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00239,
+   "bbox": [
+    109.168795,
+    21.682339,
+    109.657616,
+    22.464453
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3062",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.05572,
+   "bbox": [
+    102.560611,
+    18.600323,
+    104.921127,
+    22.377149
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
    "network": "MOBILE",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3063",
    "set": "heldout-v3",
    "dataset": "clustered_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01878,
+   "fraction": 0.03213,
+   "bbox": [
+    107.243191,
+    8.0,
+    109.035654,
+    10.86794
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3064",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.0014,
+   "bbox": [
+    103.475892,
+    14.982659,
+    103.849607,
+    15.580603
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3065",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.18299,
    "bbox": [
     100.0,
-    21.807397,
-    101.370377,
+    17.155642,
+    104.277724,
     24.0
    ],
    "kind": "features",
@@ -1382,76 +1446,36 @@
    "browser_state": "warm"
   },
   {
-   "id": "h3064",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.0273,
-   "bbox": [
-    104.926668,
-    19.517211,
-    106.57901,
-    22.160958
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3065",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00205,
-   "bbox": [
-    109.193478,
-    18.201275,
-    109.64612,
-    18.925503
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
    "id": "h3066",
    "set": "heldout-v3",
    "dataset": "uniform_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01111,
+   "fraction": 0.00137,
    "bbox": [
-    101.819895,
-    10.815629,
-    102.873793,
-    12.501866
+    101.025615,
+    12.954968,
+    101.395431,
+    13.546673
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
    "filter": null,
-   "deterministic": true,
+   "deterministic": false,
    "network": "MOBILE",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3067",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.01268,
+   "fraction": 0.56695,
    "bbox": [
-    105.903948,
-    13.130235,
-    107.029977,
-    14.931881
+    100.0,
+    11.262003,
+    107.529634,
+    23.309418
    ],
    "kind": "features",
    "limit": 300,
@@ -1466,16 +1490,16 @@
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.02204,
+   "fraction": 0.00215,
    "bbox": [
-    100.587403,
-    14.18765,
-    102.072032,
-    16.563057
+    103.990615,
+    15.028119,
+    104.454572,
+    15.77045
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
+   "kind": "features",
+   "limit": 40000,
+   "group_by": null,
    "filter": null,
    "deterministic": false,
    "network": "MOBILE",
@@ -1486,220 +1510,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00728,
+   "fraction": 0.03692,
    "bbox": [
-    100.0,
-    9.95505,
-    100.853287,
-    11.32031
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": null,
-   "deterministic": true,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3070",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00068,
-   "bbox": [
-    107.840821,
-    13.811952,
-    108.101322,
-    14.228753
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3071",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.23329,
-   "bbox": [
-    105.169958,
-    14.235863,
-    110.0,
-    21.963931
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3072",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00151,
-   "bbox": [
-    105.605498,
-    12.852497,
-    105.993486,
-    13.473279
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3073",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.01426,
-   "bbox": [
-    101.671169,
-    15.694302,
-    102.865123,
-    17.604629
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": {
-    "column": "category",
-    "op": "eq",
-    "value": "school"
-   },
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3074",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.16456,
-   "bbox": [
-    105.943408,
-    8.0,
-    110.0,
-    14.490547
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3075",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00363,
-   "bbox": [
-    109.348723,
-    14.392046,
-    109.951275,
-    15.35613
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3076",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.02055,
-   "bbox": [
-    106.184897,
-    8.0,
-    107.618584,
-    10.293899
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3077",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.01343,
-   "bbox": [
-    107.046378,
-    12.530753,
-    108.205345,
-    14.385101
-   ],
-   "kind": "features",
-   "limit": 300,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3078",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.0042,
-   "bbox": [
-    102.250607,
-    22.782466,
-    102.898573,
-    23.819212
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "MOBILE",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3079",
-   "set": "heldout-v3",
-   "dataset": "uniform_30mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.02954,
-   "bbox": [
-    104.829155,
-    8.0,
-    106.547889,
-    10.749974
+    104.370084,
+    20.925666,
+    106.291543,
+    24.0
    ],
    "kind": "count",
    "limit": null,
@@ -1714,22 +1530,238 @@
    "browser_state": "warm"
   },
   {
+   "id": "h3070",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00583,
+   "bbox": [
+    103.207293,
+    18.507672,
+    103.970874,
+    19.729401
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3071",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00359,
+   "bbox": [
+    107.735096,
+    19.833118,
+    108.33443,
+    20.792053
+   ],
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3072",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00045,
+   "bbox": [
+    107.428748,
+    13.593749,
+    107.640698,
+    13.932868
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3073",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00785,
+   "bbox": [
+    108.061832,
+    14.582074,
+    108.947563,
+    15.999244
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3074",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.05808,
+   "bbox": [
+    105.692301,
+    20.143977,
+    108.102315,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3075",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.12057,
+   "bbox": [
+    106.527748,
+    14.905256,
+    110.0,
+    20.460859
+   ],
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3076",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00382,
+   "bbox": [
+    106.541316,
+    17.220433,
+    107.159341,
+    18.209272
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3077",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.07864,
+   "bbox": [
+    100.0,
+    8.0,
+    102.804336,
+    12.486938
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3078",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.58936,
+   "bbox": [
+    100.337669,
+    8.0,
+    108.014655,
+    20.283178
+   ],
+   "kind": "count",
+   "limit": null,
+   "group_by": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
+   "deterministic": true,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3079",
+   "set": "heldout-v3",
+   "dataset": "uniform_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.0693,
+   "bbox": [
+    107.367543,
+    8.0,
+    110.0,
+    12.211931
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
    "id": "h3080",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.0407,
+   "fraction": 0.00055,
    "bbox": [
-    104.049788,
-    8.0,
-    106.067333,
-    11.228072
+    109.718587,
+    20.630205,
+    109.953263,
+    21.005686
    ],
    "kind": "count_by",
    "limit": null,
-   "group_by": "height",
+   "group_by": "category",
    "filter": null,
-   "deterministic": false,
+   "deterministic": true,
    "network": "MOBILE",
    "browser_state": "cold"
   },
@@ -1738,12 +1770,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.67762,
+   "fraction": 0.03683,
    "bbox": [
-    101.768249,
-    10.829198,
-    110.0,
-    24.0
+    101.964999,
+    19.352479,
+    103.884222,
+    22.423236
    ],
    "kind": "features",
    "limit": 300,
@@ -1756,14 +1788,14 @@
   {
    "id": "h3082",
    "set": "heldout-v3",
-   "dataset": "uniform_30mb_spatial_s3",
+   "dataset": "uniform_1gb_shuffled",
    "crs": "EPSG:4326",
-   "fraction": 0.61429,
+   "fraction": 0.0005,
    "bbox": [
-    102.16231,
-    11.459696,
-    110.0,
-    24.0
+    106.505432,
+    21.315522,
+    106.729472,
+    21.673985
    ],
    "kind": "count",
    "limit": null,
@@ -1782,17 +1814,21 @@
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00808,
+   "fraction": 0.08911,
    "bbox": [
-    103.217183,
-    13.382656,
-    104.115993,
-    14.820752
+    100.0,
+    14.904243,
+    102.985171,
+    19.680517
    ],
    "kind": "count",
    "limit": null,
    "group_by": null,
-   "filter": null,
+   "filter": {
+    "column": "height",
+    "op": "gt",
+    "value": 20
+   },
    "deterministic": true,
    "network": "HIGH_LATENCY",
    "browser_state": "cold"
@@ -1802,12 +1838,12 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.33886,
+   "fraction": 0.00655,
    "bbox": [
-    104.178825,
-    14.68612,
-    110.0,
-    24.0
+    102.986611,
+    18.16778,
+    103.795706,
+    19.462333
    ],
    "kind": "features",
    "limit": 8000,
@@ -1822,200 +1858,32 @@
    "set": "heldout-v3",
    "dataset": "uniform_100mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.00304,
+   "fraction": 0.00648,
    "bbox": [
-    105.328994,
-    9.553672,
-    105.88028,
-    10.43573
+    100.0,
+    14.937103,
+    100.805222,
+    16.225458
    ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": {
-    "column": "category",
-    "op": "ne",
-    "value": "other"
-   },
-   "deterministic": true,
+   "kind": "features",
+   "limit": 300,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
    "network": "HIGH_LATENCY",
-   "browser_state": "cold"
+   "browser_state": "warm"
   },
   {
    "id": "h3086",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_spatial_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.03839,
+   "fraction": 0.13199,
    "bbox": [
-    108.040783,
-    8.0,
+    106.367016,
+    15.454477,
     110.0,
-    11.134748
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3087",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.05036,
-   "bbox": [
-    101.294871,
-    8.0,
-    103.538929,
-    11.590493
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3088",
-   "set": "heldout-v3",
-   "dataset": "uniform_1gb_shuffled",
-   "crs": "EPSG:4326",
-   "fraction": 0.00269,
-   "bbox": [
-    103.844027,
-    15.333284,
-    104.36288,
-    16.163448
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3089",
-   "set": "heldout-v3",
-   "dataset": "clustered_30mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.01775,
-   "bbox": [
-    100.894681,
-    8.0,
-    102.227117,
-    10.131898
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3090",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00072,
-   "bbox": [
-    101.87427,
-    17.021059,
-    102.142522,
-    17.450263
-   ],
-   "kind": "features",
-   "limit": 40000,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3091",
-   "set": "heldout-v3",
-   "dataset": "clustered_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00037,
-   "bbox": [
-    103.16413,
-    17.262314,
-    103.356465,
-    17.570049
-   ],
-   "kind": "features",
-   "limit": 1500,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3092",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00042,
-   "bbox": [
-    108.061427,
-    14.197136,
-    108.266121,
-    14.524647
-   ],
-   "kind": "count",
-   "limit": null,
-   "group_by": null,
-   "filter": {
-    "column": "height",
-    "op": "gt",
-    "value": 20
-   },
-   "deterministic": true,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3093",
-   "set": "heldout-v3",
-   "dataset": "uniform_10mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.18984,
-   "bbox": [
-    100.0,
-    17.028739,
-    104.357038,
-    24.0
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "category",
-   "filter": null,
-   "deterministic": true,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3094",
-   "set": "heldout-v3",
-   "dataset": "uniform_30mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.04506,
-   "bbox": [
-    105.056747,
-    18.514046,
-    107.179419,
-    21.910321
+    21.267252
    ],
    "kind": "features",
    "limit": 1500,
@@ -2030,16 +1898,240 @@
    "browser_state": "warm"
   },
   {
+   "id": "h3087",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00252,
+   "bbox": [
+    105.811258,
+    9.033882,
+    106.312827,
+    9.836392
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3088",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.09463,
+   "bbox": [
+    104.961186,
+    11.98321,
+    108.03745,
+    16.905232
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3089",
+   "set": "heldout-v3",
+   "dataset": "clustered_30mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.54501,
+   "bbox": [
+    100.0,
+    12.188045,
+    107.382472,
+    24.0
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3090",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.20122,
+   "bbox": [
+    105.499767,
+    11.295558,
+    109.985555,
+    18.472819
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3091",
+   "set": "heldout-v3",
+   "dataset": "clustered_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.0021,
+   "bbox": [
+    108.812998,
+    9.903701,
+    109.271224,
+    10.636862
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3092",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.01946,
+   "bbox": [
+    104.067957,
+    8.0,
+    105.462939,
+    10.23197
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": {
+    "column": "category",
+    "op": "ne",
+    "value": "other"
+   },
+   "deterministic": true,
+   "network": "HIGH_LATENCY",
+   "browser_state": "cold"
+  },
+  {
+   "id": "h3093",
+   "set": "heldout-v3",
+   "dataset": "uniform_10mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00078,
+   "bbox": [
+    108.474658,
+    10.265414,
+    108.753894,
+    10.712192
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3094",
+   "set": "heldout-v3",
+   "dataset": "uniform_30mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00139,
+   "bbox": [
+    107.402441,
+    10.657104,
+    107.77592,
+    11.254671
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
    "id": "h3095",
    "set": "heldout-v3",
    "dataset": "uniform_30mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.15119,
+   "fraction": 0.04048,
    "bbox": [
-    106.111742,
-    11.710869,
-    110.0,
-    17.932082
+    101.463865,
+    20.78069,
+    103.475934,
+    24.0
+   ],
+   "kind": "features",
+   "limit": 8000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3096",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.00194,
+   "bbox": [
+    108.256744,
+    11.037622,
+    108.696648,
+    11.741469
+   ],
+   "kind": "features",
+   "limit": 1500,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3097",
+   "set": "heldout-v3",
+   "dataset": "uniform_100mb_shuffled_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.06112,
+   "bbox": [
+    106.895747,
+    8.839101,
+    109.367998,
+    12.794704
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "height",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "h3098",
+   "set": "heldout-v3",
+   "dataset": "clustered_10mb_spatial_s3",
+   "crs": "EPSG:4326",
+   "fraction": 0.01413,
+   "bbox": [
+    106.498953,
+    15.96034,
+    107.687854,
+    17.862582
    ],
    "kind": "count_by",
    "limit": null,
@@ -2054,84 +2146,28 @@
    "browser_state": "warm"
   },
   {
-   "id": "h3096",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.40898,
-   "bbox": [
-    103.604844,
-    8.918635,
-    110.0,
-    19.150885
-   ],
-   "kind": "count_by",
-   "limit": null,
-   "group_by": "height",
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "cold"
-  },
-  {
-   "id": "h3097",
-   "set": "heldout-v3",
-   "dataset": "uniform_100mb_shuffled_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.00749,
-   "bbox": [
-    100.21416,
-    10.237804,
-    101.079422,
-    11.622223
-   ],
-   "kind": "features",
-   "limit": 300,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
-   "id": "h3098",
-   "set": "heldout-v3",
-   "dataset": "clustered_10mb_spatial_s3",
-   "crs": "EPSG:4326",
-   "fraction": 0.0368,
-   "bbox": [
-    108.081657,
-    20.930652,
-    110.0,
-    24.0
-   ],
-   "kind": "features",
-   "limit": 300,
-   "group_by": null,
-   "filter": null,
-   "deterministic": false,
-   "network": "HIGH_LATENCY",
-   "browser_state": "warm"
-  },
-  {
    "id": "h3099",
    "set": "heldout-v3",
    "dataset": "clustered_10mb_shuffled_s3",
    "crs": "EPSG:4326",
-   "fraction": 0.13326,
+   "fraction": 0.4432,
    "bbox": [
-    100.994546,
-    9.600596,
-    104.645066,
-    15.441427
+    100.0,
+    8.0,
+    106.657323,
+    18.651718
    ],
    "kind": "features",
-   "limit": 300,
+   "limit": 1500,
    "group_by": null,
-   "filter": null,
+   "filter": {
+    "column": "category",
+    "op": "eq",
+    "value": "school"
+   },
    "deterministic": false,
    "network": "HIGH_LATENCY",
-   "browser_state": "cold"
+   "browser_state": "warm"
   }
  ]
 }

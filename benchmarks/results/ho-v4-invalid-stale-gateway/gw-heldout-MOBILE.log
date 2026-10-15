@@ -1,0 +1,6 @@
+loaded 365 telemetry observations from benchmarks/results/calibration-v3.jsonl
+planner calibration is frozen (--no-learn)
+
+thread 'main' (50732) panicked at crates\geo-gateway\src\main.rs:73:75:
+bind 127.0.0.1:8810: Only one usage of each socket address (protocol/network address/port) is normally permitted. (os error 10048)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
