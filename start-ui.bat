@@ -38,7 +38,7 @@ if errorlevel 1 (
 rem ---- stale check: rebuild automatically when sources are newer than the built outputs ----------
 powershell -NoProfile -Command "$o=(Get-Item 'web\dist\index.html' -ErrorAction SilentlyContinue).LastWriteTime; if(-not $o -or (Get-ChildItem web\src,web\index.html,web\public -Recurse -File | Where-Object {$_.LastWriteTime -gt $o})){exit 1}"
 if errorlevel 1 set WEB_STALE=1
-powershell -NoProfile -Command "$o=(Get-Item 'targetelease\geo-gateway.exe' -ErrorAction SilentlyContinue).LastWriteTime; if(-not $o -or (Get-ChildItem crates -Recurse -File -Include *.rs,Cargo.toml | Where-Object {$_.LastWriteTime -gt $o})){exit 1}"
+powershell -NoProfile -Command "$o=(Get-Item 'target\release\geo-gateway.exe' -ErrorAction SilentlyContinue).LastWriteTime; if(-not $o -or (Get-ChildItem crates -Recurse -File -Include *.rs,Cargo.toml | Where-Object {$_.LastWriteTime -gt $o})){exit 1}"
 if errorlevel 1 set GW_STALE=1
 
 rem ---- 3. web UI bundle ---------------------------------------------------------------------
