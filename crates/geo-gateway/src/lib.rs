@@ -523,6 +523,7 @@ fn observation(physical: &PhysicalPlan, plan: &Plan, engine: &str, actual_rows: 
         actual_ms,
         network: network.into(),
         fallback,
+        layout: est.layout.clone(),
     }
 }
 
@@ -712,6 +713,7 @@ pub struct ClientReport {
     est_ms: Option<f64>,
     actual_ms: Option<f64>,
     fallback: Option<bool>,
+    layout: Option<String>,
 }
 
 /// A client-side engine (the browser) reports how a run went: health, known incompatibilities, telemetry.
@@ -743,6 +745,7 @@ async fn client_report(State(st): State<Shared>, Json(r): Json<ClientReport>) ->
         actual_ms: r.actual_ms.unwrap_or(0.0),
         network: state.network().name,
         fallback: r.fallback.unwrap_or(false),
+        layout: r.layout.clone().unwrap_or_default(),
     });
     state.record(ExecutionReport { engine: r.engine.clone(), source: r.source.clone(), outcome, observation });
     Ok(Json(json!({"recorded": true, "class": class})))

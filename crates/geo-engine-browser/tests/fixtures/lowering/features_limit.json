@@ -1,0 +1,94 @@
+{
+  "expected": {
+    "files": [
+      "a.parquet"
+    ],
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE \"bbox\".\"xmin\" <= 105.5 AND \"bbox\".\"xmax\" >= 104.0 AND \"bbox\".\"ymin\" <= 13.25 AND \"bbox\".\"ymax\" >= 12.0),\n\"n2\" AS NOT MATERIALIZED (SELECT \"id\", \"category\", \"geometry\", \"bbox\" FROM \"n1\"),\n\"n3\" AS NOT MATERIALIZED (SELECT * FROM \"n2\" LIMIT 2000)\nSELECT * FROM \"n3\" LIMIT 100001"
+  },
+  "max_rows": 100000,
+  "name": "features_limit",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_3804a36f9da9488c2784": {
+        "columns": [
+          "id",
+          "category",
+          "geometry",
+          "bbox"
+        ],
+        "input": "n_6bbcfac81059b8f07f56",
+        "op": "project"
+      },
+      "n_3be8577ec3966bddb362": {
+        "input": "n_3804a36f9da9488c2784",
+        "n": 2000,
+        "op": "limit"
+      },
+      "n_6bbcfac81059b8f07f56": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "bbox_filter"
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_3be8577ec3966bddb362"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

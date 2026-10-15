@@ -1,0 +1,77 @@
+{
+  "expected": {
+    "files": [
+      "a.parquet"
+    ],
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE \"category\" = 'it''s \"x\"')\nSELECT * FROM \"n1\" LIMIT 11"
+  },
+  "max_rows": 10,
+  "name": "filter_string_with_quote",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_b51c655519a244ad5e04": {
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "filter",
+        "predicate": {
+          "column": "category",
+          "kind": "compare",
+          "op": "eq",
+          "value": {
+            "str": "it's \"x\""
+          }
+        }
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_b51c655519a244ad5e04"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

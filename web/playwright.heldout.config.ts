@@ -6,10 +6,10 @@ import { defineConfig } from "@playwright/test";
 //   HO_OUT=../benchmarks/results/heldout-MOBILE.json npx playwright test -c playwright.heldout.config.ts
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: /heldout\.spec\.ts/,
+  testMatch: /(heldout|envelope)\.spec\.ts/,
   timeout: 60 * 60_000,
   workers: 1,
   retries: 0,
   reporter: [["list"]],
-  use: { baseURL: process.env.HO_BASE ?? "http://127.0.0.1:8810", channel: "chrome", headless: true, viewport: { width: 1500, height: 900 } },
+  use: { baseURL: process.env.HO_BASE ?? "http://127.0.0.1:8810", channel: (process.env.HO_CHANNEL ?? "chrome") as "chrome" | "msedge", headless: true, viewport: { width: 1500, height: 900 } },
 });

@@ -47,6 +47,28 @@ pub mod checks {
     pub const READ_CLASS: &str = "read_class:";
 }
 
+/// What the planner needs to know about the device, nothing more (no fingerprinting surface: major version only,
+/// no user-agent string, no screen, no timezone).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceProfile {
+    /// `chrome` | `edge` | `firefox` | `safari` | `other`
+    pub browser_family: String,
+    pub browser_major: Option<u32>,
+    /// `windows` | `macos` | `linux` | `android` | `ios` | `other`
+    pub platform: String,
+    pub hardware_concurrency: Option<u32>,
+    pub wasm_simd: bool,
+    /// SharedArrayBuffer usable (cross-origin isolation): needed for multi-threaded DuckDB-Wasm.
+    pub wasm_threads: bool,
+}
+
+impl DeviceProfile {
+    /// Browser families whose safe operating envelope was measured (`web/e2e/envelope.spec.ts`).
+    pub fn envelope_measured(&self) -> bool {
+        matches!(self.browser_family.as_str(), "chrome" | "edge")
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProbeReport {
     pub engine: String,
@@ -66,6 +88,9 @@ pub struct ProbeReport {
     pub js_heap_limit_mb: Option<u64>,
     /// Operation kinds (`OpKind::name`) that ran correctly in the probe.
     pub supported_ops: Vec<String>,
+    /// Device facts the envelope depends on; absent in reports from older clients.
+    #[serde(default)]
+    pub device: Option<DeviceProfile>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -115,17 +140,52 @@ impl ProbeReport {
     }
 }
 
-/// Browser memory model: the input size (bytes pulled into the tab) at which tabs were observed to
-/// crash, scaled by the probed memory class. One machine, one browser: the *scaling* is an assumption.
-pub fn crash_threshold_bytes(memory_class: MemoryClass, device_memory_gb: Option<f64>) -> (u64, &'static str) {
-    const MEASURED: f64 = 245.0 * 1024.0 * 1024.0; // tab crash measured with kept 112 MB + covering 139 MB (deviceMemory = 8)
-    match (memory_class, device_memory_gb) {
-        (MemoryClass::Unknown, _) | (_, None) => ((MEASURED * 0.5) as u64, "memory class unknown: half of the measured crash size"),
-        (_, Some(gb)) => (
-            (MEASURED * (gb / 8.0).clamp(0.125, 1.0)) as u64,
-            "measured crash size at deviceMemory=8 on one machine, scaled linearly below (assumption)",
-        ),
+/// Safe operating envelope of the browser engine (range access), from `web/e2e/envelope.spec.ts`
+/// (benchmarks/results/envelope-*.json): Chrome 8 GB-class machine, headless, LOCAL network, 23 runs on 1 GB sources.
+/// * aggregates over a 1 GB file that pulled **976 MB** (the whole file) ran in 4-8 s without a crash; the Overture
+///   subset (1.38 GB, 219 MB pulled) in 4 s -> nothing above ~1 GB was tried: that is where evidence ends;
+/// * results are the other limit: 100 000 rows cost 61 MB of JS heap on the synthetic files and **430 MB** on Overture
+///   (many columns) and 10-34 s of conversion time.
+/// Memory classes below 8 GB scale the numbers linearly (an assumption: no such device was measured).
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct Envelope {
+    /// Pulling at most this many bytes into the tab was always fine (many runs, both browsers).
+    pub safe_fetch_bytes: u64,
+    /// Above this nothing has been demonstrated (largest successful run ≈ 976 MB): treated as unsafe.
+    pub unsafe_fetch_bytes: u64,
+    pub safe_result_bytes: u64,
+    pub unsafe_result_bytes: u64,
+    pub basis: &'static str,
+}
+
+pub fn envelope(memory_class: MemoryClass, device_memory_gb: Option<f64>) -> Envelope {
+    const MB: f64 = 1024.0 * 1024.0;
+    let (scale, basis) = match (memory_class, device_memory_gb) {
+        (MemoryClass::Unknown, _) | (_, None) => (0.5, "memory class unknown: half of the measured envelope"),
+        (_, Some(gb)) => ((gb / 8.0).clamp(0.125, 1.0), "measured at deviceMemory=8 (Chrome, one machine); scaled linearly below (assumption)"),
+    };
+    Envelope {
+        safe_fetch_bytes: (300.0 * MB * scale) as u64,
+        unsafe_fetch_bytes: (1200.0 * MB * scale) as u64,
+        safe_result_bytes: (150.0 * MB * scale) as u64,
+        unsafe_result_bytes: (1000.0 * MB * scale) as u64,
+        basis,
     }
+}
+
+/// How safe a browser workload is, judged against the [`Envelope`] with the *upper* bounds of the estimates
+/// (an underestimate is the dangerous direction).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BrowserSafety {
+    /// Inside the envelope on a probed, healthy runtime.
+    Safe,
+    /// Inside the demonstrated range but beyond the comfortable one, or the runtime is degraded/stale.
+    Risky,
+    /// Beyond what was ever demonstrated: never executed automatically.
+    Unsafe,
+    /// No evidence about this runtime (not probed, memory class unknown): never chosen on cost alone.
+    Unknown,
 }
 
 pub fn memory_class_for(device_memory_gb: Option<f64>) -> MemoryClass {
@@ -160,6 +220,7 @@ mod tests {
             device_memory_gb: Some(8.0),
             js_heap_limit_mb: Some(4096),
             supported_ops: vec!["source".into(), "filter".into(), "bbox_filter".into()],
+            device: None,
         }
     }
 
@@ -178,11 +239,12 @@ mod tests {
     }
 
     #[test]
-    fn threshold_scales_with_memory() {
-        let (hi, _) = crash_threshold_bytes(MemoryClass::High, Some(8.0));
-        let (lo, _) = crash_threshold_bytes(MemoryClass::Low, Some(2.0));
-        let (unk, why) = crash_threshold_bytes(MemoryClass::Unknown, None);
-        assert!(lo < hi && unk < hi, "{why}");
-        assert_eq!(hi, 245 * 1024 * 1024);
+    fn envelope_scales_with_memory() {
+        let hi = envelope(MemoryClass::High, Some(8.0));
+        let lo = envelope(MemoryClass::Low, Some(2.0));
+        let unk = envelope(MemoryClass::Unknown, None);
+        assert!(lo.safe_fetch_bytes < hi.safe_fetch_bytes && unk.safe_fetch_bytes < hi.safe_fetch_bytes);
+        assert_eq!(hi.safe_fetch_bytes, 300 * 1024 * 1024);
+        assert!(hi.unsafe_fetch_bytes > hi.safe_fetch_bytes && hi.unsafe_result_bytes > hi.safe_result_bytes);
     }
 }

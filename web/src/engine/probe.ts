@@ -11,12 +11,12 @@ import { wkbToGeoJSON } from "./wkb.ts";
 import { SUPPORTED_OPS } from "./sqlgen.ts";
 import type { DuckDbWasmEngine } from "./wasm.ts";
 import { ENGINE_ID } from "./wasm.ts";
-import { memoryClassFor } from "./probe-model.ts";
+import { deviceProfileFrom, memoryClassFor } from "./probe-model.ts";
 import type { ProbeCheck, ProbeReport } from "./probe-model.ts";
 import type { ExecutionContext, PlanGraph, PlanNode } from "./contract.ts";
 
 export { isFresh, usable, sessionId, PROBE_TTL_MS, memoryClassFor } from "./probe-model.ts";
-export type { ProbeCheck, ProbeReport, MemoryClass } from "./probe-model.ts";
+export type { ProbeCheck, ProbeReport, MemoryClass, DeviceProfile } from "./probe-model.ts";
 
 const FIXTURES = { plain_wkb: "probe/probe-plain-wkb.parquet", duckdb_typed: "probe/probe-duckdb-typed.parquet" } as const;
 const STEP_TIMEOUT_MS = 20_000;
@@ -35,6 +35,15 @@ async function step(name: string, required: boolean, fn: () => Promise<string>):
     return { name, ok: false, required, detail: (e instanceof Error ? e.message : String(e)).slice(0, 300), ms: performance.now() - t0 };
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** WebAssembly SIMD support (feature-detection by validating a tiny module that uses a v128 instruction). */
+function wasmSimd(): boolean {
+  try {
+    return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11]));
+  } catch {
+    return false;
   }
 }
 
@@ -188,5 +197,6 @@ export async function runProbe(engine: DuckDbWasmEngine, session: string): Promi
     device_memory_gb: dm,
     js_heap_limit_mb: heap ? Math.round(heap / 1048576) : null,
     supported_ops: supported,
+    device: deviceProfileFrom(navigator as never, wasmSimd(), typeof SharedArrayBuffer !== "undefined" && (globalThis as { crossOriginIsolated?: boolean }).crossOriginIsolated === true),
   };
 }

@@ -1,0 +1,71 @@
+{
+  "expected": {
+    "error_kind": "unsupported"
+  },
+  "max_rows": 10,
+  "name": "bbox_without_covering_is_unsupported",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_6bbcfac81059b8f07f56": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "bbox_filter"
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_6bbcfac81059b8f07f56"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": null
+    }
+  }
+}

@@ -107,7 +107,7 @@ def geo_metadata(bbox) -> bytes:
     ).encode()
 
 
-def generate(dist: str, ordering: str, size: str, seed: int, out: pathlib.Path) -> dict:
+def generate(dist: str, ordering: str, size: str, seed: int, out: pathlib.Path, suffix: str = "") -> dict:
     cfg = SIZES[size]
     n = cfg["rows"]
     rng = np.random.default_rng(seed)
@@ -140,7 +140,7 @@ def generate(dist: str, ordering: str, size: str, seed: int, out: pathlib.Path) 
     data_bbox = (float(xmin.min()), float(ymin.min()), float(xmax.max()), float(ymax.max()))
     table = table.replace_schema_metadata({b"geo": geo_metadata(data_bbox)})
     out.mkdir(parents=True, exist_ok=True)
-    name = f"{dist}_{size}_{ordering}"
+    name = f"{dist}_{size}_{ordering}{suffix}"
     path = out / f"{name}.parquet"
     pq.write_table(table, path, row_group_size=cfg["row_group"], compression="zstd", write_statistics=True)
     meta = {
@@ -168,11 +168,12 @@ def main():
     ap.add_argument("--size", choices=SIZES, required=True)
     ap.add_argument("--out", default="data")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--suffix", default="", help="appended to the file names, e.g. _s2 for a second, independent draw of the same generator")
     a = ap.parse_args()
     out = pathlib.Path(a.out)
     for dist in ("clustered", "uniform"):
         for ordering in ("spatial", "shuffled"):
-            m = generate(dist, ordering, a.size, a.seed, out)
+            m = generate(dist, ordering, a.size, a.seed, out, a.suffix)
             print(f"{m['name']}: {m['file_size_bytes']/1e6:.1f} MB, rows={m['row_count']}, rg={m['row_groups']}")
 
 

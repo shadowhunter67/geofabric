@@ -653,6 +653,8 @@ dependencies = [
  "geo-ir",
  "geo-source-geoparquet",
  "geo-types",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

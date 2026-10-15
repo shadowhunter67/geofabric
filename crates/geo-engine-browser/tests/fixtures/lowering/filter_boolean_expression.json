@@ -1,0 +1,125 @@
+{
+  "expected": {
+    "files": [
+      "a.parquet"
+    ],
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE ((\"category\" <> 'farm') OR (\"category\" IS NULL)) AND (NOT (\"id\" IN (1, 2, 3))) AND (\"id\" >= 2.5) AND (\"id\" < 10.0))\nSELECT * FROM \"n1\" LIMIT 11"
+  },
+  "max_rows": 10,
+  "name": "filter_boolean_expression",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_997aff582ad2769463a6": {
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "filter",
+        "predicate": {
+          "exprs": [
+            {
+              "exprs": [
+                {
+                  "column": "category",
+                  "kind": "compare",
+                  "op": "ne",
+                  "value": {
+                    "str": "farm"
+                  }
+                },
+                {
+                  "column": "category",
+                  "kind": "is_null"
+                }
+              ],
+              "kind": "or"
+            },
+            {
+              "expr": {
+                "column": "id",
+                "kind": "in",
+                "values": [
+                  {
+                    "int": 1
+                  },
+                  {
+                    "int": 2
+                  },
+                  {
+                    "int": 3
+                  }
+                ]
+              },
+              "kind": "not"
+            },
+            {
+              "column": "id",
+              "kind": "compare",
+              "op": "ge",
+              "value": {
+                "float": 2.5
+              }
+            },
+            {
+              "column": "id",
+              "kind": "compare",
+              "op": "lt",
+              "value": {
+                "float": 10.0
+              }
+            }
+          ],
+          "kind": "and"
+        }
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_997aff582ad2769463a6"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

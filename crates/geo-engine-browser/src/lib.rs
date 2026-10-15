@@ -10,6 +10,8 @@
 //! no spatial extension), Aggregate, Project, Limit, Sort. No Intersects, Buffer or
 //! SpatialJoin.
 
+pub mod lower;
+
 use geo_executor::{
     Capabilities, EngineDescriptor, EngineError, EngineId, EngineKind, EngineLimits, Estimate,
     ExecutionContext, ExplainStep, Metric,
@@ -28,7 +30,7 @@ pub struct BrowserEngineConfig {
 
 impl Default for BrowserEngineConfig {
     fn default() -> Self {
-        BrowserEngineConfig { limits: EngineLimits { max_input_bytes: Some(256 << 20), max_result_rows: Some(500_000) } }
+        BrowserEngineConfig { limits: EngineLimits { max_input_bytes: None, max_result_rows: Some(500_000) } }
     }
 }
 

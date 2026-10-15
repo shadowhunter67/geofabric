@@ -280,7 +280,7 @@ mod tests {
     fn rep(engine: &str, session: &str, version: &str) -> ProbeReport {
         ProbeReport {
             engine: engine.into(), session: session.into(), engine_version: version.into(), runtime_version: "r".into(), captured_at_ms: now_ms(), duration_ms: 1.0,
-            checks: vec![], memory_class: crate::probe::MemoryClass::High, device_memory_gb: Some(8.0), js_heap_limit_mb: None, supported_ops: vec![],
+            checks: vec![], memory_class: crate::probe::MemoryClass::High, device_memory_gb: Some(8.0), js_heap_limit_mb: None, supported_ops: vec![], device: None,
         }
     }
 
@@ -318,7 +318,7 @@ mod tests {
         st.set_learning(false);
         let o = Observation {
             ts_ms: 0, source: "a".into(), kind: "features".into(), engine: "duckdb".into(), raw_selected: 10.0, total_rows: 100, est_rows: 10, actual_rows: 5, limit: None,
-            censored: false, group_by: None, est_ms: None, actual_ms: 1.0, network: "LOCAL".into(), fallback: false,
+            censored: false, group_by: None, est_ms: None, actual_ms: 1.0, network: "LOCAL".into(), fallback: false, layout: String::new(),
         };
         st.record(ExecutionReport { engine: "duckdb".into(), source: "a".into(), outcome: Ok(()), observation: Some(o) });
         assert_eq!(st.summary().telemetry_observations, 0);

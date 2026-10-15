@@ -1,0 +1,94 @@
+{
+  "expected": {
+    "files": [
+      "a.parquet"
+    ],
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT \"category\", SUM(\"id\") AS \"s\", MIN(\"id\") AS \"lo\", MAX(\"id\") AS \"hi\", AVG(\"id\") AS \"mean\", COUNT(\"id\") AS \"n\" FROM \"n0\" GROUP BY \"category\")\nSELECT * FROM \"n1\" LIMIT 11"
+  },
+  "max_rows": 10,
+  "name": "numeric_aggregates",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_55a3fd14208b8cfe8d9c": {
+        "aggregates": [
+          {
+            "alias": "s",
+            "column": "id",
+            "func": "sum"
+          },
+          {
+            "alias": "lo",
+            "column": "id",
+            "func": "min"
+          },
+          {
+            "alias": "hi",
+            "column": "id",
+            "func": "max"
+          },
+          {
+            "alias": "mean",
+            "column": "id",
+            "func": "avg"
+          },
+          {
+            "alias": "n",
+            "column": "id",
+            "func": "count"
+          }
+        ],
+        "group_by": [
+          "category"
+        ],
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "aggregate"
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_55a3fd14208b8cfe8d9c"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": null
+    }
+  }
+}

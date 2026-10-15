@@ -76,12 +76,13 @@ fn world() -> PlanInputs {
             device_memory_gb: Some(8.0),
             js_heap_limit_mb: Some(4096),
             supported_ops: ["source", "filter", "bbox_filter", "aggregate", "project", "limit", "sort"].iter().map(|s| s.to_string()).collect(),
+            device: Some(geo_planner::DeviceProfile { browser_family: "chrome".into(), browser_major: Some(140), platform: "windows".into(), hardware_concurrency: Some(8), wasm_simd: true, wasm_threads: false }),
         },
     );
     let obs: Vec<Observation> = (0..4)
         .map(|k| Observation {
             ts_ms: 0, source: "clustered_10mb_spatial".into(), kind: "features".into(), engine: "duckdb".into(), raw_selected: 226.0 + k as f64, total_rows: 130_000,
-            est_rows: 226, actual_rows: 2, limit: Some(2000), censored: false, group_by: None, est_ms: None, actual_ms: 80.0, network: "LOCAL".into(), fallback: false,
+            est_rows: 226, actual_rows: 2, limit: Some(2000), censored: false, group_by: None, est_ms: None, actual_ms: 80.0, network: "LOCAL".into(), fallback: false, layout: "coh=high|skew=peaked|cov=declared".into(),
         })
         .collect();
     i.calibration = geo_planner::Calibration::fit(&obs);

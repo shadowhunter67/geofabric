@@ -35,12 +35,12 @@ mod state;
 
 pub use confidence::{Confidence, ConfidenceFactor};
 pub use estimator::{
-    bucket_of, error_factor, estimate as estimate_rows, plan_shape, summarize_errors, PlanShape, Calibration, CoveringQuality, Correction, ErrorSummary,
+    bucket_of, error_factor, estimate as estimate_rows, layout_class, plan_shape, summarize_errors, PlanShape, Calibration, CoveringQuality, Correction, ErrorSummary,
     EstimateQuality, Observation, RowEstimate,
 };
 pub use failure::{FailureClass, HealthConfig, HealthState, HealthTracker, HealthView, KnownIncompat};
 pub use network::{NetworkOrigin, NetworkProfile, PROFILE_NAMES};
-pub use probe::{checks as probe_checks, crash_threshold_bytes, memory_class_for, Freshness, MemoryClass, ProbeCheck, ProbeReport};
+pub use probe::{checks as probe_checks, envelope, memory_class_for, BrowserSafety, DeviceProfile, Envelope, Freshness, MemoryClass, ProbeCheck, ProbeReport};
 pub use state::{now_ms, ExecutionReport, PlanInputs, PlannerState, ProbeVerdict, StateSummary};
 
 use geo_executor::{
@@ -108,7 +108,21 @@ pub struct CostModel {
     /// (aggregate: bbox + group columns only; features: all projected columns).
     pub browser_range_requests_per_rg_aggregate: f64,
     pub browser_range_requests_per_rg_features: f64,
-    pub browser_range_bytes_share_aggregate: f64,
+    /// Bytes pulled per kept byte, measured on 23 runs over 1 GB sources (envelope): plain-WKB files read whole row
+    /// groups (≈ 1.0 × kept + 3 % of the file), typed-geometry files read the covering/group columns (≈ 1.7 × the
+    /// covering share of the file). `*_upper` are the pessimistic versions used for safety decisions.
+    pub browser_fetch_overhead_share: f64,
+    pub browser_fetch_upper_scale: f64,
+    pub browser_fetch_upper_overhead_share: f64,
+    pub browser_typed_share_scale: f64,
+    pub browser_typed_share_upper_scale: f64,
+    /// A LIMIT'd feature query pulled up to 22x the minimal bytes (read-ahead of several row groups): upper bound =
+    /// factor x needed rows x bytes/row + floor.
+    pub browser_features_upper_factor: f64,
+    pub browser_features_upper_floor_bytes: u64,
+    /// JS heap per byte of result (compressed bytes/row x rows): 5.8x on the synthetic files, 45x on the 45-column Overture
+    /// subset (100 000 rows = 430 MB). Upper bound for safety.
+    pub browser_result_inflation: f64,
     pub avg_result_row_bytes: u64,
     /// Result rows assumed for a grouped aggregate (ungrouped = 1).
     pub aggregate_result_rows: u64,
@@ -136,7 +150,14 @@ impl Default for CostModel {
             browser_range_us_per_row: 104.0,
             browser_range_requests_per_rg_aggregate: 9.6,
             browser_range_requests_per_rg_features: 12.0,
-            browser_range_bytes_share_aggregate: 0.47,
+            browser_fetch_overhead_share: 0.03,
+            browser_fetch_upper_scale: 1.2,
+            browser_fetch_upper_overhead_share: 0.05,
+            browser_typed_share_scale: 1.7,
+            browser_typed_share_upper_scale: 2.5,
+            browser_features_upper_factor: 24.0,
+            browser_features_upper_floor_bytes: 64 << 20,
+            browser_result_inflation: 50.0,
             avg_result_row_bytes: 300,
             aggregate_result_rows: 1000,
         }
@@ -157,12 +178,12 @@ pub struct PlannerConfig {
     pub browser_max_input_bytes: Option<u64>,
     /// Browser memory guard: estimated result rows above this make the browser infeasible.
     pub browser_max_result_rows: u64,
-    /// Reject the browser when estimated input / probed crash threshold exceeds this (safety margin).
-    pub browser_reject_risk: f64,
     /// R5b: the browser is only chosen on a cost advantage when its confidence reaches this floor.
     pub low_confidence_floor: f64,
     /// R5b: a cost advantage smaller than this fraction of the server cost is a "close call".
     pub close_call_margin: f64,
+    /// R5b: a browser workload classified Risky must be at least this much cheaper (fraction of the server cost).
+    pub risky_margin: f64,
     pub cost: CostModel,
 }
 
@@ -174,9 +195,9 @@ impl Default for PlannerConfig {
             allow_browser: true,
             browser_max_input_bytes: None,
             browser_max_result_rows: 100_000,
-            browser_reject_risk: 0.6,
             low_confidence_floor: 0.45,
             close_call_margin: 0.2,
+            risky_margin: 0.3,
             cost: CostModel::default(),
         }
     }
@@ -218,19 +239,23 @@ pub struct Candidate {
     pub probe_status: String,
 }
 
-/// Browser risk model: replaces the fixed 245 MB constant. `score` = 1 - prod(1 - component).
+/// Browser safety model (envelope-based). `score` = 1 - prod(1 - component); `safety` is the verdict.
 #[derive(Debug, Clone, Serialize)]
 pub struct BrowserRisk {
+    pub safety: BrowserSafety,
     pub score: f64,
-    /// estimated input / crash threshold.
+    /// max(fetch upper bound / unsafe fetch limit, result memory upper bound / unsafe result limit).
     pub memory: f64,
     pub result_rows: f64,
     pub probe: f64,
     pub health: f64,
     pub format: f64,
+    /// Expected / upper-bound bytes pulled into the tab.
     pub memory_input_bytes: u64,
-    pub crash_threshold_bytes: u64,
-    pub threshold_basis: String,
+    pub fetch_upper_bytes: u64,
+    pub result_upper_bytes: u64,
+    pub envelope: Envelope,
+    pub reasons: Vec<String>,
 }
 
 /// How the browser engine gets a source's bytes (decided by the planner, followed by the client).
@@ -250,8 +275,11 @@ pub struct BrowserAccess {
     pub file_bytes: u64,
     /// Sequential HTTP requests the browser will issue (estimate).
     pub requests_est: f64,
-    /// Bytes pulled into the tab (estimate).
+    /// Bytes pulled into the tab: expected, and the pessimistic bound safety decisions use.
     pub fetch_bytes_est: u64,
+    pub fetch_bytes_upper: u64,
+    /// Compressed bytes per row of the source (used for result-memory bounds).
+    pub row_bytes: f64,
 }
 
 fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &CostModel) -> Vec<BrowserAccess> {
@@ -260,21 +288,44 @@ fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &Cost
     scans
         .iter()
         .map(|s| {
+            let row_bytes = s.total_bytes as f64 / s.total_rows.max(1) as f64;
             if s.total_bytes <= c.browser_full_fetch_max_bytes {
-                return BrowserAccess { uri: s.uri.clone(), strategy: AccessStrategy::Full, file_bytes: s.total_bytes, requests_est: 1.0, fetch_bytes_est: s.total_bytes };
+                return BrowserAccess {
+                    uri: s.uri.clone(), strategy: AccessStrategy::Full, file_bytes: s.total_bytes, requests_est: 1.0,
+                    fetch_bytes_est: s.total_bytes, fetch_bytes_upper: s.total_bytes, row_bytes,
+                };
             }
             let kept = s.prune.kept.len().max(1) as f64;
-            let (touched, requests, bytes) = if aggregate {
-                (kept, c.browser_range_requests_per_rg_aggregate * kept, s.prune.kept_bytes as f64 * c.browser_range_bytes_share_aggregate)
-            } else {
-                // a LIMIT stops the scan early: only the row groups needed to produce `limit` rows are touched
-                let selected = est.selected_after_correction.max(1.0);
-                let needed = shape.limit.map_or(selected, |l| (l as f64).min(selected));
-                let touched = (kept * needed / selected).ceil().clamp(1.0, kept);
-                (touched, c.browser_range_requests_per_rg_features * touched, s.prune.kept_bytes as f64 * touched / kept)
+            let kept_bytes = s.prune.kept_bytes as f64;
+            let file = s.total_bytes as f64;
+            // share of a row group's bytes a scan pulls: plain-WKB files are read whole, typed-geometry files by column
+            let cov_share = s.covering_bytes_total as f64 / file.max(1.0);
+            let (share, share_upper) = match s.read_class {
+                geo_source_geoparquet::ReadClass::PlainWkb => (1.0, c.browser_fetch_upper_scale),
+                geo_source_geoparquet::ReadClass::DuckDbTyped => ((cov_share * c.browser_typed_share_scale).min(1.0), (cov_share * c.browser_typed_share_upper_scale).min(1.0)),
             };
-            let _ = touched;
-            BrowserAccess { uri: s.uri.clone(), strategy: AccessStrategy::Range, file_bytes: s.total_bytes, requests_est: requests + 4.0, fetch_bytes_est: bytes as u64 }
+            let full_scan = |sh: f64, over: f64| (kept_bytes * sh + file * over).min(file * 1.02); // footer + page headers: a little above the sum of row-group bytes
+            let (requests, bytes, upper) = if aggregate {
+                (c.browser_range_requests_per_rg_aggregate * kept, full_scan(share, c.browser_fetch_overhead_share), full_scan(share_upper, c.browser_fetch_upper_overhead_share))
+            } else {
+                // a LIMIT stops the scan early: only the row groups needed to produce `limit` rows are touched. The
+                // expected number comes from the expected cardinality, the pessimistic one from its LOWER bound.
+                let needed = |card: f64| shape.limit.map_or(card, |l| (l as f64).min(card));
+                let touched = |card: f64| (kept * needed(card) / card.max(1.0)).ceil().clamp(1.0, kept);
+                let t_exp = touched(est.selected_after_correction.max(1.0));
+                let t_up = touched((est.cardinality_low as f64).max(1.0));
+                let by_rg = |t: f64| kept_bytes * t / kept;
+                let row_cap = shape.limit.map_or(f64::MAX, |l| c.browser_features_upper_factor * l as f64 * row_bytes + c.browser_features_upper_floor_bytes as f64);
+                (
+                    c.browser_range_requests_per_rg_features * t_exp,
+                    by_rg(t_exp),
+                    by_rg(t_up).min(row_cap).min(file * 1.02), // features read every projected column: no column-share cap
+                )
+            };
+            BrowserAccess {
+                uri: s.uri.clone(), strategy: AccessStrategy::Range, file_bytes: s.total_bytes, requests_est: requests + 4.0,
+                fetch_bytes_est: bytes as u64, fetch_bytes_upper: (upper.max(bytes)) as u64, row_bytes,
+            }
         })
         .collect()
 }
@@ -397,7 +448,6 @@ struct PlanFacts<'a> {
     scans: &'a [SourceScan],
     est: &'a RowEstimate,
     input_bytes: u64,
-    covering_total: u64,
     access: &'a [BrowserAccess],
     result_bytes: u64,
     has_bbox_filter: bool,
@@ -476,7 +526,6 @@ impl Planner {
                 "bbox covering column inferred by naming convention (struct `bbox`), not declared in the GeoParquet metadata; pruning relies on that column really covering the geometry",
             ));
         }
-        let covering_total: u64 = scans.iter().map(|s| s.covering_bytes_total).sum();
 
         // R2b estimator v2: result rows with calibration, interval and quality
         let est = estimate_rows(plan, &scans, &cfg.cost, &inputs.calibration);
@@ -508,7 +557,6 @@ impl Planner {
             scans: &scans,
             est: &est,
             input_bytes,
-            covering_total,
             access: &access,
             result_bytes,
             has_bbox_filter: plan.required_ops().contains(&OpKind::BboxFilter),
@@ -587,11 +635,22 @@ impl Planner {
                 let (bs, ss) = (b.score_ms.unwrap_or(0.0), s.score_ms.unwrap_or(0.0));
                 let (bc, sc) = (b.confidence.as_ref().map_or(0.0, |c| c.score), s.confidence.as_ref().map_or(0.0, |c| c.score));
                 let gap = if ss > 0.0 { (ss - bs) / ss } else { 1.0 };
-                if b.probe_status == "missing" {
+                let safety = b.risk.as_ref().map(|r| r.safety);
+                if safety == Some(BrowserSafety::Unknown) || b.probe_status == "missing" {
                     policy.push(format!(
                         "R5b unprobed runtime: {} is {:.0}% cheaper on paper, but its runtime has not been probed (static description only); {} chosen. Probe the runtime or pass an explicit engine hint to use it",
                         b.engine,
                         gap * 100.0,
+                        s.engine
+                    ));
+                    chosen = si;
+                } else if safety == Some(BrowserSafety::Risky) && gap < cfg.risky_margin {
+                    policy.push(format!(
+                        "R5b risky workload: {} is inside the demonstrated envelope but not the comfortable one ({}); its {:.0}% cost advantage is below the {:.0}% required for risky workloads; {} chosen",
+                        b.engine,
+                        b.risk.as_ref().map(|r| r.reasons.join("; ")).unwrap_or_default(),
+                        gap * 100.0,
+                        cfg.risky_margin * 100.0,
                         s.engine
                     ));
                     chosen = si;
@@ -776,7 +835,7 @@ impl Planner {
         // memory: engine limit; for the browser either the operator override or the risk model.
         // A browser engine reads the covering columns of the whole file (no struct-stat pruning) on top
         // of the kept data: both count against its memory.
-        let engine_input = if browser { f.access.iter().map(|a| a.fetch_bytes_est).sum::<u64>() } else { input_bytes };
+        let engine_input = if browser { f.access.iter().map(|a| a.fetch_bytes_upper).sum::<u64>() } else { input_bytes };
         let mut input_limit = caps.limits.max_input_bytes;
         let mut rows_limit = caps.limits.max_result_rows;
         if browser {
@@ -798,8 +857,10 @@ impl Planner {
             }
         }
         if let Some(l) = rows_limit {
-            if result_rows > l {
-                why_not.push(format!("estimated result {result_rows} rows exceeds the engine limit {l}"));
+            // the pessimistic bound decides: an underestimate is the dangerous direction
+            let rows_for_limit = if browser { est.high } else { result_rows };
+            if rows_for_limit > l {
+                why_not.push(format!("estimated result {result_rows} rows (up to {}) exceeds the engine limit {l}", est.high));
             }
         }
         if f.has_bbox_filter && caps.bbox_filter_requires_covering {
@@ -869,12 +930,18 @@ impl Planner {
             }
         }
 
-        // browser risk (replaces the fixed memory constant)
+        // browser safety (envelope-based, upper bounds): Safe / Risky / Unsafe / Unknown
         let risk = browser.then(|| {
             let (mem_class, dev_mem) = e.probe.map_or((MemoryClass::Unknown, None), |p| (p.memory_class, p.device_memory_gb));
-            let (threshold, basis) = crash_threshold_bytes(mem_class, dev_mem);
-            let memory = engine_input as f64 / threshold as f64;
-            let rows = result_rows as f64 / cfg.browser_max_result_rows.max(1) as f64;
+            let env = envelope(mem_class, dev_mem);
+            let fetch_exp: u64 = f.access.iter().map(|a| a.fetch_bytes_est).sum();
+            let fetch_up: u64 = f.access.iter().map(|a| a.fetch_bytes_upper).sum();
+            let row_bytes = f.access.iter().map(|a| a.row_bytes).fold(0.0, f64::max);
+            let result_up = (est.high as f64 * row_bytes * cfg.cost.browser_result_inflation) as u64;
+            let fetch_ratio = fetch_up as f64 / env.unsafe_fetch_bytes as f64;
+            let result_ratio = result_up as f64 / env.unsafe_result_bytes as f64;
+            let memory = fetch_ratio.max(result_ratio);
+            let rows = est.high as f64 / cfg.browser_max_result_rows.max(1) as f64;
             let probe_r = match e.probe_status {
                 Freshness::Fresh => 0.0,
                 Freshness::Stale => 0.15,
@@ -886,31 +953,54 @@ impl Planner {
                 HealthState::Degraded => 0.4,
                 HealthState::Unhealthy => 1.0,
             };
+            let mut reasons = Vec::new();
+            let mut safety = BrowserSafety::Safe;
+            if fetch_up > env.unsafe_fetch_bytes {
+                safety = BrowserSafety::Unsafe;
+                reasons.push(format!("could pull {:.0} MB into the tab (upper bound), beyond the demonstrated {:.0} MB", mb(fetch_up), mb(env.unsafe_fetch_bytes)));
+            }
+            if result_up > env.unsafe_result_bytes {
+                safety = BrowserSafety::Unsafe;
+                reasons.push(format!("result could need {:.0} MB of tab memory (upper bound), beyond the demonstrated {:.0} MB", mb(result_up), mb(env.unsafe_result_bytes)));
+            }
+            if safety != BrowserSafety::Unsafe {
+                if fetch_up > env.safe_fetch_bytes || result_up > env.safe_result_bytes {
+                    safety = BrowserSafety::Risky;
+                    reasons.push(format!("upper bounds {:.0} MB fetched / {:.0} MB result exceed the comfortable {:.0} / {:.0} MB", mb(fetch_up), mb(result_up), mb(env.safe_fetch_bytes), mb(env.safe_result_bytes)));
+                }
+                if matches!(e.health.state, HealthState::Degraded) || e.probe_status == Freshness::Stale {
+                    safety = safety.max(BrowserSafety::Risky);
+                    reasons.push("runtime is degraded or its probe is stale".into());
+                }
+                if e.probe_status == Freshness::Missing || (mem_class == MemoryClass::Unknown && fetch_up > env.safe_fetch_bytes / 2) {
+                    safety = BrowserSafety::Unknown;
+                    reasons.push("no probe / unknown memory class: no evidence for this runtime".into());
+                } else if e.probe.is_some_and(|p| !p.device.as_ref().is_some_and(|d| d.envelope_measured())) {
+                    safety = BrowserSafety::Unknown;
+                    reasons.push("browser family not covered by the envelope measurements (only Chrome and Edge were measured)".into());
+                }
+            }
             let parts = [memory.clamp(0.0, 1.0), rows.clamp(0.0, 1.0), probe_r, health_r, format_risk];
             BrowserRisk {
+                safety,
                 score: 1.0 - parts.iter().map(|p| 1.0 - p).product::<f64>(),
                 memory,
                 result_rows: rows,
                 probe: probe_r,
                 health: health_r,
                 format: format_risk,
-                memory_input_bytes: engine_input,
-                crash_threshold_bytes: threshold,
-                threshold_basis: basis.into(),
+                memory_input_bytes: fetch_exp,
+                fetch_upper_bytes: fetch_up,
+                result_upper_bytes: result_up,
+                envelope: env,
+                reasons,
             }
         });
         if let Some(r) = &risk {
-            if cfg.browser_max_input_bytes.is_none() && r.memory > cfg.browser_reject_risk {
-                why_not.push(format!(
-                    "browser memory risk {:.2} exceeds {:.2}: estimated input {:.1} MB vs crash threshold {:.0} MB ({})",
-                    r.memory,
-                    cfg.browser_reject_risk,
-                    mb(r.memory_input_bytes),
-                    mb(r.crash_threshold_bytes),
-                    r.threshold_basis
-                ));
+            if cfg.browser_max_input_bytes.is_none() && r.safety == BrowserSafety::Unsafe {
+                why_not.push(format!("browser workload is unsafe: {} ({})", r.reasons.join("; "), r.envelope.basis));
             } else {
-                why.push(format!("browser risk {:.2} (memory {:.2} of the crash threshold)", r.score, r.memory));
+                why.push(format!("browser safety {:?}, risk {:.2} (upper bounds: {:.0} MB fetched, {:.0} MB result)", r.safety, r.score, mb(r.fetch_upper_bytes), mb(r.result_upper_bytes)));
             }
         }
 

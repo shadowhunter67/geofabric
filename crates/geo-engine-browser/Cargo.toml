@@ -10,3 +10,7 @@ geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
+
+[dev-dependencies]
+serde_json.workspace = true
+serde.workspace = true

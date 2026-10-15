@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isFresh, memoryClassFor, PROBE_TTL_MS, usable } from "../src/engine/probe-model.ts";
+import { deviceProfileFrom, isFresh, memoryClassFor, PROBE_TTL_MS, usable } from "../src/engine/probe-model.ts";
 import type { ProbeReport } from "../src/engine/probe-model.ts";
 
 const report = (over: Partial<ProbeReport> = {}): ProbeReport => ({
@@ -28,4 +28,17 @@ test("freshness follows the TTL (and a missing probe is not fresh)", () => {
   assert.equal(isFresh(r, 1_000 + PROBE_TTL_MS), true);
   assert.equal(isFresh(r, 1_000 + PROBE_TTL_MS + 1), false);
   assert.equal(isFresh(null), false);
+});
+
+test("device profile: Chrome, Edge, Firefox, Safari are told apart without keeping the user-agent string", () => {
+  const chrome = deviceProfileFrom({ userAgentData: { brands: [{ brand: "Chromium", version: "140" }, { brand: "Google Chrome", version: "140" }], platform: "Windows" }, hardwareConcurrency: 16 }, true, false);
+  assert.deepEqual(chrome, { browser_family: "chrome", browser_major: 140, platform: "windows", hardware_concurrency: 16, wasm_simd: true, wasm_threads: false });
+  const edge = deviceProfileFrom({ userAgentData: { brands: [{ brand: "Chromium", version: "140" }, { brand: "Microsoft Edge", version: "139" }], platform: "Windows" } }, true, false);
+  assert.equal(edge.browser_family, "edge");
+  assert.equal(edge.browser_major, 139);
+  const ff = deviceProfileFrom({ userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0", platform: "Linux x86_64" }, true, false);
+  assert.deepEqual([ff.browser_family, ff.browser_major, ff.platform], ["firefox", 130, "linux"]);
+  const safari = deviceProfileFrom({ userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15", platform: "MacIntel" }, false, false);
+  assert.deepEqual([safari.browser_family, safari.platform], ["safari", "macos"]);
+  assert.ok(!JSON.stringify(chrome).includes("Mozilla"), "no user-agent string in the profile");
 });

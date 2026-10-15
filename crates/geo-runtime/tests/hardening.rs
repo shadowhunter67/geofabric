@@ -72,6 +72,7 @@ fn probe(mem: MemoryClass, gb: Option<f64>, typed_ok: bool) -> ProbeReport {
         device_memory_gb: gb,
         js_heap_limit_mb: None,
         supported_ops: ["source", "filter", "bbox_filter", "aggregate", "project", "limit", "sort"].iter().map(|s| s.to_string()).collect(),
+        device: Some(geo_planner::DeviceProfile { browser_family: "chrome".into(), browser_major: Some(140), platform: "windows".into(), hardware_concurrency: Some(8), wasm_simd: true, wasm_threads: false }),
     }
 }
 
@@ -82,7 +83,7 @@ fn world(source_name: &str) -> PlanInputs {
     let obs: Vec<Observation> = (0..4)
         .map(|k| Observation {
             ts_ms: 0, source: source_name.into(), kind: "features".into(), engine: "duckdb".into(), raw_selected: 226.0 + k as f64, total_rows: 130_000,
-            est_rows: 226, actual_rows: 2, limit: Some(2000), censored: false, group_by: None, est_ms: None, actual_ms: 80.0, network: "LOCAL".into(), fallback: false,
+            est_rows: 226, actual_rows: 2, limit: Some(2000), censored: false, group_by: None, est_ms: None, actual_ms: 80.0, network: "LOCAL".into(), fallback: false, layout: "coh=high|skew=peaked|cov=declared".into(),
         })
         .collect();
     i.calibration = geo_planner::Calibration::fit(&obs);
@@ -240,7 +241,7 @@ fn cold_browser_instance_is_priced_in() {
 }
 
 #[test]
-fn browser_risk_scales_with_memory_class_and_replaces_the_fixed_limit() {
+fn browser_safety_follows_the_measured_envelope_and_the_memory_class() {
     let Some(plan) = plan_for("clustered_100mb_spatial", 0.002, 2000) else { return };
     let mut hi = world("clustered_100mb_spatial");
     hi.probes.insert("duckdb-wasm".into(), probe(MemoryClass::High, Some(8.0), false));
@@ -248,19 +249,23 @@ fn browser_risk_scales_with_memory_class_and_replaces_the_fixed_limit() {
     lo.probes.insert("duckdb-wasm".into(), probe(MemoryClass::Low, Some(1.0), false));
     let (ph, pl) = (pick(&plan, &hi), pick(&plan, &lo));
     let (rh, rl) = (cand(&ph, "duckdb-wasm").risk.as_ref().unwrap(), cand(&pl, "duckdb-wasm").risk.as_ref().unwrap());
-    assert!(rl.memory > rh.memory * 4.0, "a 1 GB device has a much smaller crash threshold: {} vs {}", rl.memory, rh.memory);
-    assert_eq!(rh.crash_threshold_bytes, 245 * 1024 * 1024);
-    assert!(rh.score >= rh.memory.min(1.0) - 1e-9 && rh.score <= 1.0);
-    // 1 GB file, half of the extent, 100k rows: the browser would have to pull far more than a tab holds ->
-    // infeasible through the risk model, with the numbers in the message (a small window on the same file is fine now:
-    // range requests fetch only what the query touches)
+    assert_eq!(rh.safety, geo_planner::BrowserSafety::Safe);
+    assert!(rl.envelope.unsafe_fetch_bytes * 4 < rh.envelope.unsafe_fetch_bytes, "a 1 GB device has a much smaller envelope");
+    assert_eq!(rh.envelope.safe_fetch_bytes, 300 * 1024 * 1024);
+    assert!(rh.fetch_upper_bytes >= rh.memory_input_bytes, "the pessimistic bound is never below the expectation");
+    // 1 GB file, half the extent, an aggregate: it must read about half of the file -> inside the demonstrated range
+    // (976 MB pulled without a crash) but not the comfortable one: Risky on an 8 GB-class device, Unsafe on a 1 GB one
     if let Some(src) = source("clustered_1gb_spatial") {
         let w = window(SYN, 0.5, (104.5, 12.5));
         let b = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(w[0], w[1], w[2], w[3], Crs::Epsg(4326)).unwrap() };
         let big = Plan::new(Node::Aggregate { input: Box::new(b), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] });
         let p = pick(&big, &hi);
+        assert_eq!(cand(&p, "duckdb-wasm").risk.as_ref().unwrap().safety, geo_planner::BrowserSafety::Risky, "{:?}", cand(&p, "duckdb-wasm").risk);
+        let mut lo1g = world("clustered_1gb_spatial");
+        lo1g.probes.insert("duckdb-wasm".into(), probe(MemoryClass::Low, Some(1.0), false));
+        let p = pick(&big, &lo1g);
         let why = cand(&p, "duckdb-wasm").rejected_because.join(" ");
-        assert!(why.contains("memory risk") && why.contains("crash threshold"), "{why}");
+        assert!(why.contains("unsafe") && why.contains("demonstrated"), "{why}");
         assert_eq!(p.engine.0, "duckdb");
     }
 }
@@ -307,4 +312,41 @@ fn browser_selection_never_exceeds_one_fallback_and_never_retries() {
     assert_eq!(p.assessment.fallback.as_ref().map(|f| f.max_fallbacks), Some(1));
     let server_plan = pick(&plan, &PlanInputs { probes: Default::default(), ..world("x") });
     assert!(server_plan.assessment.fallback.is_none(), "a server plan has no fallback");
+}
+
+/// The envelope measurements (`benchmarks/results/envelope-chrome.json`: 23 real browser runs on 1 GB+ sources) are a
+/// regression suite for the safety model: the planner's UPPER bound of the bytes the browser pulls must never be below
+/// what a run really pulled (an underestimate is the dangerous direction), and the pessimistic bound must stay useful
+/// (within 12x of the observation on every run).
+#[test]
+fn fetch_upper_bounds_cover_every_measured_browser_run() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../benchmarks/results/envelope-chrome.json");
+    let Ok(text) = std::fs::read_to_string(&path) else { return eprintln!("SKIP: no envelope measurements") };
+    let rows = serde_json::from_str::<serde_json::Value>(&text).unwrap()["rows"].as_array().unwrap().clone();
+    let mut checked = 0;
+    for r in rows.iter().filter(|r| r["outcome"] == "ok") {
+        let (name, kind) = (r["source"].as_str().unwrap(), r["kind"].as_str().unwrap());
+        let Some(src) = source(name) else { continue };
+        let f = r["fraction"].as_f64().unwrap();
+        let ov = name.starts_with("overture");
+        let w = if ov { window([105.0, 8.5, 108.0, 12.0], f, (106.7, 10.8)) } else { window(SYN, f, (104.5, 12.5)) };
+        let crs = if ov { Crs::OgcCrs84 } else { Crs::Epsg(4326) };
+        let b = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(w[0], w[1], w[2], w[3], crs).unwrap() };
+        let plan = if kind == "count_by" {
+            let col = if ov { "version" } else { "category" };
+            Plan::new(Node::Aggregate { input: Box::new(b), group_by: vec![col.into()], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] })
+        } else {
+            Plan::new(Node::Limit { input: Box::new(b), n: r["limit"].as_u64().unwrap() })
+        };
+        let mut cfg = PlannerConfig::default();
+        cfg.browser_max_input_bytes = Some(1 << 40); // plan it even where the planner would refuse: we compare numbers
+        cfg.browser_max_result_rows = u64::MAX;
+        let p = rt().plan_with_inputs(&cfg, &plan, &ctx(), &world(name)).unwrap();
+        let upper = p.assessment.browser_access.iter().map(|a| a.fetch_bytes_upper).sum::<u64>() as f64 / 1048576.0;
+        let observed = r["fetched_mb"].as_f64().unwrap();
+        assert!(upper >= observed, "{name} {kind} f={f}: upper bound {upper:.0} MB < observed {observed:.0} MB");
+        assert!(upper <= 12.0 * observed.max(20.0), "{name} {kind} f={f}: upper bound {upper:.0} MB is useless against {observed:.0} MB observed");
+        checked += 1;
+    }
+    eprintln!("checked {checked} measured browser runs");
 }

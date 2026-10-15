@@ -1,19 +1,24 @@
-//! Estimator v2 (ADR-010): statistical, explainable result-size estimation with rolling calibration.
+//! Estimator v3 (ADR-010): cardinality and output-size estimation with isolated, evidence-based calibration.
 //!
 //! Inputs are metadata only (footer statistics via [`SourceScan`]) plus a [`Calibration`] learned from
 //! *previous* executions' telemetry. The estimator never sees the outcome of the query it estimates.
 //!
 //! ```text
-//! raw      = sum over kept row groups of rows x (window ∩ row-group bbox)/area(row-group bbox)   (uniform density)
-//!            x (1 - geometry null fraction)
-//! selected = min( raw x correction(source, selectivity bucket), rows of the kept row groups )
-//! result   = shape(selected): Limit caps it, Aggregate replaces it by the group count
-//! interval = [result / spread, result x spread],  spread = 2 | 4 | 10 for Good | Fair | Poor quality
+//! raw         = sum over kept row groups of rows x (window ∩ row-group bbox)/area(row-group bbox)   (uniform density)
+//!               x (1 - geometry null fraction)
+//! cardinality = min( raw x correction(layout class, selectivity bucket), rows of the kept row groups )   -- how many rows match
+//! output      = shape(cardinality): aggregate -> group count, LIMIT -> min(limit, .)                     -- how many rows come back
+//! interval    = cardinality / spread .. cardinality x spread, spread = P90 residual of the calibration key
 //! ```
 //!
-//! `correction` is a shrunk median of past `actual / raw` ratios (uncensored observations only: a result
-//! that hit its LIMIT only bounds the selectivity from below). Source-specific history beats the global
-//! per-bucket history, which beats no correction.
+//! v3 separates what v2 conflated:
+//! * **cardinality ≠ output cap.** A LIMIT bounds the output, not the number of matching rows. The output is
+//!   only *certain* when the lower bound of the cardinality already reaches the limit (`limit_certain`).
+//! * **Calibration is isolated by context.** A correction learned on one *layout class* (spatial coherence of the
+//!   row groups × density skew × covering quality) is never applied to another class. Lookup order: this source
+//!   (≥ 2 runs) → this layout class (≥ 3 runs) → no correction at all (factor 1, spread 12, quality Poor).
+//!
+//! Censored runs (the result hit its LIMIT) teach nothing about selectivity.
 
 use crate::CostModel;
 use geo_ir::{Plan, PlanNode};
@@ -40,13 +45,6 @@ pub enum EstimateQuality {
 }
 
 impl EstimateQuality {
-    pub fn spread(self) -> f64 {
-        match self {
-            EstimateQuality::Good => 2.0,
-            EstimateQuality::Fair => 4.0,
-            EstimateQuality::Poor => 10.0,
-        }
-    }
     pub fn score(self) -> f64 {
         match self {
             EstimateQuality::Good => 1.0,
@@ -55,6 +53,9 @@ impl EstimateQuality {
         }
     }
 }
+
+/// Spread (multiplicative half-width of the interval) assumed when there is no calibration at all.
+pub const PRIOR_SPREAD: f64 = 12.0;
 
 /// One finished execution, as telemetry. JSON lines on disk (`--telemetry`), bounded in memory.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +78,9 @@ pub struct Observation {
     pub actual_ms: f64,
     pub network: String,
     pub fallback: bool,
+    /// Layout class of the source when the run was planned (see [`layout_class`]); empty in old telemetry.
+    #[serde(default)]
+    pub layout: String,
 }
 
 /// Selectivity bucket by the fraction of the file a query is expected to select (raw estimate).
@@ -100,12 +104,43 @@ fn median(v: &mut [f64]) -> f64 {
     if n % 2 == 1 { v[n / 2] } else { (v[n / 2 - 1] + v[n / 2]) / 2.0 }
 }
 
+fn percentile(v: &mut [f64], p: f64) -> f64 {
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    v[(((v.len() - 1) as f64) * p).ceil() as usize]
+}
+
+/// The context a correction is valid in: how well the file's row groups are ordered in space, how uneven the
+/// density is, and whether the bbox covering is declared. Corrections never cross classes.
+pub fn layout_class(scans: &[SourceScan], covering: CoveringQuality) -> String {
+    let coh = scans.iter().filter_map(|s| s.spatial_coherence).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.min(c))));
+    let skew = scans.iter().filter_map(|s| s.density_skew).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.max(c))));
+    let coh = match coh {
+        None => "unknown",
+        Some(c) if c >= 0.8 => "high",
+        Some(c) if c >= 0.4 => "mid",
+        Some(_) => "low",
+    };
+    let skew = match skew {
+        None => "unknown",
+        Some(s) if s < 4.0 => "flat",
+        Some(s) if s < 20.0 => "mid",
+        Some(_) => "peaked",
+    };
+    let cov = match covering {
+        CoveringQuality::Declared => "declared",
+        CoveringQuality::Inferred => "inferred",
+        CoveringQuality::None => "none",
+    };
+    format!("coh={coh}|skew={skew}|cov={cov}")
+}
+
 /// Learned corrections. Built from observations with [`Calibration::fit`]; cheap to clone.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct Calibration {
     /// ln(actual+1 / raw+1) per (source, bucket).
     by_source: BTreeMap<(String, u8), Vec<f64>>,
-    by_bucket: BTreeMap<u8, Vec<f64>>,
+    /// ... per (layout class, bucket): the only way knowledge crosses sources.
+    by_class: BTreeMap<(String, u8), Vec<f64>>,
     /// Observed group counts per (source, column).
     groups: BTreeMap<(String, String), Vec<f64>>,
     all_groups: Vec<f64>,
@@ -117,7 +152,16 @@ pub struct Calibration {
 pub struct Correction {
     pub factor: f64,
     pub samples: usize,
+    /// `source` | `class` | `none`
     pub basis: &'static str,
+    /// Half-width of the interval (multiplicative): P90 of the residuals around the median.
+    pub spread: f64,
+}
+
+impl Correction {
+    pub fn none() -> Correction {
+        Correction { factor: 1.0, samples: 0, basis: "none", spread: PRIOR_SPREAD }
+    }
 }
 
 impl Calibration {
@@ -126,11 +170,15 @@ impl Calibration {
         for o in obs {
             c.observations += 1;
             *c.familiarity.entry(o.source.clone()).or_default() += 1;
-            if !o.censored && o.group_by.is_none() && o.raw_selected >= 0.0 {
+            // `kind == "count"` rows are the single row of an ungrouped aggregate, not a cardinality; offline calibration
+            // records the matching-row count as kind "cardinality"
+            if !o.censored && o.group_by.is_none() && o.kind != "count" && o.raw_selected >= 0.0 {
                 let r = ((o.actual_rows as f64 + 1.0) / (o.raw_selected + 1.0)).ln();
                 let b = bucket_of(o.raw_selected, o.total_rows);
                 c.by_source.entry((o.source.clone(), b)).or_default().push(r);
-                c.by_bucket.entry(b).or_default().push(r);
+                if !o.layout.is_empty() {
+                    c.by_class.entry((o.layout.clone(), b)).or_default().push(r);
+                }
             }
             if let Some(g) = &o.group_by {
                 // grouped result below its LIMIT = the true group count
@@ -147,18 +195,28 @@ impl Calibration {
         self.familiarity.get(source).copied().unwrap_or(0)
     }
 
-    pub fn selectivity_correction(&self, source: &str, bucket: u8) -> Correction {
-        let shrunk = |v: &Vec<f64>, prior_n: f64| {
-            let n = v.len() as f64;
-            (median(&mut v.clone()) * n / (n + prior_n)).exp().clamp(1.0 / 200.0, 200.0)
-        };
+    fn summarise(v: &[f64], prior_n: f64, basis: &'static str) -> Correction {
+        let n = v.len() as f64;
+        let med = median(&mut v.to_vec());
+        let mut dev: Vec<f64> = v.iter().map(|x| (x - med).abs()).collect();
+        let spread_ln = if v.len() >= 3 { percentile(&mut dev, 0.9) } else { dev.iter().cloned().fold(0.0, f64::max) * 1.5 };
+        Correction {
+            factor: (med * n / (n + prior_n)).exp().clamp(1.0 / 200.0, 200.0),
+            samples: v.len(),
+            basis,
+            spread: spread_ln.exp().clamp(1.5, PRIOR_SPREAD),
+        }
+    }
+
+    /// Correction for a source in a layout class: this source's own runs, else the class's, else none.
+    pub fn selectivity_correction(&self, source: &str, layout: &str, bucket: u8) -> Correction {
         if let Some(v) = self.by_source.get(&(source.to_string(), bucket)).filter(|v| v.len() >= 2) {
-            return Correction { factor: shrunk(v, 1.0), samples: v.len(), basis: "source" };
+            return Self::summarise(v, 1.0, "source");
         }
-        if let Some(v) = self.by_bucket.get(&bucket).filter(|v| v.len() >= 3) {
-            return Correction { factor: shrunk(v, 2.0), samples: v.len(), basis: "global" };
+        if let Some(v) = self.by_class.get(&(layout.to_string(), bucket)).filter(|v| v.len() >= 3) {
+            return Self::summarise(v, 2.0, "class");
         }
-        Correction { factor: 1.0, samples: 0, basis: "none" }
+        Correction::none()
     }
 
     /// Cardinality of a GROUP BY column: the largest group count ever observed for it on this source (a window can
@@ -178,11 +236,24 @@ impl Calibration {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RowEstimate {
+    /// Expected rows the query returns (after aggregate / LIMIT).
     pub rows: u64,
+    /// Interval of the *output* rows; `high` is what safety decisions use.
     pub low: u64,
     pub high: u64,
+    /// Quality of the output estimate.
     pub quality: EstimateQuality,
+    /// Expected rows that MATCH (before aggregate / LIMIT) and their interval.
+    pub cardinality: u64,
+    pub cardinality_low: u64,
+    pub cardinality_high: u64,
+    pub cardinality_quality: EstimateQuality,
+    /// The LIMIT is smaller than the expected cardinality: the output is capped, the cardinality is not known to be that small.
+    pub bounded_by_limit: bool,
+    /// The lower bound of the cardinality already reaches the LIMIT: the output is certain to be the limit.
+    pub limit_certain: bool,
     pub covering_quality: CoveringQuality,
+    pub layout: String,
     /// Uncorrected selectivity estimate (what telemetry stores as `raw_selected`).
     pub raw_selected: f64,
     pub selected_after_correction: f64,
@@ -193,8 +264,6 @@ pub struct RowEstimate {
     pub null_fraction: Option<f64>,
     pub row_groups_total: usize,
     pub row_groups_kept: usize,
-    /// The result is bounded by a LIMIT that the selection exceeds with margin: the estimate is the limit.
-    pub limit_bound: bool,
     pub group_basis: Option<&'static str>,
     pub notes: Vec<String>,
 }
@@ -245,6 +314,15 @@ pub fn plan_shape(plan: &Plan) -> PlanShape {
     }
 }
 
+fn quality_of(c: &Correction) -> EstimateQuality {
+    match (c.basis, c.samples) {
+        ("source", n) if n >= 3 && c.spread <= 3.0 => EstimateQuality::Good,
+        ("class", n) if n >= 6 && c.spread <= 3.0 => EstimateQuality::Good,
+        (_, _) if c.basis != "none" && c.spread <= 8.0 => EstimateQuality::Fair,
+        _ => EstimateQuality::Poor,
+    }
+}
+
 /// Estimate the result rows of `plan` given its scans (see module docs).
 pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calibration) -> RowEstimate {
     let source = scans.first().map(|s| s.uri.rsplit(['/', '\\']).next().unwrap_or(&s.uri).trim_end_matches(".parquet").to_string()).unwrap_or_default();
@@ -252,37 +330,6 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
     let raw: f64 = scans.iter().map(|s| s.raw_selected_rows * (1.0 - s.null_fraction.unwrap_or(0.0))).sum();
     let kept_rows: u64 = scans.iter().map(|s| s.prune.kept_rows).sum();
     let bucket = bucket_of(raw, total_rows);
-    let corr = cal.selectivity_correction(&source, bucket);
-    let selected = (raw * corr.factor).min(kept_rows as f64).max(0.0);
-    let mut notes = Vec::new();
-
-    // plan shape
-    let shape = plan_shape(plan);
-    let (limit, ungrouped) = (shape.limit, shape.ungrouped);
-    let groups: Option<(f64, &'static str)> =
-        shape.group_by.as_deref().map(|g| cal.group_count(&source, g).unwrap_or((cost.aggregate_result_rows as f64, "prior")));
-    let cap = selected;
-    let mut result = if ungrouped {
-        1.0
-    } else if let Some((g, basis)) = groups {
-        notes.push(format!("group count {g:.0} from {basis} history"));
-        g.min(cap.max(1.0))
-    } else {
-        cap
-    };
-    if let Some(l) = limit {
-        result = result.min(l as f64);
-    }
-        let limit_bound = limit.is_some_and(|l| groups.is_none() && !ungrouped && selected >= 2.0 * l as f64);
-
-    // quality: history first, structure second
-    let mut quality = match (corr.basis, corr.samples) {
-        ("source", n) if n >= 3 => EstimateQuality::Good,
-        ("source", _) | ("global", _) => EstimateQuality::Fair,
-        _ => EstimateQuality::Poor,
-    };
-    let coherence = scans.iter().filter_map(|s| s.spatial_coherence).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.min(c))));
-    let skew = scans.iter().filter_map(|s| s.density_skew).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.max(c))));
     let covering_quality = if scans.is_empty() || scans.iter().any(|s| !s.has_covering) {
         CoveringQuality::None
     } else if scans.iter().any(|s| s.covering_inferred) {
@@ -290,41 +337,80 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
     } else {
         CoveringQuality::Declared
     };
+    let layout = layout_class(scans, covering_quality);
+    let corr = cal.selectivity_correction(&source, &layout, bucket);
+    let mut notes = Vec::new();
+    let kept = kept_rows as f64;
+    let card = (raw * corr.factor).min(kept).max(0.0);
+    let card_low = (card / corr.spread).min(card);
+    let card_high = (card * corr.spread).min(kept).max(card);
+    let mut card_quality = quality_of(&corr);
+    let coherence = scans.iter().filter_map(|s| s.spatial_coherence).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.min(c))));
+    let skew = scans.iter().filter_map(|s| s.density_skew).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.max(c))));
     if covering_quality == CoveringQuality::None {
-        quality = quality.min(EstimateQuality::Poor);
+        card_quality = EstimateQuality::Poor;
         notes.push("no covering statistics: selectivity is a guess".into());
     }
     if coherence.is_some_and(|c| c < 0.3) {
-        quality = quality.min(EstimateQuality::Fair);
+        card_quality = card_quality.min(EstimateQuality::Fair);
         notes.push(format!("spatially incoherent file (coherence {:.2}): row-group boxes overlap, estimates are looser", coherence.unwrap()));
     }
     if skew.is_some_and(|s| s > 20.0) {
-        quality = quality.min(EstimateQuality::Fair);
+        card_quality = card_quality.min(EstimateQuality::Fair);
         notes.push(format!("skewed density across row groups (max/median {:.0}x)", skew.unwrap()));
     }
-    if limit_bound || ungrouped {
-        // the answer does not depend on the selectivity estimate: LIMIT-bound or a single row
-        quality = EstimateQuality::Good;
-        notes.push(if ungrouped { "ungrouped aggregate: exactly one row".into() } else { "result is LIMIT-bound".into() });
-    }
-    let spread = quality.spread();
-    let rows = result.ceil() as u64;
-    let low = (result / spread).floor() as u64;
-    let mut high = (result * spread).ceil() as u64;
-    if let Some(l) = limit {
-        high = high.min(l);
-    }
-    if !ungrouped && groups.is_none() {
-        high = high.min(kept_rows.max(rows));
+    notes.push(match corr.basis {
+        "none" => format!("no calibration for layout class '{layout}': uncorrected estimate, interval ×/÷{:.0}", corr.spread),
+        b => format!("correction {:.2} from {} runs of this {b} (interval ×/÷{:.1})", corr.factor, corr.samples, corr.spread),
+    });
+
+    // plan shape: output rows
+    let shape = plan_shape(plan);
+    let groups: Option<(f64, &'static str)> =
+        shape.group_by.as_deref().map(|g| cal.group_count(&source, g).unwrap_or((cost.aggregate_result_rows as f64, "prior")));
+    let (mut out, mut out_low, mut out_high, mut out_quality) = if shape.ungrouped {
+        notes.push("ungrouped aggregate: exactly one row".into());
+        (1.0, 1.0, 1.0, EstimateQuality::Good)
+    } else if let Some((g, basis)) = groups {
+        notes.push(format!("group count ≤ {g:.0} from {basis} history"));
+        let e = g.min(card.max(1.0));
+        let gq = if basis == "source" { card_quality } else { card_quality.min(EstimateQuality::Fair) };
+        (e, g.min(card_low.max(1.0)).min(e), g.min(card_high.max(1.0)).max(e), gq)
+    } else {
+        (card, card_low, card_high, card_quality)
+    };
+    let mut bounded = false;
+    let mut certain = false;
+    if let Some(l) = shape.limit {
+        let lf = l as f64;
+        bounded = out > lf;
+        // certain only when even the pessimistic cardinality reaches the limit
+        certain = groups.is_none() && !shape.ungrouped && out_low >= lf;
+        out = out.min(lf);
+        out_low = out_low.min(lf);
+        out_high = out_high.min(lf);
+        if certain {
+            out_quality = EstimateQuality::Good;
+            notes.push("result is certain to hit the LIMIT (lower bound of the cardinality ≥ limit)".into());
+        } else if bounded {
+            notes.push("result is CAPPED by the LIMIT, but how many rows match is not certain".into());
+        }
     }
     RowEstimate {
-        rows,
-        low: low.min(rows),
-        high: high.max(rows),
-        quality,
+        rows: out.ceil() as u64,
+        low: out_low.floor() as u64,
+        high: out_high.ceil() as u64,
+        quality: out_quality,
+        cardinality: card.ceil() as u64,
+        cardinality_low: card_low.floor() as u64,
+        cardinality_high: card_high.ceil() as u64,
+        cardinality_quality: card_quality,
+        bounded_by_limit: bounded,
+        limit_certain: certain,
         covering_quality,
+        layout,
         raw_selected: raw,
-        selected_after_correction: selected,
+        selected_after_correction: card,
         correction: corr,
         bucket,
         spatial_coherence: coherence,
@@ -332,7 +418,6 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
         null_fraction: scans.first().and_then(|s| s.null_fraction),
         row_groups_total: scans.iter().map(|s| s.prune.total_row_groups).sum(),
         row_groups_kept: scans.iter().map(|s| s.prune.kept.len()).sum(),
-        limit_bound,
         group_basis: groups.map(|g| g.1),
         notes,
     }
@@ -350,9 +435,12 @@ pub struct ErrorSummary {
     pub n: usize,
     pub median: f64,
     pub p90: f64,
+    pub p95: f64,
     pub max: f64,
     pub over_rate: f64,
     pub under_rate: f64,
+    /// Share of cases where `(actual+1)/(est+1) > 5`: the estimate was dangerously low.
+    pub unsafe_under_rate: f64,
     /// Share of cases whose actual value lies inside the estimated [low, high] interval.
     pub interval_coverage: Option<f64>,
 }
@@ -364,23 +452,23 @@ pub fn summarize_errors(pairs: &[(f64, f64)], intervals: Option<&[(f64, f64)]>) 
     let mut f: Vec<f64> = pairs.iter().map(|(e, a)| error_factor(*e, *a)).collect();
     f.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let q = |p: f64| f[(((f.len() as f64 - 1.0) * p).ceil() as usize).min(f.len() - 1)];
-    let over = pairs.iter().filter(|(e, a)| e > a).count() as f64 / pairs.len() as f64;
-    let under = pairs.iter().filter(|(e, a)| e < a).count() as f64 / pairs.len() as f64;
-    let cover = intervals.map(|iv| {
-        let hit = pairs.iter().zip(iv).filter(|((_, a), (lo, hi))| a >= lo && a <= hi).count();
-        hit as f64 / pairs.len() as f64
-    });
-    Some(ErrorSummary { n: pairs.len(), median: q(0.5), p90: q(0.9), max: *f.last().unwrap(), over_rate: over, under_rate: under, interval_coverage: cover })
+    let n = pairs.len() as f64;
+    let over = pairs.iter().filter(|(e, a)| e > a).count() as f64 / n;
+    let under = pairs.iter().filter(|(e, a)| e < a).count() as f64 / n;
+    let unsafe_under = pairs.iter().filter(|(e, a)| (a + 1.0) / (e + 1.0) > 5.0).count() as f64 / n;
+    let cover = intervals.map(|iv| pairs.iter().zip(iv).filter(|((_, a), (lo, hi))| a >= lo && a <= hi).count() as f64 / n);
+    Some(ErrorSummary { n: pairs.len(), median: q(0.5), p90: q(0.9), p95: q(0.95), max: *f.last().unwrap(), over_rate: over, under_rate: under, unsafe_under_rate: unsafe_under, interval_coverage: cover })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn obs(source: &str, raw: f64, actual: u64, censored: bool) -> Observation {
+    fn obs(source: &str, layout: &str, raw: f64, actual: u64, censored: bool) -> Observation {
         Observation {
             ts_ms: 0, source: source.into(), kind: "features".into(), engine: "duckdb".into(), raw_selected: raw, total_rows: 1_000_000,
-            est_rows: raw as u64, actual_rows: actual, limit: None, censored, group_by: None, est_ms: None, actual_ms: 10.0, network: "LOCAL".into(), fallback: false,
+            est_rows: raw as u64, actual_rows: actual, limit: None, censored, group_by: None, est_ms: None, actual_ms: 10.0, network: "LOCAL".into(),
+            fallback: false, layout: layout.into(),
         }
     }
 
@@ -393,49 +481,131 @@ mod tests {
     }
 
     #[test]
-    fn summary_reports_median_p90_max_and_direction() {
-        let pairs: Vec<(f64, f64)> = vec![(10.0, 10.0), (20.0, 10.0), (10.0, 40.0), (100.0, 10.0), (10.0, 10.0)];
+    fn summary_reports_median_p90_p95_max_direction_and_unsafe_underestimates() {
+        let pairs: Vec<(f64, f64)> = vec![(10.0, 10.0), (20.0, 10.0), (10.0, 400.0), (100.0, 10.0), (10.0, 10.0)];
         let s = summarize_errors(&pairs, None).unwrap();
         assert_eq!(s.n, 5);
-        assert!(s.median < 2.5 && s.max > 9.0);
+        assert!(s.median < 2.5 && s.max > 9.0 && s.p95 >= s.p90);
         assert!((s.over_rate - 0.4).abs() < 1e-9 && (s.under_rate - 0.2).abs() < 1e-9);
+        assert!((s.unsafe_under_rate - 0.2).abs() < 1e-9, "one run came back 36x larger than estimated");
         let iv = vec![(5.0, 20.0); 5];
         let c = summarize_errors(&pairs, Some(&iv)).unwrap().interval_coverage.unwrap();
         assert!((c - 0.8).abs() < 1e-9, "{c}");
     }
 
     #[test]
-    fn calibration_learns_over_estimation_per_source_then_falls_back_to_global() {
-        // the heuristic over-estimates small windows ~20x on source A
-        let train: Vec<Observation> = (0..4).map(|i| obs("A", 200.0 + i as f64, 10, false)).collect();
+    fn calibration_never_crosses_layout_classes() {
+        let a = "coh=high|skew=peaked|cov=declared";
+        let b = "coh=high|skew=flat|cov=declared";
+        // the heuristic over-estimates 20x on clustered files (class a)
+        let train: Vec<Observation> = (0..6).map(|i| obs(&format!("S{i}"), a, 200.0 + i as f64, 10, false)).collect();
         let cal = Calibration::fit(&train);
-        let b = bucket_of(200.0, 1_000_000);
-        let ca = cal.selectivity_correction("A", b);
-        assert_eq!(ca.basis, "source");
-        assert!(ca.factor < 0.15, "learned ~1/20 shrunk toward 1, got {}", ca.factor);
-        // a never-seen source in the same bucket uses the global history
-        let cb = cal.selectivity_correction("B", b);
-        assert_eq!(cb.basis, "global");
-        assert!(cb.factor < 0.25);
-        // a bucket without any history leaves the estimate untouched
-        assert_eq!(cal.selectivity_correction("A", 4).basis, "none");
-        assert_eq!(cal.familiarity("A"), 4);
-        assert_eq!(cal.familiarity("B"), 0);
+        let bk = bucket_of(200.0, 1_000_000);
+        let ca = cal.selectivity_correction("NEW", a, bk);
+        assert_eq!(ca.basis, "class");
+        assert!(ca.factor < 0.2, "{}", ca.factor);
+        // a uniform (flat) file must NOT inherit it
+        let cb = cal.selectivity_correction("NEW", b, bk);
+        assert_eq!((cb.basis, cb.factor), ("none", 1.0));
+        assert_eq!(cb.spread, PRIOR_SPREAD);
+        // a source with its own runs uses them
+        let own: Vec<Observation> = (0..3).map(|_| obs("OWN", b, 200.0, 190, false)).collect();
+        let cal2 = Calibration::fit(&[train, own].concat());
+        let co = cal2.selectivity_correction("OWN", b, bk);
+        assert_eq!(co.basis, "source");
+        assert!(co.factor > 0.7 && co.spread < 3.0);
+        assert_eq!(cal2.familiarity("OWN"), 3);
+    }
+
+    #[test]
+    fn too_few_class_samples_means_no_correction() {
+        let a = "coh=high|skew=peaked|cov=declared";
+        let cal = Calibration::fit(&[obs("X", a, 200.0, 10, false), obs("Y", a, 210.0, 10, false)]);
+        assert_eq!(cal.selectivity_correction("Z", a, bucket_of(200.0, 1_000_000)).basis, "none");
+    }
+
+    #[test]
+    fn spread_follows_the_residuals_and_drives_quality() {
+        let a = "coh=high|skew=peaked|cov=declared";
+        let tight: Vec<Observation> = (0..8).map(|i| obs(&format!("S{i}"), a, 200.0, 10 + (i % 2), false)).collect();
+        let c = Calibration::fit(&tight).selectivity_correction("N", a, bucket_of(200.0, 1_000_000));
+        assert!(c.spread < 1.6, "{}", c.spread);
+        assert_eq!(quality_of(&c), EstimateQuality::Good);
+        let wild: Vec<Observation> = (0..8).map(|i| obs(&format!("S{i}"), a, 200.0, [2, 400, 5, 900, 3, 200, 1, 700][i], false)).collect();
+        let w = Calibration::fit(&wild).selectivity_correction("N", a, bucket_of(200.0, 1_000_000));
+        assert!(w.spread > 5.0, "{}", w.spread);
+        assert_ne!(quality_of(&w), EstimateQuality::Good);
     }
 
     #[test]
     fn censored_observations_do_not_teach_selectivity() {
-        let train: Vec<Observation> = (0..5).map(|_| obs("A", 5000.0, 2000, true)).collect();
+        let a = "coh=high|skew=peaked|cov=declared";
+        let train: Vec<Observation> = (0..5).map(|_| obs("A", a, 5000.0, 2000, true)).collect();
         let cal = Calibration::fit(&train);
-        assert_eq!(cal.selectivity_correction("A", bucket_of(5000.0, 1_000_000)).basis, "none");
+        assert_eq!(cal.selectivity_correction("A", a, bucket_of(5000.0, 1_000_000)).basis, "none");
     }
 
     #[test]
     fn group_counts_are_learned() {
-        let mut o = obs("A", 100.0, 8, false);
+        let mut o = obs("A", "x", 100.0, 8, false);
         o.group_by = Some("category".into());
         let cal = Calibration::fit(&vec![o.clone(), o.clone(), o]);
         assert_eq!(cal.group_count("A", "category"), Some((8.0, "source")));
         assert_eq!(cal.group_count("Z", "x").map(|g| g.1), Some("global"));
+    }
+
+    fn test_scan() -> SourceScan {
+        use geo_source_geoparquet::{PruneMethod, PruneReport, ReadClass};
+        SourceScan {
+            node: "n".into(), uri: "x.parquet".into(), crs: geo_types::Crs::Epsg(4326), total_rows: 1000, total_bytes: 1000, constraints_applied: 1, constraints_skipped: vec![],
+            access_paths: 1, has_covering: true, covering_inferred: false, covering: None, covering_bytes_total: 0, selected_rows_estimate: 10, raw_selected_rows: 10.0,
+            read_class: ReadClass::PlainWkb, null_fraction: Some(0.0), spatial_coherence: None, density_skew: None,
+            prune: PruneReport { method: PruneMethod::CoveringStats, total_row_groups: 10, kept: vec![0], skipped: 9, total_rows: 1000, kept_rows: 100, total_bytes: 1000, kept_bytes: 100 },
+        }
+    }
+
+    #[test]
+    fn layout_class_separates_clustered_uniform_and_shuffled() {
+        let sc = |coh: f64, skew: f64| {
+            let mut s = test_scan();
+            s.spatial_coherence = Some(coh);
+            s.density_skew = Some(skew);
+            s
+        };
+        let c = CoveringQuality::Declared;
+        assert_eq!(layout_class(&[sc(0.99, 60.0)], c), "coh=high|skew=peaked|cov=declared");
+        assert_eq!(layout_class(&[sc(0.95, 1.5)], c), "coh=high|skew=flat|cov=declared");
+        assert_eq!(layout_class(&[sc(0.05, 1.2)], c), "coh=low|skew=flat|cov=declared");
+        assert_eq!(layout_class(&[], CoveringQuality::None), "coh=unknown|skew=unknown|cov=none");
+    }
+
+    fn plan_with_limit(limit: Option<u64>) -> Plan {
+        use geo_ir::Node;
+        let src = Node::Source {
+            uri: "x.parquet".into(), format: geo_ir::SourceFormat::GeoParquet,
+            schema: geo_types::SpatialSchema { fields: vec![], geometry_columns: vec![] }, statistics: Default::default(),
+        };
+        match limit {
+            Some(n) => Plan::new(Node::Limit { input: Box::new(src), n }),
+            None => Plan::new(src),
+        }
+    }
+
+    #[test]
+    fn a_limit_caps_the_output_but_not_the_cardinality() {
+        let mut s = test_scan();
+        s.raw_selected_rows = 80.0;
+        s.prune.kept_rows = 100_000;
+        s.total_rows = 1_000_000;
+        // no calibration: interval ×/÷12 -> cardinality 80 (6..960): a LIMIT of 50 caps the output but cannot be certain
+        let e = estimate(&plan_with_limit(Some(50)), &[s.clone()], &CostModel::default(), &Calibration::default());
+        assert_eq!((e.rows, e.cardinality), (50, 80));
+        assert!(e.bounded_by_limit && !e.limit_certain);
+        assert_ne!(e.quality, EstimateQuality::Good, "v2 called this 'good': a capped estimate is not a certain one");
+        assert!(e.low < 50 && e.high == 50);
+        // a cardinality whose LOWER bound reaches the limit is certain
+        s.raw_selected_rows = 90_000.0;
+        let e = estimate(&plan_with_limit(Some(50)), &[s], &CostModel::default(), &Calibration::default());
+        assert!(e.limit_certain && e.quality == EstimateQuality::Good && e.low == 50 && e.high == 50);
     }
 }

@@ -1,0 +1,29 @@
+
+Running 1 test using 1 worker
+
+clustered_1gb_spatial count_by f=0.01 lim=null: ok fetched=58MB est=64MB 298ms
+clustered_1gb_spatial count_by f=0.05 lim=null: ok fetched=130MB est=121MB 772ms
+clustered_1gb_spatial count_by f=0.1 lim=null: ok fetched=145MB est=142MB 834ms
+clustered_1gb_spatial count_by f=0.25 lim=null: ok fetched=302MB est=299MB 2070ms
+clustered_1gb_spatial count_by f=0.5 lim=null: ok fetched=672MB est=668MB 4915ms
+clustered_1gb_spatial count_by f=1 lim=null: ok fetched=924MB est=942MB 6532ms
+clustered_1gb_spatial features f=0.05 lim=100000: ok fetched=66MB est=21MB 17087ms
+clustered_1gb_spatial features f=0.25 lim=100000: ok fetched=62MB est=14MB 17551ms
+clustered_1gb_spatial features f=1 lim=100000: ok fetched=21MB est=14MB 16680ms
+clustered_1gb_shuffled count_by f=0.1 lim=null: ok fetched=976MB est=978MB 7750ms
+clustered_1gb_shuffled count_by f=0.5 lim=null: ok fetched=976MB est=978MB 7963ms
+clustered_1gb_shuffled count_by f=1 lim=null: ok fetched=976MB est=978MB 7562ms
+clustered_1gb_shuffled features f=0.1 lim=100000: ok fetched=220MB est=66MB 18805ms
+clustered_1gb_shuffled features f=1 lim=100000: ok fetched=22MB est=15MB 16936ms
+overture_buildings_vn_south count_by f=0.01 lim=null: ok fetched=45MB est=83MB 663ms
+overture_buildings_vn_south count_by f=0.05 lim=null: ok fetched=91MB est=125MB 1293ms
+overture_buildings_vn_south count_by f=0.1 lim=null: ok fetched=103MB est=142MB 1877ms
+overture_buildings_vn_south count_by f=0.25 lim=null: ok fetched=161MB est=196MB 3015ms
+overture_buildings_vn_south count_by f=0.5 lim=null: ok fetched=184MB est=221MB 3842ms
+overture_buildings_vn_south count_by f=1 lim=null: ok fetched=219MB est=266MB 4270ms
+overture_buildings_vn_south features f=0.01 lim=100000: ok fetched=131MB est=27MB 34771ms
+overture_buildings_vn_south features f=0.25 lim=100000: ok fetched=61MB est=18MB 33386ms
+overture_buildings_vn_south features f=1 lim=100000: ok fetched=24MB est=9MB 32968ms
+  ok 1 e2e\envelope.spec.ts:26:1 › browser envelope (4.8m)
+
+  1 passed (4.8m)

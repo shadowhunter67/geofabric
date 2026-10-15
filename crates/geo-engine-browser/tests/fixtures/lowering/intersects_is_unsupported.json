@@ -1,0 +1,73 @@
+{
+  "expected": {
+    "error_kind": "unsupported"
+  },
+  "max_rows": 10,
+  "name": "intersects_is_unsupported",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.2",
+    "nodes": {
+      "n_5d9d0f760aa18a5f4186": {
+        "geometry_column": "geometry",
+        "input": "n_ce16bba17b3c0e1cd696",
+        "op": "intersects",
+        "with": {
+          "crs": {
+            "epsg": 4326
+          },
+          "wkt": "POINT(104.5 12.5)"
+        }
+      },
+      "n_ce16bba17b3c0e1cd696": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_5d9d0f760aa18a5f4186"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}
