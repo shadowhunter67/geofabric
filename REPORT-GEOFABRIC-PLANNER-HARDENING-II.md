@@ -148,4 +148,4 @@ One first combined run (screenshots enabled) showed 2 failures in the engines su
 
 ## Commit
 
-`daaeddb` (message: Planner hardening II ...); the report itself is in this commit.
+Commit titled "Planner hardening II: held-out v5 (valid), estimator v3 evidence, ADR-009 Accepted (scoped), ADR-010 addendum, report, UI screenshots" (the report itself is in it; its hash is in `git log`).
