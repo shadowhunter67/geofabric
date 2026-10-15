@@ -16,7 +16,11 @@
 //! argument proves the access guard ran before any I/O on the file.
 
 mod analysis;
-pub use analysis::{analyze_plan, wkt_envelope, SourceScan};
+mod colstats;
+mod histogram;
+pub use colstats::{selectivity as predicate_selectivity, ColumnStats, Selectivity};
+pub use histogram::{HistogramStore, SpatialHistogram, DEFAULT_GRID};
+pub use analysis::{analyze_plan_with, analyze_plan, wkt_envelope, SourceScan};
 
 use arrow_schema::DataType;
 use geo_ir::{Node, SourceFormat, SourceStats};

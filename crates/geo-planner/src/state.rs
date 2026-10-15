@@ -12,11 +12,12 @@ use crate::estimator::{Calibration, Observation};
 use crate::failure::{FailureClass, HealthConfig, HealthTracker, HealthView, KnownIncompat};
 use crate::network::NetworkProfile;
 use crate::probe::ProbeReport;
+use geo_source_geoparquet::HistogramStore;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub fn now_ms() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
@@ -35,6 +36,8 @@ pub struct PlanInputs {
     pub probe_ttl_ms: Option<u64>,
     /// The client's browser engine instance is already instantiated (`None` = unknown, treated as warm).
     pub browser_warm: Option<bool>,
+    /// Spatial histograms of the sources (built by the gateway at startup); `None` = footer statistics only.
+    pub histograms: Option<Arc<HistogramStore>>,
 }
 
 impl Default for PlanInputs {
@@ -48,6 +51,7 @@ impl Default for PlanInputs {
             calibration: Calibration::default(),
             probe_ttl_ms: Some(30 * 60_000),
             browser_warm: None,
+            histograms: None,
         }
     }
 }
@@ -86,6 +90,7 @@ struct Inner {
 
 pub struct PlannerState {
     inner: Mutex<Inner>,
+    histograms: Arc<HistogramStore>,
     pub probe_ttl_ms: Option<u64>,
 }
 
@@ -107,7 +112,13 @@ impl PlannerState {
                 engines: Vec::new(),
             }),
             probe_ttl_ms: Some(30 * 60_000),
+            histograms: Arc::new(HistogramStore::new()),
         }
+    }
+
+    /// Spatial histograms the planner estimates with (filled by the gateway's background builder).
+    pub fn histograms(&self) -> &Arc<HistogramStore> {
+        &self.histograms
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
@@ -229,6 +240,7 @@ impl PlannerState {
             calibration: g.calibration.clone(),
             probe_ttl_ms: self.probe_ttl_ms,
             browser_warm: None,
+            histograms: Some(self.histograms.clone()),
         }
     }
 

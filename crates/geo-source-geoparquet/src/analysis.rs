@@ -20,6 +20,12 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SourceScan {
+    /// Authorized file path (the key of the histogram store).
+    pub source_path: String,
+    /// A spatial histogram of the rows was available: `raw_selected_rows` comes from it, not from the uniform-density heuristic.
+    pub has_histogram: bool,
+    /// The uniform-density-per-row-group estimate (always computed; the histogram replaces it when present).
+    pub uniform_selected_rows: f64,
     pub node: String,
     pub uri: String,
     pub crs: Crs,
@@ -91,6 +97,11 @@ pub fn wkt_envelope(wkt: &str, crs: &Crs) -> Option<BoundingBox> {
 /// Scan analysis reads source metadata, so every source is authorized by
 /// `guard` **before** it is opened.
 pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<SourceScan>, SourceError> {
+    analyze_plan_with(plan, guard, None)
+}
+
+/// Like [`analyze_plan`], using spatial histograms (when the store has one for a source) for the selectivity estimate.
+pub fn analyze_plan_with(plan: &Plan, guard: &dyn SourceAccessGuard, histograms: Option<&crate::HistogramStore>) -> Result<Vec<SourceScan>, SourceError> {
     // 1. collect, per source node, the constraint sets of every access path
     let mut paths: BTreeMap<NodeId, Vec<Vec<Constraint>>> = BTreeMap::new();
     let mut seen: HashSet<(NodeId, String)> = HashSet::new();
@@ -159,12 +170,39 @@ pub fn analyze_plan(plan: &Plan, guard: &dyn SourceAccessGuard) -> Result<Vec<So
             }
             selected_rows += rg.rows as f64 * best;
         }
+        let uniform_selected = selected_rows;
+        let mut has_histogram = false;
+        if let Some(h) = histograms.and_then(|s| s.get(src.path())).filter(|h| h.matches(&src)) {
+            // the histogram knows where the rows really are: per access path, the window is the intersection of its constraints
+            let mut best = 0.0f64;
+            for set in path_sets {
+                let mut w: Option<[f64; 4]> = None;
+                for c in set.iter().filter(|c| c.column == info.geometry_column) {
+                    let b = [c.bbox.min_x(), c.bbox.min_y(), c.bbox.max_x(), c.bbox.max_y()];
+                    w = Some(match w {
+                        None => b,
+                        Some(a) => [a[0].max(b[0]), a[1].max(b[1]), a[2].min(b[2]), a[3].min(b[3])],
+                    });
+                }
+                let est = match w {
+                    Some(w) if w[0] > w[2] || w[1] > w[3] => 0.0,
+                    Some(w) => h.estimate(w),
+                    None => h.counted as f64,
+                };
+                best = best.max(est);
+            }
+            selected_rows = best;
+            has_histogram = true;
+        }
         let kept: Vec<usize> = kept.into_iter().collect();
         let total_bytes: u64 = info.row_groups.iter().map(|r| r.compressed_bytes).sum();
         let kept_rows: u64 = kept.iter().map(|i| info.row_groups[*i].rows).sum();
         let kept_bytes = src.estimate_bytes(None, &kept);
         let has_stats = info.row_groups.iter().any(|r| r.bbox.is_some());
         out.push(SourceScan {
+            source_path: src.path().to_string_lossy().into_owned(),
+            has_histogram,
+            uniform_selected_rows: uniform_selected,
             node: id.0.clone(),
             uri: uri.clone(),
             crs: info.crs.clone(),

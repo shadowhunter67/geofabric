@@ -111,7 +111,7 @@ fn percentile(v: &mut [f64], p: f64) -> f64 {
 
 /// The context a correction is valid in: how well the file's row groups are ordered in space, how uneven the
 /// density is, and whether the bbox covering is declared. Corrections never cross classes.
-pub fn layout_class(scans: &[SourceScan], covering: CoveringQuality) -> String {
+pub fn layout_class(scans: &[SourceScan], covering: CoveringQuality, filtered: bool) -> String {
     let coh = scans.iter().filter_map(|s| s.spatial_coherence).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.min(c))));
     let skew = scans.iter().filter_map(|s| s.density_skew).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.max(c))));
     let coh = match coh {
@@ -131,7 +131,8 @@ pub fn layout_class(scans: &[SourceScan], covering: CoveringQuality) -> String {
         CoveringQuality::Inferred => "inferred",
         CoveringQuality::None => "none",
     };
-    format!("coh={coh}|skew={skew}|cov={cov}")
+    let hist = if !scans.is_empty() && scans.iter().all(|s| s.has_histogram) { "yes" } else { "no" };
+    format!("coh={coh}|skew={skew}|cov={cov}|hist={hist}|filt={}", if filtered { "yes" } else { "no" })
 }
 
 /// Learned corrections. Built from observations with [`Calibration::fit`]; cheap to clone.
@@ -324,10 +325,27 @@ fn quality_of(c: &Correction) -> EstimateQuality {
 }
 
 /// Estimate the result rows of `plan` given its scans (see module docs).
-pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calibration) -> RowEstimate {
+pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calibration, hists: Option<&geo_source_geoparquet::HistogramStore>) -> RowEstimate {
     let source = scans.first().map(|s| s.uri.rsplit(['/', '\\']).next().unwrap_or(&s.uri).trim_end_matches(".parquet").to_string()).unwrap_or_default();
     let total_rows: u64 = scans.iter().map(|s| s.total_rows).sum();
-    let raw: f64 = scans.iter().map(|s| s.raw_selected_rows * (1.0 - s.null_fraction.unwrap_or(0.0))).sum();
+    let mut raw: f64 = scans.iter().map(|s| s.raw_selected_rows * (1.0 - s.null_fraction.unwrap_or(0.0))).sum();
+    // attribute predicates (Filter nodes): selectivity from the column statistics of the source's histogram sidecar
+    let filters: Vec<&geo_ir::Expr> = plan.nodes.values().filter_map(|n| if let PlanNode::Filter { predicate, .. } = n { Some(predicate) } else { None }).collect();
+    let mut attr_note: Option<String> = None;
+    let mut attr_known = true;
+    if !filters.is_empty() && scans.len() == 1 {
+        let hist = hists.and_then(|h| h.get(std::path::Path::new(&scans[0].source_path)));
+        let empty = std::collections::BTreeMap::new();
+        let cols = hist.as_ref().map_or(&empty, |h| &h.columns);
+        let sel: Vec<geo_source_geoparquet::Selectivity> = filters.iter().map(|e| geo_source_geoparquet::predicate_selectivity(e, cols)).collect();
+        let v: f64 = sel.iter().map(|s| s.value).product();
+        attr_known = sel.iter().all(|s| s.known);
+        raw *= v;
+        attr_note = Some(format!("attribute filter keeps ~{:.1}% of the rows ({})", v * 100.0, if attr_known { "from column statistics" } else { "ASSUMED: no statistics for it" }));
+    } else if !filters.is_empty() {
+        attr_known = false;
+        attr_note = Some("attribute filters over several sources are not modelled".into());
+    }
     let kept_rows: u64 = scans.iter().map(|s| s.prune.kept_rows).sum();
     let bucket = bucket_of(raw, total_rows);
     let covering_quality = if scans.is_empty() || scans.iter().any(|s| !s.has_covering) {
@@ -337,7 +355,7 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
     } else {
         CoveringQuality::Declared
     };
-    let layout = layout_class(scans, covering_quality);
+    let layout = layout_class(scans, covering_quality, !filters.is_empty());
     let corr = cal.selectivity_correction(&source, &layout, bucket);
     let mut notes = Vec::new();
     let kept = kept_rows as f64;
@@ -347,6 +365,12 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
     let mut card_quality = quality_of(&corr);
     let coherence = scans.iter().filter_map(|s| s.spatial_coherence).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.min(c))));
     let skew = scans.iter().filter_map(|s| s.density_skew).fold(None, |a: Option<f64>, c| Some(a.map_or(c, |x| x.max(c))));
+    if let Some(n) = attr_note {
+        notes.push(n);
+    }
+    if !attr_known {
+        card_quality = card_quality.min(EstimateQuality::Fair);
+    }
     if covering_quality == CoveringQuality::None {
         card_quality = EstimateQuality::Poor;
         notes.push("no covering statistics: selectivity is a guess".into());
@@ -366,15 +390,22 @@ pub fn estimate(plan: &Plan, scans: &[SourceScan], cost: &CostModel, cal: &Calib
 
     // plan shape: output rows
     let shape = plan_shape(plan);
-    let groups: Option<(f64, &'static str)> =
-        shape.group_by.as_deref().map(|g| cal.group_count(&source, g).unwrap_or((cost.aggregate_result_rows as f64, "prior")));
+    // group count: exact frequencies of the column when the sidecar has them (expected distinct values among the matching
+    // rows), else what past runs of this source/column showed, else the prior
+    let groups: Option<(f64, &'static str)> = shape.group_by.as_deref().map(|g| {
+        let hist = hists.and_then(|h| scans.first().and_then(|s| h.get(std::path::Path::new(&s.source_path))));
+        match hist.as_ref().and_then(|h| h.columns.get(g)).and_then(|c| c.expected_distinct(card)) {
+            Some(d) => (d.max(1.0), "statistics"),
+            None => cal.group_count(&source, g).unwrap_or((cost.aggregate_result_rows as f64, "prior")),
+        }
+    });
     let (mut out, mut out_low, mut out_high, mut out_quality) = if shape.ungrouped {
         notes.push("ungrouped aggregate: exactly one row".into());
         (1.0, 1.0, 1.0, EstimateQuality::Good)
     } else if let Some((g, basis)) = groups {
         notes.push(format!("group count ≤ {g:.0} from {basis} history"));
         let e = g.min(card.max(1.0));
-        let gq = if basis == "source" { card_quality } else { card_quality.min(EstimateQuality::Fair) };
+        let gq = if basis == "source" || basis == "statistics" { card_quality } else { card_quality.min(EstimateQuality::Fair) };
         (e, g.min(card_low.max(1.0)).min(e), g.min(card_high.max(1.0)).max(e), gq)
     } else {
         (card, card_low, card_high, card_quality)
@@ -495,8 +526,8 @@ mod tests {
 
     #[test]
     fn calibration_never_crosses_layout_classes() {
-        let a = "coh=high|skew=peaked|cov=declared";
-        let b = "coh=high|skew=flat|cov=declared";
+        let a = "coh=high|skew=peaked|cov=declared|hist=no";
+        let b = "coh=high|skew=flat|cov=declared|hist=no";
         // the heuristic over-estimates 20x on clustered files (class a)
         let train: Vec<Observation> = (0..6).map(|i| obs(&format!("S{i}"), a, 200.0 + i as f64, 10, false)).collect();
         let cal = Calibration::fit(&train);
@@ -519,14 +550,14 @@ mod tests {
 
     #[test]
     fn too_few_class_samples_means_no_correction() {
-        let a = "coh=high|skew=peaked|cov=declared";
+        let a = "coh=high|skew=peaked|cov=declared|hist=no";
         let cal = Calibration::fit(&[obs("X", a, 200.0, 10, false), obs("Y", a, 210.0, 10, false)]);
         assert_eq!(cal.selectivity_correction("Z", a, bucket_of(200.0, 1_000_000)).basis, "none");
     }
 
     #[test]
     fn spread_follows_the_residuals_and_drives_quality() {
-        let a = "coh=high|skew=peaked|cov=declared";
+        let a = "coh=high|skew=peaked|cov=declared|hist=no";
         let tight: Vec<Observation> = (0..8).map(|i| obs(&format!("S{i}"), a, 200.0, 10 + (i % 2), false)).collect();
         let c = Calibration::fit(&tight).selectivity_correction("N", a, bucket_of(200.0, 1_000_000));
         assert!(c.spread < 1.6, "{}", c.spread);
@@ -539,7 +570,7 @@ mod tests {
 
     #[test]
     fn censored_observations_do_not_teach_selectivity() {
-        let a = "coh=high|skew=peaked|cov=declared";
+        let a = "coh=high|skew=peaked|cov=declared|hist=no";
         let train: Vec<Observation> = (0..5).map(|_| obs("A", a, 5000.0, 2000, true)).collect();
         let cal = Calibration::fit(&train);
         assert_eq!(cal.selectivity_correction("A", a, bucket_of(5000.0, 1_000_000)).basis, "none");
@@ -558,7 +589,7 @@ mod tests {
         use geo_source_geoparquet::{PruneMethod, PruneReport, ReadClass};
         SourceScan {
             node: "n".into(), uri: "x.parquet".into(), crs: geo_types::Crs::Epsg(4326), total_rows: 1000, total_bytes: 1000, constraints_applied: 1, constraints_skipped: vec![],
-            access_paths: 1, has_covering: true, covering_inferred: false, covering: None, covering_bytes_total: 0, selected_rows_estimate: 10, raw_selected_rows: 10.0,
+            source_path: String::new(), has_histogram: false, uniform_selected_rows: 10.0, access_paths: 1, has_covering: true, covering_inferred: false, covering: None, covering_bytes_total: 0, selected_rows_estimate: 10, raw_selected_rows: 10.0,
             read_class: ReadClass::PlainWkb, null_fraction: Some(0.0), spatial_coherence: None, density_skew: None,
             prune: PruneReport { method: PruneMethod::CoveringStats, total_row_groups: 10, kept: vec![0], skipped: 9, total_rows: 1000, kept_rows: 100, total_bytes: 1000, kept_bytes: 100 },
         }
@@ -573,10 +604,10 @@ mod tests {
             s
         };
         let c = CoveringQuality::Declared;
-        assert_eq!(layout_class(&[sc(0.99, 60.0)], c), "coh=high|skew=peaked|cov=declared");
-        assert_eq!(layout_class(&[sc(0.95, 1.5)], c), "coh=high|skew=flat|cov=declared");
-        assert_eq!(layout_class(&[sc(0.05, 1.2)], c), "coh=low|skew=flat|cov=declared");
-        assert_eq!(layout_class(&[], CoveringQuality::None), "coh=unknown|skew=unknown|cov=none");
+        assert_eq!(layout_class(&[sc(0.99, 60.0)], c, false), "coh=high|skew=peaked|cov=declared|hist=no|filt=no");
+        assert_eq!(layout_class(&[sc(0.95, 1.5)], c, false), "coh=high|skew=flat|cov=declared|hist=no|filt=no");
+        assert_eq!(layout_class(&[sc(0.05, 1.2)], c, true), "coh=low|skew=flat|cov=declared|hist=no|filt=yes");
+        assert_eq!(layout_class(&[], CoveringQuality::None, false), "coh=unknown|skew=unknown|cov=none|hist=no|filt=no");
     }
 
     fn plan_with_limit(limit: Option<u64>) -> Plan {
@@ -598,14 +629,14 @@ mod tests {
         s.prune.kept_rows = 100_000;
         s.total_rows = 1_000_000;
         // no calibration: interval ×/÷12 -> cardinality 80 (6..960): a LIMIT of 50 caps the output but cannot be certain
-        let e = estimate(&plan_with_limit(Some(50)), &[s.clone()], &CostModel::default(), &Calibration::default());
+        let e = estimate(&plan_with_limit(Some(50)), &[s.clone()], &CostModel::default(), &Calibration::default(), None);
         assert_eq!((e.rows, e.cardinality), (50, 80));
         assert!(e.bounded_by_limit && !e.limit_certain);
         assert_ne!(e.quality, EstimateQuality::Good, "v2 called this 'good': a capped estimate is not a certain one");
         assert!(e.low < 50 && e.high == 50);
         // a cardinality whose LOWER bound reaches the limit is certain
         s.raw_selected_rows = 90_000.0;
-        let e = estimate(&plan_with_limit(Some(50)), &[s], &CostModel::default(), &Calibration::default());
+        let e = estimate(&plan_with_limit(Some(50)), &[s], &CostModel::default(), &Calibration::default(), None);
         assert!(e.limit_certain && e.quality == EstimateQuality::Good && e.low == 50 && e.high == 50);
     }
 }

@@ -47,7 +47,7 @@ use geo_executor::{
     Capabilities, EngineDescriptor, EngineId, EngineKind, Estimate, ExecutionContext, ExplainStep,
 };
 use geo_ir::{validate, OpKind, Plan, PlanNode, ValidationReport};
-use geo_source_geoparquet::{analyze_plan, ReadClass, SourceScan};
+use geo_source_geoparquet::{analyze_plan_with, ReadClass, SourceScan};
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -491,7 +491,7 @@ impl Planner {
         }
 
         // R2 scan analysis (source metadata only; sources authorized first)
-        let scans = analyze_plan(plan, ctx.guard.as_ref()).map_err(|e| match e {
+        let scans = analyze_plan_with(plan, ctx.guard.as_ref(), inputs.histograms.as_deref()).map_err(|e| match e {
             geo_source_geoparquet::SourceError::AccessDenied => PlanError::AccessDenied,
             other => PlanError::Other(other.to_string()),
         })?;
@@ -528,7 +528,7 @@ impl Planner {
         }
 
         // R2b estimator v2: result rows with calibration, interval and quality
-        let est = estimate_rows(plan, &scans, &cfg.cost, &inputs.calibration);
+        let est = estimate_rows(plan, &scans, &cfg.cost, &inputs.calibration, inputs.histograms.as_deref());
         let result_rows = est.rows;
         let result_bytes = result_rows.saturating_mul(cfg.cost.avg_result_row_bytes);
         log.push(dec(

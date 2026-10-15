@@ -350,3 +350,79 @@ fn fetch_upper_bounds_cover_every_measured_browser_run() {
     }
     eprintln!("checked {checked} measured browser runs");
 }
+
+fn true_count(plan: &Plan) -> u64 {
+    use arrow_array::cast::AsArray;
+    let out = rt().run(plan, &ctx()).expect("count runs on the server engine");
+    out.result.batches[0].column(0).as_primitive::<arrow_array::types::Int64Type>().value(0) as u64
+}
+
+/// The histogram sidecar is what makes cardinality estimates trustworthy on clustered data: on a window over EMPTY terrain
+/// inside a big row-group box the uniform-density heuristic says thousands of rows, the histogram says (about) none.
+#[test]
+fn spatial_histogram_estimates_the_true_cardinality_on_clustered_data() {
+    let name = "clustered_100mb_spatial";
+    let path = data().join(format!("{name}.parquet"));
+    if !path.exists() {
+        return eprintln!("SKIP: {name} missing");
+    }
+    let hist = geo_source_geoparquet::SpatialHistogram::build(&geo_source_geoparquet::GeoParquetSource::open(&path).unwrap(), 128, 128).unwrap();
+    let store = std::sync::Arc::new(geo_source_geoparquet::HistogramStore::new());
+    let canonical = std::fs::canonicalize(&path).unwrap();
+    store.put(&canonical, hist);
+    let mut with = PlanInputs::default();
+    with.histograms = Some(store);
+    let without = PlanInputs::default();
+    let (mut e_with, mut e_without) = (Vec::new(), Vec::new());
+    for (f, fx, fy) in [(0.0003, 0.2, 0.7), (0.001, 0.8, 0.3), (0.004, 0.45, 0.55), (0.02, 0.3, 0.3), (0.1, 0.6, 0.6), (0.3, 0.5, 0.5), (0.0005, 0.9, 0.1), (0.002, 0.1, 0.9)] {
+        let w = [100.0 + fx * 10.0 - 0.5 * 10.0 * (f as f64).sqrt(), 8.0 + fy * 16.0 - 0.5 * 16.0 * (f as f64).sqrt(), 100.0 + fx * 10.0 + 0.5 * 10.0 * (f as f64).sqrt(), 8.0 + fy * 16.0 + 0.5 * 16.0 * (f as f64).sqrt()];
+        let src = source(name).unwrap();
+        let b = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(w[0].max(100.0), w[1].max(8.0), w[2].min(110.0), w[3].min(24.0), Crs::Epsg(4326)).unwrap() };
+        let plan = Plan::new(Node::Aggregate { input: Box::new(b), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] });
+        let truth = true_count(&plan) as f64;
+        let (a, b2) = (pick(&plan, &with), pick(&plan, &without));
+        assert!(a.scans[0].has_histogram && !b2.scans[0].has_histogram);
+        e_with.push((a.assessment.estimate.cardinality as f64, truth));
+        e_without.push((b2.assessment.estimate.cardinality as f64, truth));
+    }
+    let (sw, so) = (geo_planner::summarize_errors(&e_with, None).unwrap(), geo_planner::summarize_errors(&e_without, None).unwrap());
+    eprintln!("histogram: median {:.2} P90 {:.2} max {:.1} | footer only: median {:.2} P90 {:.2} max {:.1}", sw.median, sw.p90, sw.max, so.median, so.p90, so.max);
+    assert!(sw.p90 <= 2.0 && sw.max <= 3.0, "histogram estimates must be tight: {sw:?}");
+    assert!(sw.max < so.max, "and far better than footer statistics alone on clustered data");
+}
+
+#[test]
+fn attribute_filters_use_column_statistics_not_a_guess() {
+    let name = "clustered_10mb_spatial";
+    let path = data().join(format!("{name}.parquet"));
+    if !path.exists() {
+        return eprintln!("SKIP: {name} missing");
+    }
+    let hist = geo_source_geoparquet::SpatialHistogram::build(&geo_source_geoparquet::GeoParquetSource::open(&path).unwrap(), 128, 128).unwrap();
+    assert!(hist.columns.contains_key("category") && hist.columns.contains_key("height"), "{:?}", hist.columns.keys().collect::<Vec<_>>());
+    let store = std::sync::Arc::new(geo_source_geoparquet::HistogramStore::new());
+    store.put(&std::fs::canonicalize(&path).unwrap(), hist);
+    let mut inputs = PlanInputs::default();
+    inputs.histograms = Some(store);
+    let src = source(name).unwrap();
+    let b = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(100.0, 8.0, 110.0, 24.0, Crs::Epsg(4326)).unwrap() };
+    let f = |c: &str, op, v| Node::Filter { input: Box::new(b.clone()), predicate: Expr::Compare { column: c.into(), op, value: v } };
+    for (node, label) in [
+        (f("category", CompareOp::Eq, Literal::Str("school".into())), "category = school"),
+        (f("height", CompareOp::Gt, Literal::Float(20.0)), "height > 20"),
+        (f("category", CompareOp::Ne, Literal::Str("other".into())), "category <> other"),
+    ] {
+        let plan = Plan::new(Node::Aggregate { input: Box::new(node), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] });
+        let truth = true_count(&plan) as f64;
+        let p = pick(&plan, &inputs);
+        let est = p.assessment.estimate.cardinality as f64;
+        assert!(geo_planner::error_factor(est, truth) < 1.2, "{label}: estimated {est}, true {truth}");
+        assert!(p.assessment.estimate.notes.iter().any(|n| n.contains("from column statistics")), "{label}: {:?}", p.assessment.estimate.notes);
+    }
+    // a column nobody profiled: the guess is labelled as a guess
+    let plan = Plan::new(Node::Aggregate { input: Box::new(f("mystery", CompareOp::Eq, Literal::Int(1))), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] });
+    let p = rt().plan_with_inputs(&PlannerConfig::default(), &plan, &ctx(), &inputs);
+    if let Ok(p) = p {
+        assert!(p.assessment.estimate.notes.iter().any(|n| n.contains("ASSUMED")));
+    }
+}

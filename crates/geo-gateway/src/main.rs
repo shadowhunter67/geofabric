@@ -64,6 +64,9 @@ async fn main() {
         app_state = app_state.with_simulated_network(profile);
     }
     let state = Arc::new(app_state);
+    if !args.iter().any(|a| a == "--no-histograms") {
+        geo_gateway::spawn_histogram_builder(state.clone());
+    }
     let index = ServeFile::new(format!("{web}/index.html"));
     let app = api_router(state).fallback_service(ServeDir::new(&web).fallback(index));
     let addr = format!("{host}:{port}");

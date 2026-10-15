@@ -79,12 +79,15 @@ pub struct AppState {
     /// requests and bytes a browser query really needed (the planner's network model depends on both).
     pub file_requests: std::sync::atomic::AtomicU64,
     pub file_bytes: std::sync::atomic::AtomicU64,
+    /// Spatial histograms: sources still waiting to be built, and per-source notes (built / cached / why not).
+    pub hist_pending: std::sync::atomic::AtomicUsize,
+    pub hist_notes: std::sync::Mutex<std::collections::BTreeMap<String, String>>,
 }
 
 impl AppState {
     pub fn new(rt: Runtime, data_dir: PathBuf, config: GatewayConfig) -> Self {
         let slots = Arc::new(Semaphore::new(config.max_concurrent_queries));
-        AppState { rt, data_dir, config, slots, sim: None, file_requests: Default::default(), file_bytes: Default::default() }
+        AppState { rt, data_dir, config, slots, sim: None, file_requests: Default::default(), file_bytes: Default::default(), hist_pending: Default::default(), hist_notes: Default::default() }
     }
 
     pub fn with_simulated_network(mut self, profile: NetworkProfile) -> Self {
@@ -752,7 +755,56 @@ async fn client_report(State(st): State<Shared>, Json(r): Json<ClientReport>) ->
 }
 
 async fn planner_state(State(st): State<Shared>) -> Json<Value> {
-    Json(json!(st.rt.state().summary()))
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut v = json!(st.rt.state().summary());
+    v["histograms"] = json!({
+        "ready": st.rt.state().histograms().len(),
+        "pending": st.hist_pending.load(Relaxed),
+        "notes": st.hist_notes.lock().map(|g| g.clone()).unwrap_or_default(),
+    });
+    Json(v)
+}
+
+/// Build (or load from `.gf-cache/`) the spatial histogram of every source in the data directory, smallest first, on a
+/// background thread: the planner estimates with footer statistics until a histogram is ready (estimator v3).
+pub fn spawn_histogram_builder(st: Shared) {
+    use geo_source_geoparquet::SpatialHistogram;
+    use std::sync::atomic::Ordering::Relaxed;
+    let mut files: Vec<PathBuf> = std::fs::read_dir(&st.data_dir)
+        .map(|rd| rd.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "parquet")).collect())
+        .unwrap_or_default();
+    files.sort_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0));
+    st.hist_pending.store(files.len(), Relaxed);
+    std::thread::spawn(move || {
+        let cache = st.data_dir.join(".gf-cache");
+        let guard = st.ctx().guard;
+        for p in files {
+            let stem = p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+            let note = (|| -> Result<String, String> {
+                let a = guard.authorize(&p.to_string_lossy()).map_err(|_| "not authorized".to_string())?;
+                let src = GeoParquetSource::open_authorized(&a).map_err(|e| e.to_string())?;
+                let side = cache.join(format!("{stem}.hist.json"));
+                if let Ok(text) = std::fs::read_to_string(&side) {
+                    if let Ok(h) = serde_json::from_str::<SpatialHistogram>(&text) {
+                        if h.matches(&src) {
+                            st.rt.state().histograms().put(src.path(), h);
+                            return Ok("cached".into());
+                        }
+                    }
+                }
+                let h = SpatialHistogram::build(&src, geo_source_geoparquet::DEFAULT_GRID, geo_source_geoparquet::DEFAULT_GRID).map_err(|e| e.to_string())?;
+                let ms = h.build_ms;
+                let _ = std::fs::create_dir_all(&cache);
+                let _ = std::fs::write(&side, serde_json::to_string(&h).unwrap_or_default());
+                st.rt.state().histograms().put(src.path(), h);
+                Ok(format!("built in {ms} ms"))
+            })();
+            if let Ok(mut g) = st.hist_notes.lock() {
+                g.insert(stem, note.unwrap_or_else(|e| format!("none: {e}")));
+            }
+            st.hist_pending.fetch_sub(1, Relaxed);
+        }
+    });
 }
 
 /// Development/test aid (localhost, no auth, like the rest of the v0 gateway): forget probes, health, telemetry.

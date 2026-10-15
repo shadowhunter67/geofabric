@@ -22,7 +22,8 @@ DATASETS["clustered_1gb_spatial"] = (SYN, "EPSG:4326")
 DATASETS["uniform_1gb_spatial"] = (SYN, "EPSG:4326")
 DATASETS["overture_buildings_vn_south"] = (OV, "OGC:CRS84")
 FRACTIONS = [0.0003, 0.001, 0.004, 0.015, 0.05, 0.15, 0.4]
-FOCI = [(0.25, 0.30), (0.62, 0.55)]  # relative positions inside the extent
+FOCI = [(0.25, 0.30), (0.62, 0.55)]
+FILTERS = [{"column": "category", "op": "eq", "value": "school"}, {"column": "category", "op": "ne", "value": "other"}, {"column": "height", "op": "gt", "value": 20}]  # relative positions inside the extent
 
 
 def window(e, f, focus):
@@ -61,6 +62,20 @@ def main():
                     "limit": None, "censored": False, "group_by": None, "est_ms": None, "actual_ms": res["timing"]["total_ms"]["value"],
                     "network": "LOCAL", "fallback": False, "layout": est["layout"]}))
                 n += 1
+        # attribute filters (not for the Overture subset: its columns differ)
+        if not name.startswith("overture"):
+            for f in (0.004, 0.05, 0.4):
+                for flt in FILTERS:
+                    req = {"source": name, "kind": "count", "bbox": window(ext, f, FOCI[1]), "crs": crs, "filter": flt}
+                    plan = post(base, "/api/query/plan", req)["physical"]
+                    est = plan["assessment"]["estimate"]
+                    res = post(base, "/api/query", {**req, "engine": "duckdb", "browser": False})
+                    print(json.dumps({
+                        "ts_ms": 0, "source": name, "kind": "cardinality", "engine": "duckdb", "raw_selected": est["raw_selected"],
+                        "total_rows": sum(s["total_rows"] for s in plan["scans"]), "est_rows": est["cardinality"], "actual_rows": int(res["rows"][0]["count"]),
+                        "limit": None, "censored": False, "group_by": None, "est_ms": None, "actual_ms": res["timing"]["total_ms"]["value"],
+                        "network": "LOCAL", "fallback": False, "layout": est["layout"]}))
+                    n += 1
         # group counts: the whole extent, then a window
         for gcol in ([cat] + (["height"] if not name.startswith("overture") else [])):
             req = {"source": name, "kind": "count_by", "group_by": gcol, "bbox": window(ext, 0.4, FOCI[0]), "crs": crs}
