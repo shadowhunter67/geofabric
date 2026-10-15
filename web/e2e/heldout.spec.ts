@@ -67,7 +67,7 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
           engine: ph.engine, placement: ph.placement, confidence: ph.assessment.confidence.score, engine_confidence: ph.assessment.engine_confidence,
           margin_factor: ph.assessment.margin_factor, estimate: ph.assessment.estimate, policy: ph.assessment.policy, network: ph.assessment.network.name,
           candidates: (ph.candidates as Cand[]).map((k) => ({ engine: k.engine, feasible: k.feasible, score_ms: k.score_ms, rejected_because: k.rejected_because, confidence: k.confidence?.score ?? null, risk: k.risk, cost: k.cost })),
-          result_rows_estimate: ph.result_rows_estimate, input_bytes: ph.input_bytes_upper_bound,
+          result_rows_estimate: ph.result_rows_estimate, input_bytes: ph.input_bytes_upper_bound, browser_access: ph.assessment.browser_access as { strategy: string; requests_est: number; fetch_bytes_est: number; file_bytes: number }[],
           covering_bytes: ph.scans.reduce((a: number, s: { covering_bytes_total: number }) => a + s.covering_bytes_total, 0) as number,
           kept_bytes: ph.scans.reduce((a: number, s: { prune: { kept_bytes: number } }) => a + s.prune.kept_bytes, 0) as number,
         };
@@ -83,10 +83,10 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
         }
         row.server = { ms: sT, median: sT.length ? median(sT) : null, rows: sRows };
         // 3. browser (only when a tab can hold it)
-        const engineInput = planner.covering_bytes + planner.kept_bytes;
+        const engineInput = planner.browser_access.reduce((a, x) => a + x.fetch_bytes_est, 0); // bytes the browser would pull into the tab
         const b: Record<string, unknown> = { ms: [], rows: null, file_requests: [], file_bytes: [] };
         if (engineInput > BROWSER_SAFE_INPUT) {
-          b.skipped = `engine input ${(engineInput / 1048576).toFixed(0)} MB > ${BROWSER_SAFE_INPUT / 1048576} MB (tab crash threshold)`;
+          b.skipped = `browser fetch ${(engineInput / 1048576).toFixed(0)} MB > ${BROWSER_SAFE_INPUT / 1048576} MB (tab crash threshold)`;
         } else {
           const times: number[] = [];
           let bDigest: unknown = null;

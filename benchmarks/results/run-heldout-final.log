@@ -1,0 +1,155 @@
+=== LOCAL: heldout-LOCAL.json
+
+Running 1 test using 1 worker
+
+ho000 LOCAL clustered_30mb_spatial count_by f=0.02 warm: planner=duckdb server=225 browser=8166
+ho011 LOCAL clustered_30mb_spatial count_by f=0.0005 warm: planner=duckdb server=183 browser=8145
+ho022 LOCAL clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=614 browser=8556
+ho001 LOCAL clustered_30mb_shuffled features f=0.0005 cold: planner=duckdb server=171 browser=12888
+ho012 LOCAL clustered_30mb_shuffled count_by f=0.5 warm: planner=duckdb server=234 browser=11873
+ho023 LOCAL clustered_30mb_shuffled features f=0.0005 warm: planner=undefined server=undefined browser=undefined
+  x  1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (5.1m)
+
+
+  1) e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time ─────────
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('header .status')
+    Expected substring: "rows ·"
+    Received string:    "gateway unreachable"
+    Timeout: 120000ms
+
+    Call log:
+      - Expect "toContainText" locator('header .status') with timeout 120000ms
+      - waiting for locator('header .status')
+        238 × locator resolved to <span class="status">gateway unreachable</span>
+            - unexpected value "gateway unreachable"
+
+
+      33 |   const open = async () => {
+      34 |     await page.goto("/?e2e=1");
+    > 35 |     await expect(page.locator("header .status")).toContainText("rows ·", { timeout: 120_000 });
+         |                                                  ^
+      36 |     await page.waitForFunction(() => (window as unknown as { __gf: { state: { probe: unknown } } }).__gf.state.probe !== null, null, { timeout: 120_000 });
+      37 |     await page.evaluate(() => { window.__gf.wasm.recycleBudget = Number.POSITIVE_INFINITY; });
+      38 |   };
+        at open (E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:35:50)
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:52:5
+
+    Error Context: test-results\heldout-held-out-planner-d-41e48-easured-server-browser-time\error-context.md
+
+  Slow test file: e2e\heldout.spec.ts (5.1m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time ──────────
+=== FAST_LAN: heldout-FAST_LAN.json
+
+Running 1 test using 1 worker
+
+ho028 FAST_LAN uniform_30mb_shuffled features f=0.0005 cold: planner=duckdb server=127 browser=992
+ho039 FAST_LAN uniform_30mb_shuffled features f=0.0005 cold: planner=duckdb server=178 browser=973
+ho029 FAST_LAN uniform_10mb_spatial count_by f=0.02 warm: planner=duckdb server=90 browser=157
+ho040 FAST_LAN uniform_10mb_spatial count f=0.5 cold: planner=duckdb server=92 browser=678
+ho030 FAST_LAN uniform_10mb_shuffled features f=0.0005 cold: planner=duckdb server=98 browser=709
+ho041 FAST_LAN uniform_10mb_shuffled features f=0.5 warm: planner=duckdb server=105 browser=196
+ho031 FAST_LAN clustered_10mb_shuffled features f=0.1 warm: planner=duckdb server=147 browser=364
+ho032 FAST_LAN uniform_100mb_spatial count_by f=0.1 warm: planner=duckdb server=106 browser=2092
+ho033 FAST_LAN uniform_100mb_shuffled count_by f=0.1 cold: planner=duckdb server=107 browser=4307
+ho034 FAST_LAN clustered_100mb_shuffled count f=0.1 warm: planner=duckdb server=108 browser=3754
+ho035 FAST_LAN clustered_30mb_spatial features f=0.0005 cold: planner=duckdb server=90 browser=864
+ho036 FAST_LAN clustered_30mb_spatial features f=0.02 cold: planner=duckdb server=102 browser=922
+ho037 FAST_LAN clustered_30mb_shuffled features f=0.02 cold: planner=duckdb server=119 browser=956
+ho038 FAST_LAN uniform_30mb_spatial count_by f=0.5 warm: planner=duckdb server=92 browser=347
+  ok 1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (1.0m)
+
+  1 passed (1.0m)
+=== GOOD_BROADBAND: heldout-GOOD_BROADBAND.json
+
+Running 1 test using 1 worker
+
+ho042 GOOD_BROADBAND clustered_10mb_shuffled features f=0.1 cold: planner=duckdb server=185 browser=1233
+ho053 GOOD_BROADBAND clustered_10mb_shuffled features f=0.5 warm: planner=duckdb server=134 browser=567
+ho043 GOOD_BROADBAND uniform_100mb_spatial features f=0.0005 warm: planner=duckdb server=137 browser=1787
+ho054 GOOD_BROADBAND uniform_100mb_spatial features f=0.1 warm: planner=duckdb server=679 browser=4331
+ho044 GOOD_BROADBAND uniform_100mb_shuffled count_by f=0.0005 warm: planner=duckdb server=176 browser=9477
+ho055 GOOD_BROADBAND uniform_100mb_shuffled count_by f=0.5 cold: planner=duckdb server=123 browser=10072
+ho045 GOOD_BROADBAND clustered_100mb_shuffled features f=0.0005 cold: planner=duckdb server=137 browser=10111
+ho056 GOOD_BROADBAND clustered_100mb_shuffled count_by f=0.5 warm: planner=duckdb server=134 browser=9474
+ho046 GOOD_BROADBAND clustered_30mb_spatial count_by f=0.0005 warm: planner=duckdb server=105 browser=1303
+ho047 GOOD_BROADBAND clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=160 browser=1499
+ho057 GOOD_BROADBAND clustered_30mb_spatial count f=0.1 warm: planner=duckdb server=105 browser=1312
+ho058 GOOD_BROADBAND clustered_30mb_spatial count_by f=0.0005 warm: planner=duckdb server=107 browser=1305
+ho048 GOOD_BROADBAND clustered_30mb_shuffled count_by f=0.0005 warm: planner=duckdb server=107 browser=1365
+ho059 GOOD_BROADBAND clustered_30mb_shuffled count_by f=0.1 warm: planner=duckdb server=121 browser=1380
+ho049 GOOD_BROADBAND uniform_30mb_spatial features f=0.0005 warm: planner=duckdb server=129 browser=1355
+ho060 GOOD_BROADBAND uniform_30mb_spatial count f=0.02 warm: planner=duckdb server=106 browser=1327
+ho050 GOOD_BROADBAND uniform_30mb_shuffled features f=0.02 warm: planner=duckdb server=392 browser=2117
+ho061 GOOD_BROADBAND uniform_30mb_shuffled features f=0.02 warm: planner=duckdb server=179 browser=1538
+ho051 GOOD_BROADBAND uniform_10mb_spatial features f=0.0005 warm: planner=duckdb server=115 browser=510
+ho052 GOOD_BROADBAND uniform_10mb_shuffled count_by f=0.5 cold: planner=duckdb server=105 browser=1017
+  ok 1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (3.6m)
+
+  1 passed (3.7m)
+=== MOBILE: heldout-MOBILE.json
+
+Running 1 test using 1 worker
+
+ho062 MOBILE clustered_100mb_shuffled features f=0.02 warm: planner=duckdb server=493 browser=23531
+ho073 MOBILE clustered_100mb_shuffled count_by f=0.1 warm: planner=duckdb server=184 browser=Error: page.evaluate: Error: browser engine failed (timeout: browser query interrupted after 30000 ms)
+    at Object.aK [as resolvePlacement] (http://127.0.0.1:8810/assets/index-DN8iiEo2.js:819:3987)
+    at async <anonymous>:396:30
+ho063 MOBILE clustered_30mb_spatial count f=0.0005 warm: planner=duckdb server=169 browser=8165
+ho064 MOBILE clustered_30mb_spatial count_by f=0.02 cold: planner=duckdb server=166 browser=8692
+ho075 MOBILE clustered_30mb_spatial count_by f=0.5 warm: planner=duckdb server=167 browser=8178
+ho065 MOBILE clustered_30mb_shuffled count f=0.02 warm: planner=duckdb server=164 browser=8372
+ho076 MOBILE clustered_30mb_shuffled count_by f=0.02 warm: planner=duckdb server=178 browser=8371
+ho066 MOBILE uniform_30mb_spatial features f=0.02 cold: planner=duckdb server=220 browser=8819
+ho077 MOBILE uniform_30mb_spatial features f=0.0005 cold: planner=duckdb server=194 browser=8791
+ho067 MOBILE uniform_30mb_shuffled features f=0.0005 warm: planner=duckdb server=223 browser=8479
+ho078 MOBILE uniform_30mb_shuffled features f=0.02 cold: planner=duckdb server=1045 browser=9675
+ho068 MOBILE uniform_10mb_spatial features f=0.5 warm: planner=duckdb server=382 browser=3046
+ho079 MOBILE uniform_10mb_spatial features f=0.0005 warm: planner=duckdb server=176 browser=2872
+ho069 MOBILE uniform_10mb_shuffled features f=0.5 warm: planner=duckdb server=2212 browser=4710
+ho080 MOBILE uniform_10mb_shuffled features f=0.02 warm: planner=duckdb server=236 browser=2949
+ho070 MOBILE clustered_10mb_shuffled count_by f=0.0005 warm: planner=duckdb server=166 browser=2913
+ho081 MOBILE clustered_10mb_shuffled count_by f=0.02 warm: planner=duckdb server=166 browser=2927
+ho071 MOBILE uniform_100mb_spatial features f=0.5 warm: planner=duckdb server=401 browser=4170
+ho072 MOBILE uniform_100mb_shuffled count_by f=0.02 cold: planner=duckdb server=181 browser=Error: page.evaluate: Error: browser engine failed (timeout: browser query interrupted after 30000 ms)
+    at Object.aK [as resolvePlacement] (http://127.0.0.1:8810/assets/index-DN8iiEo2.js:819:3987)
+    at async <anonymous>:396:30
+ho074 MOBILE uniform_1gb_spatial count_by f=0.0005 warm: planner=duckdb server=178 browser=16853
+  ok 1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (9.3m)
+
+  Slow test file: e2e\heldout.spec.ts (9.3m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (9.3m)
+=== HIGH_LATENCY: heldout-HIGH_LATENCY.json
+
+Running 1 test using 1 worker
+
+ho082 HIGH_LATENCY clustered_30mb_shuffled count f=0.02 warm: planner=duckdb server=258 browser=12632
+ho093 HIGH_LATENCY clustered_30mb_shuffled features f=0.5 warm: planner=duckdb server=567 browser=12778
+ho083 HIGH_LATENCY uniform_30mb_spatial count_by f=0.02 warm: planner=duckdb server=247 browser=12359
+ho094 HIGH_LATENCY uniform_30mb_spatial features f=0.0005 cold: planner=duckdb server=284 browser=12945
+ho084 HIGH_LATENCY uniform_30mb_shuffled features f=0.1 warm: planner=duckdb server=679 browser=12829
+ho095 HIGH_LATENCY uniform_30mb_shuffled features f=0.0005 warm: planner=duckdb server=309 browser=12692
+ho085 HIGH_LATENCY uniform_10mb_spatial count_by f=0.02 warm: planner=duckdb server=249 browser=4363
+ho096 HIGH_LATENCY uniform_10mb_spatial features f=0.5 warm: planner=duckdb server=327 browser=4381
+ho086 HIGH_LATENCY uniform_10mb_shuffled features f=0.5 warm: planner=duckdb server=3156 browser=6332
+ho097 HIGH_LATENCY uniform_10mb_shuffled features f=0.5 warm: planner=duckdb server=586 browser=4599
+ho087 HIGH_LATENCY clustered_10mb_shuffled count_by f=0.0005 warm: planner=duckdb server=266 browser=4412
+ho098 HIGH_LATENCY clustered_10mb_shuffled features f=0.0005 warm: planner=duckdb server=246 browser=4405
+ho088 HIGH_LATENCY uniform_100mb_spatial count f=0.02 cold: planner=duckdb server=247 browser=14416
+ho099 HIGH_LATENCY uniform_100mb_spatial features f=0.5 warm: planner=duckdb server=355 browser=6503
+ho089 HIGH_LATENCY uniform_100mb_shuffled features f=0.5 warm: planner=duckdb server=568 browser=4899
+ho090 HIGH_LATENCY clustered_100mb_shuffled count_by f=0.0005 cold: planner=duckdb server=272 browser=Error: page.evaluate: Error: browser engine failed (timeout: browser query interrupted after 30000 ms)
+    at Object.aK [as resolvePlacement] (http://127.0.0.1:8810/assets/index-DN8iiEo2.js:819:3987)
+    at async <anonymous>:396:30
+ho091 HIGH_LATENCY clustered_30mb_spatial features f=0.02 warm: planner=duckdb server=337 browser=12303
+ho092 HIGH_LATENCY clustered_30mb_spatial features f=0.1 warm: planner=duckdb server=3171 browser=14133
+  ok 1 e2e\heldout.spec.ts:26:1 › held-out: planner decision vs measured server/browser time (10.3m)
+
+  Slow test file: e2e\heldout.spec.ts (10.3m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 passed (10.3m)

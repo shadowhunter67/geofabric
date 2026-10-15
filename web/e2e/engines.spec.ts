@@ -130,3 +130,15 @@ test("UI: when the browser engine fails, the query is re-run on the server and t
   await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure");
   await expect(panel.getByTestId("engine-fallback")).toContainText("re-run once on the server");
 });
+
+test("real Overture subset (1.45 GB, DuckDB-typed GEOMETRY): browser range-request execution equals the server (digests)", async ({ page }) => {
+  const req = { source: "overture_buildings_vn_south", kind: "count_by", group_by: "version", bbox: [106.64, 10.72, 106.76, 10.88], crs: "OGC:CRS84" };
+  const probe = await post(page, "/api/query/plan", req);
+  test.skip(probe.status === 404, "Overture subset not present");
+  const { server, browser } = await both(page, req, "Overture count by version (range requests, typed geometry)");
+  expect(browser.placement).toBe("browser");
+  expect(browser.result_digest).toEqual(server.result_digest);
+  // features: the geometry column is streamed (the bug fixed on 2026-10-14: typed GEOMETRY(crs) could not be streamed)
+  const f = await both(page, { ...req, kind: "features", group_by: undefined, limit: 500 }, "Overture features limit 500 (geometry streamed as WKB)");
+  expect(f.browser.rows_total).toBe(f.server.rows_total);
+});

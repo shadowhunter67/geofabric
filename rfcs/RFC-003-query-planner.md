@@ -43,3 +43,7 @@ Every candidate carries `feasible`, `score_ms`, a cost breakdown, reasons and re
 ## Not implemented
 
 cost model beyond linear, cache/locality, multi-stage plans, learned estimates, remote object storage.
+
+## v1.1 hardening (2026-10-14; ADR-009, ADR-010)
+
+`Planner::plan_with_inputs(plan, engines, ctx, &PlanInputs)`; `plan()` = the same with an empty world. `PlanInputs`: runtime probes, health views, known incompatibilities, calibration, network profile, browser warm/cold. `PhysicalPlan` gains `assessment` { confidence (0–1 with 7 reasoned factors), engine confidence, margin factor, estimate (rows, interval, quality), network, health, probes, planned fallback (max 1), browser access strategy per source (`full` | `range`), policy notes } and each candidate gains `confidence`, `risk`, `health`, `probe_status`. New feasibility rules: probe failure / unverified operation / unreadable file class / failed range requests, unhealthy engine, known incompatibility, browser memory risk (replaces the fixed `browser_max_input_bytes`, now an optional operator override). New selection rule R5b (confidence policy). `browser_max_input_bytes` is `Option<u64>`; `CostModel.network_mb_per_s` is gone (network = `NetworkProfile`).

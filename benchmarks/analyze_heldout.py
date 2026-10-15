@@ -49,10 +49,10 @@ def post(base, path, body):
         return json.load(r)
 
 
-def load(results_dir):
+def load(results_dir, prefix="heldout"):
     rows = []
-    for f in sorted(glob.glob(os.path.join(results_dir, "heldout-*.json"))):
-        if f.endswith("heldout-summary.json") or f.endswith("heldout-cases.json"):
+    for f in sorted(glob.glob(os.path.join(results_dir, prefix + "-*.json"))):
+        if f.endswith("-summary.json") or f.endswith("-cases.json") or "range-features" in f:
             continue
         d = json.load(open(f))
         rows += [dict(r, network=d["network"]) for r in d["rows"]]
@@ -62,9 +62,10 @@ def load(results_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=os.path.join(os.path.dirname(__file__), "results"))
+    ap.add_argument("--prefix", default="heldout")
     ap.add_argument("--uncalibrated", help="gateway without telemetry, for the v1-equivalent estimator")
     a = ap.parse_args()
-    rows = load(a.results)
+    rows = load(a.results, a.prefix)
     ok = [r for r in rows if "planner" in r and r.get("server", {}).get("median") is not None]
     out = {"cases_total": len(rows), "cases_evaluated": len(ok)}
 
@@ -171,7 +172,7 @@ def main():
     # safety: browser chosen by default although it later crashed/failed
     out["unsafe_choices"] = [c["id"] for c, r in zip(cases, ok) if c["chosen"] == "duckdb-wasm" and ((r.get("browser") or {}).get("crashed") or (r.get("browser") or {}).get("error"))]
     out["cases"] = cases
-    json.dump(out, open(os.path.join(a.results, "heldout-summary.json"), "w"), indent=1)
+    json.dump(out, open(os.path.join(a.results, a.prefix + "-summary.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in out.items() if k not in ("cases", "estimator_v2_cases")}, indent=1))
 
 

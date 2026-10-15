@@ -21,3 +21,9 @@ web/test-results/
 web/playwright-report/
 benchmarks/results/gw-*.log
 benchmarks/results/*.jsonl
+# planner-hardening evidence (small; the rest of results/*.json stays ignored)
+!benchmarks/results/heldout-*.json
+!benchmarks/results/cal2-*.json
+!benchmarks/results/netcal-cases.json
+!benchmarks/results/calibration-set.jsonl
+!benchmarks/results/exploratory-ho1/*.json

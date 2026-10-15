@@ -1,6 +1,6 @@
 # GEOFABRIC
 
-Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP + hardening + multi-engine validation xong 2026-10-13 (REPORT-GEOFABRIC-CORE-MVP.md, REPORT-GEOFABRIC-HARDENING.md); Principal Architect đã Conditional Approve MVP, hardening đề xuất APPROVE — chờ review, KHÔNG mở rộng feature (real data, engine 2, WASM, AI) khi chưa được duyệt.
+Dự án kết nối và sử dụng các thành phần liên quan đến GIS (nguồn dữ liệu, dịch vụ bản đồ, xử lý không gian). Phạm vi cụ thể do user bổ sung dần — **đang ở giai đoạn dựng khung (2026-10-13)**, stack đã chọn (xem dưới); core MVP + hardening + multi-engine validation xong 2026-10-13; planner hardening xong 2026-10-14 (REPORT-GEOFABRIC-PLANNER-HARDENING.md, chờ review, KHÔNG thêm PostGIS trước review) (REPORT-GEOFABRIC-CORE-MVP.md, REPORT-GEOFABRIC-HARDENING.md); Principal Architect đã Conditional Approve MVP, hardening đề xuất APPROVE — chờ review, KHÔNG mở rộng feature (real data, engine 2, WASM, AI) khi chưa được duyệt.
 
 ## Rules bắt buộc
 
@@ -52,5 +52,6 @@ cargo build --release -p geo-bench && target/release/geo-bench.exe --data benchm
 | [`CONSTITUTION.md`](CONSTITUTION.md), [`AGENTS.md`](AGENTS.md) | Luôn đọc trước khi sửa code |
 | [`docs/vision.md`](docs/vision.md), `rfcs/RFC-001..003`, `adr/ADR-001..005` | Cần hiểu thiết kế IR/engine/planner |
 | [`docs/claude/lich-su.md`](docs/claude/lich-su.md) | Cần tra lịch sử sửa lỗi / quyết định thiết kế |
+| [`docs/claude/planner-hardening.md`](docs/claude/planner-hardening.md) | Sửa planner/probe/health/network hoặc engine trình duyệt; chạy held-out |
 
 **Quy tắc duy trì:** mục mới/lịch sử ghi vào `docs/claude/`, KHÔNG nối dài CLAUDE.md.

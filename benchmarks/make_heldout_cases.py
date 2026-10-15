@@ -62,7 +62,8 @@ def window(e, f, focus):
 
 
 def main():
-    rng = random.Random(20261014)
+    SEED = int(__import__("os").environ.get("HO_SEED", "20261014"))
+    rng = random.Random(SEED)
     names = list(DATASETS)
     cases = []
     n = 0
@@ -81,7 +82,7 @@ def main():
                 "deterministic": det, "network": net, "browser_state": "cold" if rng.random() < 0.2 else "warm",
             })
         n += 3
-    json.dump({"seed": 20261014, "cases": cases}, open(__import__("sys").stdout.fileno(), "w", closefd=False), indent=1)
+    json.dump({"seed": SEED, "cases": cases}, open(__import__("sys").stdout.fileno(), "w", closefd=False), indent=1)
 
 
 if __name__ == "__main__":

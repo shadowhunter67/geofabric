@@ -1,0 +1,8 @@
+overture_buildings_vn_south  ov_bbox_count_small              pass      n=812006   rg_skip~Some(140)/Some(154) 44.9ms
+overture_buildings_vn_south  ov_bbox_count_large              pass      n=12648395 rg_skip~Some(9)/Some(154) 205.9ms
+overture_buildings_vn_south  ov_attr_filter_fullscan          pass      n=8599896  rg_skip~Some(0)/Some(154) 40.6ms
+overture_buildings_vn_south  ov_intersects_polygon            pass      n=284071   rg_skip~Some(140)/Some(154) 203.3ms
+overture_buildings_vn_south  ov_aggregate_version_small       pass      n=10       rg_skip~Some(140)/Some(154) 40.2ms
+overture_buildings_vn_south  ov_spatial_join_small            pass      n=145      rg_skip~Some(150)/Some(154) 94.7ms
+overture_buildings_vn_south  ov_return_rows_small(id,version) pass      n=28169    rg_skip~Some(150)/Some(154) 52.0ms
+wrote benchmarks/results/bench-hardening-overture.{json,md}; validation failures: 0

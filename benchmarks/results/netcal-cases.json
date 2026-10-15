@@ -1,0 +1,964 @@
+{
+ "cases": [
+  {
+   "id": "nc000",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc001",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc002",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc003",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc004",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc005",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc006",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc007",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc008",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc009",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc010",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc011",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "LOCAL",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc012",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc013",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc014",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc015",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc016",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc017",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc018",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc019",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc020",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc021",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc022",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc023",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "GOOD_BROADBAND",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc024",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc025",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc026",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc027",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc028",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc029",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc030",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc031",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc032",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc033",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc034",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc035",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "MOBILE",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc036",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc037",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc038",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc039",
+   "set": "netcal",
+   "dataset": "clustered_10mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc040",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc041",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.002,
+   "bbox": [
+    104.276393,
+    12.142229,
+    104.723607,
+    12.857771
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc042",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "category",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc043",
+   "set": "netcal",
+   "dataset": "clustered_100mb_spatial",
+   "crs": "EPSG:4326",
+   "fraction": 0.05,
+   "bbox": [
+    103.381966,
+    10.711146,
+    105.618034,
+    14.288854
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc044",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc045",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.002,
+   "bbox": [
+    106.632918,
+    10.721738,
+    106.767082,
+    10.878262
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc046",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "count_by",
+   "limit": null,
+   "group_by": "version",
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  },
+  {
+   "id": "nc047",
+   "set": "netcal",
+   "dataset": "overture_buildings_vn_south",
+   "crs": "OGC:CRS84",
+   "fraction": 0.05,
+   "bbox": [
+    106.36459,
+    10.408688,
+    107.03541,
+    11.191312
+   ],
+   "kind": "features",
+   "limit": 2000,
+   "group_by": null,
+   "filter": null,
+   "deterministic": false,
+   "network": "HIGH_LATENCY",
+   "browser_state": "warm"
+  }
+ ]
+}
