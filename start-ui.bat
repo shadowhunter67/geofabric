@@ -35,8 +35,15 @@ if errorlevel 1 (
   goto :fail
 )
 
+rem ---- stale check: rebuild automatically when sources are newer than the built outputs ----------
+powershell -NoProfile -Command "$o=(Get-Item 'web\dist\index.html' -ErrorAction SilentlyContinue).LastWriteTime; if(-not $o -or (Get-ChildItem web\src,web\index.html,web\public -Recurse -File | Where-Object {$_.LastWriteTime -gt $o})){exit 1}"
+if errorlevel 1 set WEB_STALE=1
+powershell -NoProfile -Command "$o=(Get-Item 'targetelease\geo-gateway.exe' -ErrorAction SilentlyContinue).LastWriteTime; if(-not $o -or (Get-ChildItem crates -Recurse -File -Include *.rs,Cargo.toml | Where-Object {$_.LastWriteTime -gt $o})){exit 1}"
+if errorlevel 1 set GW_STALE=1
+
 rem ---- 3. web UI bundle ---------------------------------------------------------------------
 if "%REBUILD%"=="1" goto :build_web
+if "%WEB_STALE%"=="1" goto :build_web
 if not exist "web\dist\index.html" goto :build_web
 goto :web_ok
 :build_web
@@ -49,6 +56,7 @@ popd
 
 rem ---- 4. gateway (release build, prebuilt DuckDB) --------------------------------------------
 if "%REBUILD%"=="1" goto :build_gw
+if "%GW_STALE%"=="1" goto :build_gw
 if not exist "target\release\geo-gateway.exe" goto :build_gw
 goto :gw_ok
 :build_gw
@@ -61,6 +69,7 @@ rem ---- already running? ------------------------------------------------------
 curl -s -m 2 http://127.0.0.1:%PORT%/api/health >nul 2>&1
 if not errorlevel 1 (
   echo GeoFabric is already running on port %PORT%.
+  echo If the page looks old: close the "GeoFabric gateway" window and run start-ui.bat again.
   goto :open
 )
 
