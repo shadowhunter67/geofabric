@@ -1,0 +1,79 @@
+{
+  "id": "copernicus_dem_hcm",
+  "title": {
+    "vi": "Độ cao địa hình",
+    "en": "Terrain elevation"
+  },
+  "group": "raster",
+  "provider": "European Space Agency / Copernicus",
+  "source": {
+    "type": "http",
+    "reference": "https://copernicus-dem-30m.s3.amazonaws.com/",
+    "release": "COP-DEM GLO-30 2021 release 1"
+  },
+  "license": {
+    "name": "Copernicus DEM GLO-30 licence (free for the general public)",
+    "url": "https://registry.opendata.aws/copernicus-dem/",
+    "attribution": "Copernicus Digital Elevation Model (DEM) accessed on 2026-10-16 from https://registry.opendata.aws/copernicus-dem",
+    "redistribution": "with-attribution"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Ho Chi Minh City",
+    "bbox": [
+      106.35,
+      10.35,
+      107.05,
+      11.25
+    ]
+  },
+  "crs": "EPSG:4326",
+  "format_original": "COG",
+  "format_normalized": "COG",
+  "geometry_type": "Raster",
+  "files": [
+    {
+      "path": "data/local/dem/Copernicus_DSM_COG_10_N10_00_E106_00_DEM.tif",
+      "size_bytes": 46642401,
+      "sha256": "37e5afce5979cf5d73da47f770d143dd8dfb8bc4e3f34caeb09d7fab3cbebd0c",
+      "rows": null,
+      "id_digest": null
+    },
+    {
+      "path": "data/local/dem/Copernicus_DSM_COG_10_N10_00_E107_00_DEM.tif",
+      "size_bytes": 22495924,
+      "sha256": "40ce2caf535ae0b2a6524a45d438b646e0ac47140bc22e37574c56c80330320d",
+      "rows": null,
+      "id_digest": null
+    },
+    {
+      "path": "data/local/dem/Copernicus_DSM_COG_10_N11_00_E106_00_DEM.tif",
+      "size_bytes": 49261307,
+      "sha256": "49cea98dfdc9e721659dacf85b2e9e58334cc753bb94d52d0854681c51fa15bf",
+      "rows": null,
+      "id_digest": null
+    },
+    {
+      "path": "data/local/dem/Copernicus_DSM_COG_10_N11_00_E107_00_DEM.tif",
+      "size_bytes": 45125169,
+      "sha256": "221ae0b87f254b47be19d32d7677bf801adf8363dee78d37611c49ab7bf75967",
+      "rows": null,
+      "id_digest": null
+    }
+  ],
+  "fetch": {
+    "script": "data/scripts/fetch_dem.py",
+    "args": [
+      "--bbox",
+      "106.35",
+      "10.35",
+      "107.05",
+      "11.25",
+      "--out-dir",
+      "data/local/dem",
+      "--max-gb",
+      "1"
+    ]
+  },
+  "notes": "Downloads the four one-degree Copernicus DEM GLO-30 COGs that cover the Ho Chi Minh City demo bbox, retaining source raster values unchanged."
+}

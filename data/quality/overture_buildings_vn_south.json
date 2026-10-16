@@ -1,0 +1,58 @@
+{
+  "id": "overture_buildings_vn_south",
+  "files": [
+    {
+      "rows": 15453032,
+      "geometry_types": {
+        "MultiPolygon": 99,
+        "Polygon": 15452933
+      },
+      "null_geometry_count": 0,
+      "empty_geometry_count": 0,
+      "invalid_geometry_count": 0,
+      "per_column_null_ratio": {
+        "id": 0.0,
+        "names": 0.9993101677392502,
+        "sources": 0.0,
+        "level": 0.9998685694820278,
+        "height": 0.9999686792857221,
+        "min_height": 0.9999998705755608,
+        "is_underground": 0.0,
+        "num_floors": 0.9996411060301953,
+        "num_floors_underground": 0.9999981233456321,
+        "min_floor": 0.9999996117266825,
+        "subtype": 0.9982287618378063,
+        "class": 0.9984331877394675,
+        "facade_color": 0.9999946935979942,
+        "facade_material": 0.9999913932747955,
+        "roof_material": 0.9999994175900238,
+        "roof_shape": 0.9999726914433361,
+        "roof_direction": 1.0,
+        "roof_orientation": 1.0,
+        "roof_color": 0.99999534072019,
+        "roof_height": 0.9999988998922671,
+        "geometry": 0.0,
+        "has_parts": 0.0,
+        "version": 0.0,
+        "bbox": 0.0
+      },
+      "duplicate_id_count": 0,
+      "crs": "OGC:CRS84",
+      "bbox": [
+        104.9991411,
+        8.6068626,
+        108.000572,
+        12.0009904
+      ],
+      "file_size": 1451854492,
+      "row_groups": 154,
+      "row_group_size_stats": {
+        "min": 488391,
+        "max": 19635440,
+        "mean": 18469653.298701297
+      },
+      "notes": "invalid_geometry_count was calculated with locally available DuckDB spatial."
+    }
+  ],
+  "notes": "Reports are read-only measurements; dataset files were not modified."
+}

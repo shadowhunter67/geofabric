@@ -1,0 +1,45 @@
+{
+  "id": "overture_transport_hcm",
+  "files": [
+    {
+      "rows": 453550,
+      "geometry_types": {
+        "LineString": 453550
+      },
+      "null_geometry_count": 0,
+      "empty_geometry_count": 0,
+      "invalid_geometry_count": 0,
+      "per_column_null_ratio": {
+        "id": 0.0,
+        "name": 0.6853467092933524,
+        "subtype": 0.0,
+        "class": 0.00017197662881710947,
+        "subclass": 0.9197618785139455,
+        "surface": 0.8602270973431816,
+        "max_speed": 0.960998787344284,
+        "max_speed_unit": 0.960998787344284,
+        "source_dataset": 0.0,
+        "version": 0.0,
+        "geometry": 0.0,
+        "bbox": 0.0
+      },
+      "duplicate_id_count": 0,
+      "crs": "OGC:CRS84",
+      "bbox": [
+        106.2238458,
+        8.6574362,
+        107.2361765,
+        11.2983476
+      ],
+      "file_size": 36577510,
+      "row_groups": 9,
+      "row_group_size_stats": {
+        "min": 7668937,
+        "max": 8919197,
+        "mean": 8315247.777777778
+      },
+      "notes": "invalid_geometry_count was calculated with locally available DuckDB spatial."
+    }
+  ],
+  "notes": "Reports are read-only measurements; dataset files were not modified."
+}

@@ -1,0 +1,64 @@
+{
+  "id": "overture_admin_hcm",
+  "title": {
+    "vi": "Ranh giới hành chính",
+    "en": "Administrative boundaries"
+  },
+  "group": "admin",
+  "provider": "Overture Maps Foundation",
+  "source": {
+    "type": "overture-s3",
+    "reference": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=divisions/type=division_area/*",
+    "release": "2026-09-23.1"
+  },
+  "license": {
+    "name": "ODbL",
+    "url": "https://opendatacommons.org/licenses/odbl/",
+    "attribution": "© OpenStreetMap contributors; geoBoundaries (CC BY 4.0); Esri Community Maps contributors (CC BY 4.0); Overture Maps Foundation",
+    "redistribution": "share-alike"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Ho Chi Minh City",
+    "bbox": [
+      106.35,
+      10.35,
+      107.05,
+      11.25
+    ]
+  },
+  "crs": "OGC:CRS84",
+  "format_original": "GeoParquet",
+  "format_normalized": "GeoParquet",
+  "geometry_type": "Polygon/MultiPolygon",
+  "files": [
+    {
+      "path": "data/local/overture_admin_hcm.parquet",
+      "size_bytes": 3271736,
+      "sha256": "03fbea87e3aef2bc36c74937f41f2976db0d909930ab2e1ae4e888b8fac769f0",
+      "rows": 325,
+      "id_digest": "05b30d2a44956cc6081f7722f6f997f8217f2e7fe2fd498056d25c47e6e04a6f"
+    }
+  ],
+  "fetch": {
+    "script": "data/scripts/fetch_overture.py",
+    "args": [
+      "--preset",
+      "admin",
+      "--out",
+      "data/local/overture_admin_hcm.parquet",
+      "--bbox",
+      "106.35",
+      "10.35",
+      "107.05",
+      "11.25",
+      "--release",
+      "2026-09-23.1",
+      "--max-gb",
+      "3",
+      "--threads",
+      "4"
+    ]
+  },
+  "notes": "Normalized flat schema restricted to country = 'VN': id, name (names.primary), subtype, admin_level, class, region, division_id, is_land, source_dataset (sources[1].dataset), version, geometry, bbox. Overture holds provinces (region), wards and communes (locality), microhoods and neighborhoods here; there is NO district tier and none is inferred. Land and territorial-water versions of one unit are separate rows (is_land). Dropped: other names, other source records and every other raw column."
+}

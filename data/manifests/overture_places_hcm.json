@@ -1,0 +1,64 @@
+{
+  "id": "overture_places_hcm",
+  "title": {
+    "vi": "Địa điểm",
+    "en": "Places"
+  },
+  "group": "places",
+  "provider": "Overture Maps Foundation",
+  "source": {
+    "type": "overture-s3",
+    "reference": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=places/type=place/*",
+    "release": "2026-09-23.1"
+  },
+  "license": {
+    "name": "CDLA-Permissive-2.0 / Apache-2.0 / CC0-1.0 (per source record)",
+    "url": "https://docs.overturemaps.org/attribution/",
+    "attribution": "Overture Maps Foundation. Places data from Meta, Microsoft, Foursquare (Apache-2.0, Copyright 2024 Foursquare Labs, Inc. All rights reserved), AllThePlaces and other providers; see sources[].license",
+    "redistribution": "with-attribution"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Ho Chi Minh City",
+    "bbox": [
+      106.35,
+      10.35,
+      107.05,
+      11.25
+    ]
+  },
+  "crs": "OGC:CRS84",
+  "format_original": "GeoParquet",
+  "format_normalized": "GeoParquet",
+  "geometry_type": "Point",
+  "files": [
+    {
+      "path": "data/local/overture_places_hcm.parquet",
+      "size_bytes": 30181252,
+      "sha256": "0ecf186882959f6a4477315e2da0cd25c1952e35c3ff3217252f30773897e080",
+      "rows": 449849,
+      "id_digest": "e57e31acebcf2581c207a5de9dd9db9c79828e9b36816e943a7df81ae07fff0e"
+    }
+  ],
+  "fetch": {
+    "script": "data/scripts/fetch_overture.py",
+    "args": [
+      "--preset",
+      "places",
+      "--out",
+      "data/local/overture_places_hcm.parquet",
+      "--bbox",
+      "106.35",
+      "10.35",
+      "107.05",
+      "11.25",
+      "--release",
+      "2026-09-23.1",
+      "--max-gb",
+      "3",
+      "--threads",
+      "4"
+    ]
+  },
+  "notes": "Normalized flat schema: id, name (names.primary), category (basic_category), taxonomy (taxonomy.primary), confidence, address (addresses[1].freeform), locality (addresses[1].locality), operating_status, source_dataset (sources[1].dataset), version, geometry, bbox. Only the first address and the first source record are kept. Dropped: websites, emails, socials, phones, brand, other names, taxonomy hierarchy/alternates and every other raw column."
+}

@@ -1,0 +1,46 @@
+{
+  "id": "overture_admin_hcm",
+  "files": [
+    {
+      "rows": 325,
+      "geometry_types": {
+        "MultiPolygon": 7,
+        "Polygon": 318
+      },
+      "null_geometry_count": 0,
+      "empty_geometry_count": 0,
+      "invalid_geometry_count": 0,
+      "per_column_null_ratio": {
+        "id": 0.0,
+        "name": 0.0,
+        "subtype": 0.0,
+        "admin_level": 0.9753846153846154,
+        "class": 0.0,
+        "region": 0.006153846153846154,
+        "division_id": 0.0,
+        "is_land": 0.0,
+        "source_dataset": 0.0,
+        "version": 0.0,
+        "geometry": 0.0,
+        "bbox": 0.0
+      },
+      "duplicate_id_count": 0,
+      "crs": "OGC:CRS84",
+      "bbox": [
+        102.1438643,
+        8.1790665,
+        109.6709846,
+        23.3926918
+      ],
+      "file_size": 3271736,
+      "row_groups": 1,
+      "row_group_size_stats": {
+        "min": 6431239,
+        "max": 6431239,
+        "mean": 6431239.0
+      },
+      "notes": "invalid_geometry_count was calculated with locally available DuckDB spatial."
+    }
+  ],
+  "notes": "Reports are read-only measurements; dataset files were not modified."
+}

@@ -8,6 +8,7 @@
 //! client disconnect cancels the running query. GeoJSON is generated here, at
 //! the boundary, purely for map display.
 
+pub mod catalog;
 pub mod wkb;
 
 use arrow_array::cast::AsArray;
@@ -71,7 +72,9 @@ impl SimNet {
 
 pub struct AppState {
     pub rt: Runtime,
-    pub data_dir: PathBuf,
+    pub data_dirs: Vec<PathBuf>,
+    pub manifests_dir: PathBuf,
+    pub repo_root: PathBuf,
     pub config: GatewayConfig,
     pub slots: Arc<Semaphore>,
     pub sim: Option<Arc<SimNet>>,
@@ -86,8 +89,41 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(rt: Runtime, data_dir: PathBuf, config: GatewayConfig) -> Self {
+        Self::new_with_dirs(rt, vec![data_dir], config)
+    }
+
+    pub fn new_with_dirs(rt: Runtime, data_dirs: Vec<PathBuf>, config: GatewayConfig) -> Self {
         let slots = Arc::new(Semaphore::new(config.max_concurrent_queries));
-        AppState { rt, data_dir, config, slots, sim: None, file_requests: Default::default(), file_bytes: Default::default(), hist_pending: Default::default(), hist_notes: Default::default() }
+        AppState {
+            rt,
+            data_dirs,
+            manifests_dir: PathBuf::from("data/manifests"),
+            repo_root: PathBuf::from("."),
+            config,
+            slots,
+            sim: None,
+            file_requests: Default::default(),
+            file_bytes: Default::default(),
+            hist_pending: Default::default(),
+            hist_notes: Default::default(),
+        }
+    }
+
+    pub fn with_catalog_paths(mut self, manifests_dir: PathBuf, repo_root: PathBuf) -> Self {
+        self.manifests_dir = manifests_dir;
+        self.repo_root = repo_root;
+        self
+    }
+
+    pub fn primary_dir(&self) -> Option<&PathBuf> {
+        self.data_dirs.first()
+    }
+
+    pub fn source_path(&self, id: &str) -> Option<PathBuf> {
+        self.data_dirs
+            .iter()
+            .map(|dir| dir.join(format!("{id}.parquet")))
+            .find(|path| path.is_file())
     }
 
     pub fn with_simulated_network(mut self, profile: NetworkProfile) -> Self {
@@ -97,7 +133,7 @@ impl AppState {
     }
 
     fn ctx(&self) -> ExecutionContext {
-        let mut ctx = ExecutionContext::new(vec![self.data_dir.clone()]);
+        let mut ctx = ExecutionContext::new(self.data_dirs.clone());
         ctx.max_rows = MAX_FEATURES + 1;
         ctx.timeout = self.config.query_timeout;
         ctx
@@ -149,7 +185,7 @@ impl From<RuntimeError> for ApiError {
 
 // ---------- sources ----------
 
-fn valid_id(id: &str) -> bool {
+pub(crate) fn valid_id(id: &str) -> bool {
     !id.is_empty() && id.len() < 128 && id.chars().all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c)) && !id.contains("..")
 }
 
@@ -158,7 +194,7 @@ fn authorized_source(st: &AppState, id: &str) -> Result<AuthorizedSource, ApiErr
     if !valid_id(id) {
         return Err(err(StatusCode::BAD_REQUEST, "bad_id", "invalid source id"));
     }
-    let p = st.data_dir.join(format!("{id}.parquet"));
+    let p = st.source_path(id).ok_or_else(|| err(StatusCode::NOT_FOUND, "no_such_source", id))?;
     st.ctx()
         .guard
         .authorize(&p.to_string_lossy())
@@ -182,10 +218,19 @@ fn modified_iso(p: &std::path::Path) -> Option<String> {
 }
 
 fn list_sources(st: &AppState) -> Vec<Value> {
+    let mut by_id = std::collections::BTreeMap::new();
+    for dir in &st.data_dirs {
+        let Ok(rd) = std::fs::read_dir(dir) else { continue };
+        for path in rd.filter_map(|entry| entry.ok()).map(|entry| entry.path()) {
+            if path.extension().is_some_and(|extension| extension == "parquet") {
+                if let Some(stem) = path.file_stem() {
+                    by_id.entry(stem.to_string_lossy().into_owned()).or_insert(path);
+                }
+            }
+        }
+    }
     let mut out = Vec::new();
-    let Ok(rd) = std::fs::read_dir(&st.data_dir) else { return out };
-    let mut files: Vec<_> = rd.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "parquet")).collect();
-    files.sort();
+    let files: Vec<_> = by_id.into_values().collect();
     let guard = st.ctx().guard;
     for p in files {
         let id = p.file_stem().unwrap().to_string_lossy().to_string();
@@ -787,20 +832,28 @@ async fn planner_state(State(st): State<Shared>) -> Json<Value> {
 pub fn spawn_histogram_builder(st: Shared) {
     use geo_source_geoparquet::SpatialHistogram;
     use std::sync::atomic::Ordering::Relaxed;
-    let mut files: Vec<PathBuf> = std::fs::read_dir(&st.data_dir)
-        .map(|rd| rd.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "parquet")).collect())
-        .unwrap_or_default();
+    let mut by_id = std::collections::BTreeMap::new();
+    for dir in &st.data_dirs {
+        let Ok(entries) = std::fs::read_dir(dir) else { continue };
+        for path in entries.filter_map(|entry| entry.ok()).map(|entry| entry.path()) {
+            if path.extension().is_some_and(|extension| extension == "parquet") {
+                if let Some(stem) = path.file_stem() {
+                    by_id.entry(stem.to_string_lossy().into_owned()).or_insert(path);
+                }
+            }
+        }
+    }
+    let mut files: Vec<PathBuf> = by_id.into_values().collect();
     files.sort_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0));
     st.hist_pending.store(files.len(), Relaxed);
     std::thread::spawn(move || {
-        let cache = st.data_dir.join(".gf-cache");
         let guard = st.ctx().guard;
         for p in files {
             let stem = p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
             let note = (|| -> Result<String, String> {
                 let a = guard.authorize(&p.to_string_lossy()).map_err(|_| "not authorized".to_string())?;
                 let src = GeoParquetSource::open_authorized(&a).map_err(|e| e.to_string())?;
-                let side = cache.join(format!("{stem}.hist.json"));
+                let side = p.parent().unwrap_or_else(|| std::path::Path::new(".")).join(".gf-cache").join(format!("{stem}.hist.json"));
                 if let Ok(text) = std::fs::read_to_string(&side) {
                     if let Ok(h) = serde_json::from_str::<SpatialHistogram>(&text) {
                         if h.matches(&src) {
@@ -811,7 +864,9 @@ pub fn spawn_histogram_builder(st: Shared) {
                 }
                 let h = SpatialHistogram::build(&src, geo_source_geoparquet::DEFAULT_GRID, geo_source_geoparquet::DEFAULT_GRID).map_err(|e| e.to_string())?;
                 let ms = h.build_ms;
-                let _ = std::fs::create_dir_all(&cache);
+                if let Some(cache) = side.parent() {
+                    let _ = std::fs::create_dir_all(cache);
+                }
                 let _ = std::fs::write(&side, serde_json::to_string(&h).unwrap_or_default());
                 st.rt.state().histograms().put(src.path(), h);
                 Ok(format!("built in {ms} ms"))
@@ -890,6 +945,8 @@ pub fn api_router(state: Shared) -> Router {
         .route("/api/probe", post(put_probe))
         .route("/api/probe/invalidate", post(invalidate_probe))
         .route("/api/report", post(client_report))
+        .route("/api/catalog", get(catalog::catalog))
+        .route("/api/rasters/{id}/{name}", get(catalog::raster))
         .route("/api/sources", get(sources))
         .route("/api/sources/{id}/row_groups", get(row_groups))
         .route("/api/files/{id}", get(file))

@@ -1,4 +1,5 @@
-//! geo-gateway binary: `geo-gateway --data <dir> [--port 8787] [--host 127.0.0.1]
+//! geo-gateway binary: `geo-gateway --data <dir> [--data <dir> ...] [--manifests data/manifests]
+//! [--repo-root .] [--port 8787] [--host 127.0.0.1]
 //! [--web web/dist] [--timeout-secs 30] [--network LOCAL|FAST_LAN|GOOD_BROADBAND|MOBILE|HIGH_LATENCY]
 //! [--simulate-network <profile>] [--telemetry <file.jsonl>] [--no-learn]`
 
@@ -12,10 +13,23 @@ fn arg(args: &[String], name: &str, default: &str) -> String {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned().unwrap_or_else(|| default.to_string())
 }
 
+fn args_for(args: &[String], name: &str) -> Vec<String> {
+    args.iter()
+        .enumerate()
+        .filter(|(_, arg)| arg.as_str() == name)
+        .filter_map(|(index, _)| args.get(index + 1).cloned())
+        .collect()
+}
+
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let data = arg(&args, "--data", "benchmarks/data");
+    let data = {
+        let values = args_for(&args, "--data");
+        if values.is_empty() { vec!["benchmarks/data".to_string()] } else { values }
+    };
+    let manifests = arg(&args, "--manifests", "data/manifests");
+    let repo_root = arg(&args, "--repo-root", ".");
     let port = arg(&args, "--port", "8787");
     let host = arg(&args, "--host", "127.0.0.1");
     let web = arg(&args, "--web", "web/dist");
@@ -23,7 +37,31 @@ async fn main() {
     if let Ok(secs) = arg(&args, "--timeout-secs", "").parse::<u64>() {
         config.query_timeout = Duration::from_secs(secs);
     }
-    let data_dir = std::fs::canonicalize(&data).unwrap_or_else(|e| panic!("data dir '{data}': {e}"));
+    let data_dirs: Vec<_> = data
+        .iter()
+        .map(|dir| std::fs::canonicalize(dir).unwrap_or_else(|error| panic!("data dir '{dir}': {error}")))
+        .collect();
+    let manifests_dir = std::fs::canonicalize(&manifests).unwrap_or_else(|_| std::path::PathBuf::from(&manifests));
+    let repo_root = std::fs::canonicalize(&repo_root).unwrap_or_else(|error| panic!("repo root '{repo_root}': {error}"));
+    let mut duplicate_ids = std::collections::BTreeSet::new();
+    let mut seen_ids = std::collections::BTreeSet::new();
+    for dir in &data_dirs {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for path in entries.filter_map(|entry| entry.ok()).map(|entry| entry.path()) {
+                if path.extension().is_some_and(|extension| extension == "parquet") {
+                    if let Some(stem) = path.file_stem() {
+                        let id = stem.to_string_lossy().into_owned();
+                        if !seen_ids.insert(id.clone()) {
+                            duplicate_ids.insert(id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for id in duplicate_ids {
+        eprintln!("warning: source '{id}' appears in multiple --data directories; using the first");
+    }
     let mut rt = tokio::task::spawn_blocking(Runtime::with_duckdb_and_browser).await.unwrap();
     let mut pcfg = rt.planner_config().clone();
     if args.iter().any(|a| a == "--no-browser") {
@@ -56,7 +94,7 @@ async fn main() {
         planner_state.set_learning(false);
         eprintln!("planner calibration is frozen (--no-learn)");
     }
-    let mut app_state = AppState::new(rt, data_dir, config.clone());
+    let mut app_state = AppState::new_with_dirs(rt, data_dirs, config.clone()).with_catalog_paths(manifests_dir, repo_root);
     let sim = arg(&args, "--simulate-network", "");
     if !sim.is_empty() {
         let profile = geo_planner::NetworkProfile::by_name(&sim).unwrap_or_else(|| panic!("unknown network profile '{sim}'"));
@@ -71,7 +109,7 @@ async fn main() {
     let app = api_router(state).fallback_service(ServeDir::new(&web).fallback(index));
     let addr = format!("{host}:{port}");
     let l = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| panic!("bind {addr}: {e}"));
-    eprintln!("geo-gateway listening on http://{addr} (data: {data}, web: {web}, query timeout: {:?})", config.query_timeout);
+    eprintln!("geo-gateway listening on http://{addr} (data: {}, web: {web}, query timeout: {:?})", data.join(", "), config.query_timeout);
     axum::serve(l, app)
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;

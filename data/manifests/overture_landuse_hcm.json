@@ -1,0 +1,64 @@
+{
+  "id": "overture_landuse_hcm",
+  "title": {
+    "vi": "Sử dụng đất",
+    "en": "Land use"
+  },
+  "group": "thematic",
+  "provider": "Overture Maps Foundation",
+  "source": {
+    "type": "overture-s3",
+    "reference": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=base/type=land_use/*",
+    "release": "2026-09-23.1"
+  },
+  "license": {
+    "name": "ODbL",
+    "url": "https://opendatacommons.org/licenses/odbl/",
+    "attribution": "© OpenStreetMap contributors. Available under the Open Database License. Data from the Daylight Map Distribution. Overture Maps Foundation",
+    "redistribution": "share-alike"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Ho Chi Minh City",
+    "bbox": [
+      106.35,
+      10.35,
+      107.05,
+      11.25
+    ]
+  },
+  "crs": "OGC:CRS84",
+  "format_original": "GeoParquet",
+  "format_normalized": "GeoParquet",
+  "geometry_type": "Polygon/MultiPolygon",
+  "files": [
+    {
+      "path": "data/local/overture_landuse_hcm.parquet",
+      "size_bytes": 3463370,
+      "sha256": "1572b7527a7165ab7966c4d8714af7ed869306801f1304c9e112c660b7019075",
+      "rows": 13277,
+      "id_digest": "e11c5ac3f6cdbe07c7545fd5dddd60f73bcd6962c4ef9e1f0eab196e1c3bfd3f"
+    }
+  ],
+  "fetch": {
+    "script": "data/scripts/fetch_overture.py",
+    "args": [
+      "--preset",
+      "landuse",
+      "--out",
+      "data/local/overture_landuse_hcm.parquet",
+      "--bbox",
+      "106.35",
+      "10.35",
+      "107.05",
+      "11.25",
+      "--release",
+      "2026-09-23.1",
+      "--max-gb",
+      "3",
+      "--threads",
+      "4"
+    ]
+  },
+  "notes": "Normalized flat schema: id, name (names.primary), subtype, class, surface, source_dataset (sources[1].dataset: only the first source record is kept), version, geometry, bbox. Dropped: the other source records, source_tags, wikidata, level, elevation and every other raw column. Rows whose bbox is wider or taller than 5 degrees are excluded (ocean-scale protected-area polygons)."
+}

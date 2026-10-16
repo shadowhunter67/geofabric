@@ -1,0 +1,44 @@
+{
+  "id": "overture_landuse_hcm",
+  "files": [
+    {
+      "rows": 13277,
+      "geometry_types": {
+        "LineString": 15,
+        "MultiPolygon": 33,
+        "Polygon": 13229
+      },
+      "null_geometry_count": 0,
+      "empty_geometry_count": 0,
+      "invalid_geometry_count": 0,
+      "per_column_null_ratio": {
+        "id": 0.0,
+        "name": 0.645326504481434,
+        "subtype": 0.0,
+        "class": 0.0,
+        "surface": 0.885290351736085,
+        "source_dataset": 0.0,
+        "version": 0.0,
+        "geometry": 0.0,
+        "bbox": 0.0
+      },
+      "duplicate_id_count": 0,
+      "crs": "OGC:CRS84",
+      "bbox": [
+        106.3130665,
+        10.3461076,
+        107.2886047,
+        11.514761
+      ],
+      "file_size": 3463370,
+      "row_groups": 1,
+      "row_group_size_stats": {
+        "min": 5566881,
+        "max": 5566881,
+        "mean": 5566881.0
+      },
+      "notes": "invalid_geometry_count was calculated with locally available DuckDB spatial."
+    }
+  ],
+  "notes": "Reports are read-only measurements; dataset files were not modified."
+}

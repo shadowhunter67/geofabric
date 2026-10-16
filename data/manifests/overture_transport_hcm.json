@@ -1,0 +1,64 @@
+{
+  "id": "overture_transport_hcm",
+  "title": {
+    "vi": "Đường giao thông",
+    "en": "Roads"
+  },
+  "group": "transport",
+  "provider": "Overture Maps Foundation",
+  "source": {
+    "type": "overture-s3",
+    "reference": "s3://overturemaps-us-west-2/release/2026-09-23.1/theme=transportation/type=segment/*",
+    "release": "2026-09-23.1"
+  },
+  "license": {
+    "name": "ODbL",
+    "url": "https://opendatacommons.org/licenses/odbl/",
+    "attribution": "© OpenStreetMap contributors. Available under the Open Database License. Data from TomTom. Overture Maps Foundation",
+    "redistribution": "share-alike"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Ho Chi Minh City",
+    "bbox": [
+      106.35,
+      10.35,
+      107.05,
+      11.25
+    ]
+  },
+  "crs": "OGC:CRS84",
+  "format_original": "GeoParquet",
+  "format_normalized": "GeoParquet",
+  "geometry_type": "LineString",
+  "files": [
+    {
+      "path": "data/local/overture_transport_hcm.parquet",
+      "size_bytes": 36577510,
+      "sha256": "5d7bf222a04856125eb2af5c6f0e72a75ae180bb8fb4f29a896315b48b1a1008",
+      "rows": 453550,
+      "id_digest": "9af9473863fb2c14dcca77d3a34b591d093c98ad2569581ca7c7ada345a2cb15"
+    }
+  ],
+  "fetch": {
+    "script": "data/scripts/fetch_overture.py",
+    "args": [
+      "--preset",
+      "transport",
+      "--out",
+      "data/local/overture_transport_hcm.parquet",
+      "--bbox",
+      "106.35",
+      "10.35",
+      "107.05",
+      "11.25",
+      "--release",
+      "2026-09-23.1",
+      "--max-gb",
+      "3",
+      "--threads",
+      "4"
+    ]
+  },
+  "notes": "Normalized flat schema. Retains only road_surface[1], speed_limits[1], and sources[1]; additional rules and sources are dropped. Drops nested connectors, routes, destinations, prohibited_transitions, access_restrictions, road_surface records after the first, speed_limits after the first, sources after the first, and all other raw Overture columns not listed in the selected normalized schema."
+}

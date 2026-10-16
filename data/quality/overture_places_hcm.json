@@ -1,0 +1,45 @@
+{
+  "id": "overture_places_hcm",
+  "files": [
+    {
+      "rows": 449849,
+      "geometry_types": {
+        "Point": 449849
+      },
+      "null_geometry_count": 0,
+      "empty_geometry_count": 0,
+      "invalid_geometry_count": 0,
+      "per_column_null_ratio": {
+        "id": 0.0,
+        "name": 0.0,
+        "category": 0.056501181507572544,
+        "taxonomy": 0.05673681613163528,
+        "confidence": 0.0,
+        "address": 0.045579738979079645,
+        "locality": 0.0026520010047816046,
+        "operating_status": 0.9999622095414239,
+        "source_dataset": 0.0,
+        "version": 0.0,
+        "geometry": 0.0,
+        "bbox": 0.0
+      },
+      "duplicate_id_count": 0,
+      "crs": "OGC:CRS84",
+      "bbox": [
+        106.35,
+        10.349999925675,
+        107.05001,
+        11.2499399
+      ],
+      "file_size": 30181252,
+      "row_groups": 9,
+      "row_group_size_stats": {
+        "min": 7152917,
+        "max": 9050780,
+        "mean": 8583915.444444444
+      },
+      "notes": "invalid_geometry_count was calculated with locally available DuckDB spatial."
+    }
+  ],
+  "notes": "Reports are read-only measurements; dataset files were not modified."
+}
