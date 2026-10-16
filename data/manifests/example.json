@@ -1,0 +1,40 @@
+{
+  "id": "example",
+  "title": {
+    "vi": "Điểm mẫu",
+    "en": "Sample points"
+  },
+  "group": "places",
+  "provider": "GeoFabric",
+  "source": {
+    "type": "generated",
+    "reference": "https://example.invalid/sample_points",
+    "release": "2026-10-16"
+  },
+  "license": {
+    "name": "CC0-1.0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "attribution": "GeoFabric sample data",
+    "redistribution": "allowed"
+  },
+  "retrieved": "2026-10-16",
+  "coverage": {
+    "name": "Vietnam Demo",
+    "bbox": [
+      102,
+      8,
+      110,
+      24
+    ]
+  },
+  "crs": "OGC:CRS84",
+  "format_original": "GeoParquet",
+  "format_normalized": "GeoParquet",
+  "geometry_type": "Point",
+  "files": [],
+  "fetch": {
+    "script": "data/scripts/generate_sample_points.py",
+    "args": []
+  },
+  "notes": "Tiny generated documentation fixture."
+}

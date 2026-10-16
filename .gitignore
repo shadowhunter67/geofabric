@@ -4,8 +4,8 @@ service-account*.json
 *.key
 __pycache__/
 node_modules/
-data/*
-!data/.gitkeep
+data/local/
+data/.cache/
 target/
 Cargo.lock.bak
 benchmarks/.venv/
