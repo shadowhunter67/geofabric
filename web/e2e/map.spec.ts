@@ -87,15 +87,17 @@ test.describe("result geometry on the map (Explorer, basemap tiles blocked)", ()
       const px = g.map.project([cx, cy]);
       const r = g.map.getCanvas().getBoundingClientRect();
       // synthetic buildings overlap: the polygon under the cursor is the top-most one at that pixel
-      const top = (g.map as unknown as { queryRenderedFeatures: (p: [number, number], o: unknown) => { properties: Record<string, unknown> }[] }).queryRenderedFeatures([px.x, px.y], { layers: ["res-fill"] })[0];
+      // the app picks the top-most feature in a 10 px box around the click: ask the same question
+      const top = (g.map as unknown as { queryRenderedFeatures: (p: unknown, o: unknown) => { properties: Record<string, unknown> }[] })
+        .queryRenderedFeatures([[px.x - 5, px.y - 5], [px.x + 5, px.y + 5]], { layers: ["res-fill", "res-pt"] })[0];
       return { x: r.left + px.x, y: r.top + px.y, i: top.properties.__i };
     });
     await page.mouse.click(target.x, target.y);
     await expect(page.getByTestId("inspector-props")).toBeVisible();
     await settled(page);
-    const sel = await page.evaluate(() => { const g = (window as unknown as { __gf: GF }).__gf; return { filter: g.map.getFilter("res-sel-fill"), n: g.map.queryRenderedFeatures({ layers: ["res-sel-fill"] }).length }; });
-    expect(JSON.stringify(sel.filter)).toContain(String(target.i));
-    expect(sel.n, "one highlighted geometry").toBe(1);
+    const sel = await page.evaluate(() => { const g = (window as unknown as { __gf: GF }).__gf; return g.map.queryRenderedFeatures({ layers: ["res-sel-fill"] }).map((f) => f.properties.__i); });
+    expect(sel.length, "one highlighted geometry").toBe(1);
+    expect(sel[0], "it is the feature that was clicked").toBe(target.i);
   });
 });
 

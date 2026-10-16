@@ -59,7 +59,7 @@ export function layerSpecs(dataset: CatalogDataset, sourceId: string, opacity = 
       "line-dasharray": ["match", ["get", "class"], "footway", ["literal", [2, 2]], "path", ["literal", [2, 2]], "track", ["literal", [2, 2]], ["literal", [1, 0]]],
     } },
   ] : dataset.group === "admin" ? [
-    { id: `${id}-fill`, type: "fill", source, filter: ADMIN_LAND, paint: { "fill-color": COLOURS.admin, "fill-opacity": 0 } },
+    { id: `${id}-fill`, type: "fill", source, filter: ADMIN_LAND, paint: { "fill-color": COLOURS.admin, "fill-opacity": 0.01 } },
     { id: `${id}-line`, type: "line", source, filter: ADMIN_LAND, paint: { "line-color": COLOURS.admin, "line-width": ["match", ["get", "subtype"], "region", 1.5, 1], "line-dasharray": ["match", ["get", "subtype"], "microhood", ["literal", [2, 2]], ["literal", [1, 0]]] } },
     { id: `${id}-label`, type: "symbol", source, filter: ADMIN_LAND, layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 12 }, paint: { "text-color": "#f2eaff", "text-halo-color": "#1a2026", "text-halo-width": 1 } },
   ] : dataset.group === "places" ? [

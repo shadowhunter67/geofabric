@@ -177,3 +177,18 @@ button.adv-toggle.open svg { transform: rotate(90deg); }
 .popover[hidden] { display: none; }
 .popover h3 { padding-left: 0; }
 .help-body { white-space: pre-line; }
+
+.demos { padding: 4px 0 8px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.demo { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 14px; }
+.demo.on { background: color-mix(in srgb, var(--accent, #4aa3ff) 10%, transparent); }
+.demo-text { display: flex; flex-direction: column; min-width: 0; }
+.demo-text strong { font-size: 14px; }
+.demo-summary { padding: 6px 14px 2px; font-size: 13px; color: var(--text); }
+
+.demo-card { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3; max-width: min(640px, calc(100% - 140px));
+  display: grid; grid-template-columns: 1fr auto; column-gap: 10px; row-gap: 2px; align-items: start; padding: 8px 12px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--line); border-radius: 6px; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.demo-card strong { grid-column: 1; font-size: 14px; }
+.demo-card span { grid-column: 1; color: var(--text); }
+.demo-card button { grid-column: 2; grid-row: 1 / span 2; min-height: 26px; min-width: 26px; padding: 0 6px; }
+.demo-card[hidden] { display: none; }

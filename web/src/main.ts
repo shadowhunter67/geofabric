@@ -19,6 +19,8 @@ import type { LayerState } from "./layers.ts";
 import { inspectorRows } from "./inspector-schema.ts";
 import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
+import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, demoRequests, splitPlaces, topGroup } from "./demos.ts";
+import type { DemoSpec } from "./demos.ts";
 import type { DemOverlay } from "./raster.ts";
 import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
@@ -71,6 +73,8 @@ const S = {
   catalog: null as Catalog | null,
   cur: null as SourceMeta | null,
   layers: loadLayerStates() as Record<string, LayerState>,
+  demo: { id: null as string | null, summary: "" },
+  contextData: new Map<string, GeoJSON.FeatureCollection>(),
   raster: new Map<string, { loading: boolean; error: string | null; overlay: DemOverlay | null }>(),
   context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number }>(),
   last: null as RunResp | null,
@@ -120,7 +124,8 @@ const legendEl = el("div", { class: "legend" });
 const popover = el("div", { class: "popover", hidden: true, role: "dialog" });
 app.append(header, left, mapDiv, right, bottom, popover);
 const attributionEl = el("div", { class: "map-attribution", tabindex: "0" });
-mapDiv.append(legendEl, attributionEl);
+const demoCardEl = el("div", { class: "demo-card", role: "status", "data-testid": "demo-summary", hidden: true });
+mapDiv.append(legendEl, attributionEl, demoCardEl);
 
 function log(msg: string, isErr = false) {
   S.logs.push(`${new Date().toISOString().slice(11, 23)} ${isErr ? "ERROR " : ""}${msg}`);
@@ -308,21 +313,28 @@ function addResultLayers() {
   add({ id: "res-line", type: "line", source: "result", paint: { "line-color": "#8cc4ff", "line-width": 1 } });
   add({ id: "res-pt", type: "circle", source: "result", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 4, "circle-color": "#4aa3ff", "circle-stroke-color": "#0e1318", "circle-stroke-width": 1 } });
   // selected feature, above every result layer
-  add({ id: "res-sel-fill", type: "fill", source: "result", filter: ["==", ["get", "__i"], -1], paint: { "fill-color": "#ffd34a", "fill-opacity": 0.55 } });
-  add({ id: "res-sel", type: "line", source: "result", filter: ["==", ["get", "__i"], -1], paint: { "line-color": "#ffffff", "line-width": 3 } });
+  map.addSource("selected", { type: "geojson", data: empty });
+  add({ id: "res-sel-fill", type: "fill", source: "selected", filter: ["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]], paint: { "fill-color": "#ffd34a", "fill-opacity": 0.55 } });
+  add({ id: "res-sel", type: "line", source: "selected", paint: { "line-color": "#ffffff", "line-width": 3 } });
+  add({ id: "res-sel-pt", type: "circle", source: "selected", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 8, "circle-color": "#ffd34a", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
 }
 map.on("load", async () => {
   await installBasemap();
   addResultLayers();
   applyMapVisibility();
-  for (const id of ["res-fill", "res-pt"]) {
-    map.on("mouseenter", id, () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", id, () => (map.getCanvas().style.cursor = ""));
-    map.on("click", id, (e) => {
-      const f = e.features?.[0];
-      if (f) select(f as unknown as GeoJSON.Feature);
-    });
-  }
+  map.on("click", (e) => {
+    // a few pixels of tolerance so thin lines and small points can be hit; the top-most rendered feature wins
+    const layers = clickableLayers();
+    if (!layers.length) return;
+    const box: [maplibregl.PointLike, maplibregl.PointLike] = [[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]];
+    const hit = map.queryRenderedFeatures(box, { layers })[0];
+    if (hit) select(originalFeature(hit as unknown as GeoJSON.Feature));
+  });
+  map.on("mousemove", (e) => {
+    const layers = clickableLayers();
+    const over = layers.length > 0 && map.queryRenderedFeatures([[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]], { layers }).length > 0;
+    map.getCanvas().style.cursor = over ? "pointer" : "";
+  });
   void loadSources();
   void placement.probeRuntime("startup");
 });
@@ -464,6 +476,7 @@ async function handle(r: RunResp, label: string, record = true) {
     S.derived = S.derived.slice(0, 8);
   }
   S.selected = null;
+  (map.getSource("selected") as maplibregl.GeoJSONSource | undefined)?.setData(empty);
   setStatus("status.drawing");
   if (r.geojson) {
     r.geojson.features.forEach((f, i) => { (f.properties ??= {}).__i = i; (f.properties ??= {}).__layer = S.cur?.id ?? ""; });
@@ -495,19 +508,23 @@ function measure(g: GeoJSON.Geometry): { area: number; perim: number } | null {
   for (const p of polys) p.forEach((ring, i) => { area += (i === 0 ? 1 : -1) * ringArea(ring); perim += ringLen(ring); });
   return { area, perim };
 }
+/** Layers a click can select: the active result and every catalog context layer (not labels, not debug overlays, not the selection). */
+function clickableLayers(): string[] {
+  return (map.getStyle().layers ?? [])
+    .map((l) => l.id)
+    .filter((id) => ["res-fill", "res-pt"].includes(id) || (id.startsWith("ctx-") && !id.endsWith("-label")));
+}
+/** Rendered features are clipped and simplified per tile; the inspector measures the ORIGINAL geometry from the loaded data. */
+function originalFeature(f: GeoJSON.Feature): GeoJSON.Feature {
+  const layer = String(f.properties?.__layer ?? "");
+  const index = Number(f.properties?.__i);
+  const fc = layer && layer !== S.cur?.id ? S.contextData.get(layer) : S.last?.geojson;
+  const original = fc?.features[index];
+  return original && original.properties?.__i === index ? original : f;
+}
 function select(f: GeoJSON.Feature) {
   S.selected = f;
-  const sourceId = String(f.properties?.__layer ?? S.cur?.id ?? "");
-  const sel = ["==", ["get", "__i"], (f.properties?.__i as number) ?? -1] as maplibregl.FilterSpecification;
-  map.setFilter("res-sel", sel);
-  map.setFilter("res-sel-fill", sel);
-  for (const id of S.catalog?.datasets.map((d) => d.id) ?? []) {
-    const source = `ctx-${id}`;
-    for (const suffix of ["sel-fill", "sel-line"]) {
-      const layer = `${source}-${suffix}`;
-      if (map.getLayer(layer)) map.setFilter(layer, id === sourceId ? sel : ["==", ["get", "__i"], -1]);
-    }
-  }
+  (map.getSource("selected") as maplibregl.GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [f] });
   renderLegend();
   syncInspectorVisibility();
   renderRight();
@@ -658,6 +675,7 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
       d.quality ? row(t("catalog.quality"), t("catalog.quality_value", { rows: d.quality.rows ?? 0, nulls: d.quality.null_geometry_count ?? 0, invalid: d.quality.invalid_geometry_count ?? 0 })) : null) : null);
 }
 function removeContext(id: string) {
+  S.contextData.delete(id);
   for (const l of map.getStyle().layers ?? []) if (l.id.startsWith(`ctx-${id}-`)) map.removeLayer(l.id);
   if (map.getSource(`ctx-${id}`)) map.removeSource(`ctx-${id}`);
 }
@@ -763,6 +781,7 @@ async function refreshContextOnce(): Promise<void> {
       if (!current || current.seq !== seq) continue;
       const fc = response.geojson ?? empty;
       fc.features.forEach((f, i) => { (f.properties ??= {}).__i = i; (f.properties ??= {}).__layer = d.id; });
+      S.contextData.set(d.id, fc);
       removeContext(d.id);
       map.addSource(`ctx-${d.id}`, { type: "geojson", data: fc });
       for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, stackAnchor(d.group));
@@ -801,6 +820,110 @@ function renderTab() {
   else tabBody.append(el("div", { class: "log" }, ...S.logs.map((l) => el("div", { class: l.includes(" ERROR ") ? "err" : "" }, l))));
 }
 
+// ---------- demo workflows ----------
+// Each demo shows a few datasets, looks at a meaningful place and runs gateway query templates through the same path as every
+// other query (/api/query -> PlanGraph -> planner -> executor). The frontend only asks and shows.
+function viewportBBox(): number[] {
+  const b = map.getBounds();
+  return [Math.max(-180, b.getWest()), Math.max(-90, b.getSouth()), Math.min(180, b.getEast()), Math.min(90, b.getNorth())];
+}
+function moveMap(view: DemoSpec["view"]): Promise<void> {
+  return new Promise<void>((done) => {
+    const timer = window.setTimeout(done, 1500); // moveend does not fire when the view does not change
+    map.once("moveend", () => { window.clearTimeout(timer); done(); });
+    map.jumpTo({ center: view.center, zoom: view.zoom });
+  });
+}
+async function queryPlaced(req: Record<string, unknown>): Promise<RunResp> {
+  const full = { crs: "OGC:CRS84", bbox: viewportBBox(), browser: true, client: { warm: wasm.isWarm() }, ...req };
+  return placement.placeWithFallback(
+    await apiRetryBusy<RunResp>("/api/query", full),
+    () => apiRetryBusy<RunResp>("/api/query", { ...full, engine: "duckdb", browser: false }),
+  );
+}
+async function runDemo(spec: DemoSpec): Promise<void> {
+  if (S.busy || !S.catalog) return;
+  S.busy = true; setRunDisabled(true); setStatus("status.running");
+  S.demo = { id: spec.id, summary: t("demo.running") };
+  renderTab(); renderDemoCard();
+  try {
+    // show exactly the datasets of this demo
+    for (const d of S.catalog.datasets) {
+      const isRaster = d.group === "raster" && !!d.raster?.length;
+      if (!sourceIdOf(d) && !isRaster) continue;
+      S.layers[d.id] = { opacity: S.layers[d.id]?.opacity ?? (isRaster ? 0.65 : 1), visible: spec.layers.includes(d.id) };
+    }
+    saveLayerStates(S.layers);
+    await moveMap(spec.view);
+    const bbox = viewportBBox();
+    const requests = demoRequests(spec.id).map((r) => ({ ...r, bbox }));
+    const activate = (id: string) => { const found = S.sources.find((x) => x.id === id); if (found) S.cur = found; };
+    let summary = "";
+    if (spec.id === "a") {
+      activate(BUILDINGS);
+      const r = await queryPlaced(requests[0]);
+      await handle(r, t(spec.title));
+      summary = t("demo.a.sum", { n: fmtInt(r.rows_total), limit: r.rows_total >= 5000 ? t("demo.limited") : "" });
+    } else if (spec.id === "b") {
+      activate(BUILDINGS);
+      const r = await queryPlaced(requests[0]);
+      await handle(r, t(spec.title));
+      const c = await queryPlaced(requests[1]);
+      summary = t("demo.b.sum", { n: fmtInt(Number(c.rows[0]?.count ?? 0)), d: NEAR_DISTANCE_M });
+    } else if (spec.id === "c") {
+      activate(BUILDINGS);
+      const r = await queryPlaced(requests[0]);
+      await handle(r, t(spec.title));
+      const top = topGroup(r.rows as { count?: unknown }[], "r_name");
+      summary = top ? t("demo.c.sum", { name: top.name, n: fmtInt(top.count) }) : t("demo.empty");
+      setTab("results");
+    } else if (spec.id === "d") {
+      activate(PLACES);
+      const r = await queryPlaced(requests[0]);
+      await handle(r, t(spec.title));
+      const counts = await queryPlaced(requests[1]);
+      const { schools, hospitals } = splitPlaces(counts.rows as { category?: unknown; count?: unknown }[]);
+      summary = t("demo.d.sum", { n: fmtInt(schools + hospitals), schools: fmtInt(schools), hospitals: fmtInt(hospitals) });
+    }
+    await refreshContext();
+    if (spec.id === "e") {
+      const overlay = S.raster.get(DEM)?.overlay;
+      summary = overlay ? t("demo.e.sum", { min: fmtInt(Math.round(overlay.min)), max: fmtInt(Math.round(overlay.max)) }) : t("catalog.raster_error");
+      setStatus("status.ready");
+    }
+    S.demo = { id: spec.id, summary };
+    renderDemoCard();
+  } catch (e) {
+    log(String(e), true);
+    S.demo = { id: spec.id, summary: t("demo.failed") };
+    renderDemoCard();
+    setStatus("status.error");
+  } finally {
+    S.busy = false; setRunDisabled(false);
+    renderLeft(); renderTab();
+  }
+}
+/** Result card of the last sample workflow, on the map so it stays visible when the bottom tab changes. */
+function renderDemoCard() {
+  const spec = DEMOS.find((d) => d.id === S.demo.id);
+  demoCardEl.hidden = !spec || !S.demo.summary;
+  if (!spec || !S.demo.summary) return;
+  fill(demoCardEl,
+    el("strong", {}, t(spec.title)),
+    el("span", {}, S.demo.summary),
+    el("button", { type: "button", "aria-label": t("demo.close"), title: t("demo.close"), onclick: () => { S.demo = { id: null, summary: "" }; renderDemoCard(); } }, "×"));
+}
+
+function demoPanel(): HTMLElement | null {
+  if (!S.catalog || !S.catalog.datasets.some((d) => d.id === BUILDINGS && d.present)) return null;
+  return el("section", { class: "demos", "data-testid": "demos", "aria-label": t("demo.title") },
+    el("h3", {}, t("demo.title")),
+    ...DEMOS.map((d) => el("div", { class: `demo${S.demo.id === d.id ? " on" : ""}`, "data-testid": `demo-${d.id}` },
+      el("div", { class: "demo-text" }, el("strong", {}, t(d.title)), el("span", { class: "meta" }, t(d.desc))),
+      el("button", { type: "button", "data-testid": `demo-run-${d.id}`, disabled: S.busy, onclick: () => void runDemo(d) }, t("demo.run")))),
+    null);
+}
+
 function queryTab(): HTMLElement {
   const cols = S.cur?.columns.filter((c) => c.type !== "other" && typeof c.type === "string") ?? [];
   const lab = (text: string, ctl: HTMLElement) => el("label", {}, el("span", {}, text), ctl);
@@ -818,7 +941,7 @@ function queryTab(): HTMLElement {
     el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), t("query.allow_browser")),
     el("button", { type: "button", class: "primary", "data-testid": "q-run", onclick: () => void run() }, t("query.run")),
   );
-  const out: Child[] = [form, el("div", { class: "note" }, t("query.hint"))];
+  const out: Child[] = [demoPanel(), form, el("div", { class: "note" }, t("query.hint"))];
   if (DEV()) {
     const ta = el("textarea", { class: "ir", spellcheck: false, "aria-label": t("query.ir"), "data-testid": "ir" }) as HTMLTextAreaElement;
     ta.value = S.last ? JSON.stringify(S.last.ir, null, 2) : "";
@@ -1022,7 +1145,7 @@ function renderPipeline() {
 function renderAll() {
   document.body.dataset.mode = S.mode;
   mapDiv.setAttribute("aria-label", t("a11y.map"));
-  renderHeader(); renderLegend(); renderLeft(); renderRight(); renderTab(); renderPipeline(); renderPopover(); applyMapVisibility();
+  renderHeader(); renderLegend(); renderLeft(); renderRight(); renderTab(); renderPipeline(); renderPopover(); applyMapVisibility(); renderDemoCard();
 }
 
 applyBottomH();

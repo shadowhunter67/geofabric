@@ -31,3 +31,4 @@ benchmarks/results/*.jsonl
 # local visual probes
 web/e2e/_probe*.ts
 docs/_probe*.png
+web/e2e/_dbg*.ts
