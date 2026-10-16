@@ -272,8 +272,12 @@ async fn row_groups(State(st): State<Shared>, UrlPath(id): UrlPath<String>) -> R
 #[derive(Deserialize)]
 pub struct FilterReq {
     column: String,
+    /// eq | ne | lt | le | gt | ge (use `value`) or in (use `values`)
     op: String,
+    #[serde(default)]
     value: Value,
+    #[serde(default)]
+    values: Vec<Value>,
 }
 
 #[derive(Deserialize)]
@@ -370,6 +374,13 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
         _ => return Err(bad("unknown kind")),
     };
     if let Some(f) = &q.filter {
+        if f.op == "in" {
+            if f.values.is_empty() {
+                return Err(bad("filter op 'in' needs a non-empty values list"));
+            }
+            let values = f.values.iter().map(json_to_literal).collect::<Result<Vec<_>, _>>()?;
+            node = Node::Filter { input: Box::new(node), predicate: Expr::In { column: f.column.clone(), values } };
+        } else {
         let op = match f.op.as_str() {
             "eq" => CompareOp::Eq,
             "ne" => CompareOp::Ne,
@@ -383,6 +394,7 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
             input: Box::new(node),
             predicate: Expr::Compare { column: f.column.clone(), op, value: json_to_literal(&f.value)? },
         };
+        }
     }
     let limit = q.limit.unwrap_or(20_000).min(MAX_FEATURES);
     node = match q.kind.as_str() {

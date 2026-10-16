@@ -137,13 +137,6 @@ class ManifestTest(unittest.TestCase):
                 ],
             )
 
-    def test_bootstrap_run_is_explicitly_unimplemented(self) -> None:
-        """M1 must refuse network execution even when a user adds --run."""
-
-        args = type("Args", (), {"region": "Vietnam Demo", "run": True})()
-        with self.assertRaisesRegex(ValueError, "not implemented in M1"):
-            geo_data.command_bootstrap(args)
-
     def test_gitignore_keeps_manifests_tracked_and_local_ignored(self) -> None:
         """The data framework needs committed manifests but untracked downloaded data."""
 

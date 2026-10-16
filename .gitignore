@@ -27,3 +27,7 @@ benchmarks/results/*.jsonl
 !benchmarks/results/netcal-cases.json
 !benchmarks/results/calibration-set.jsonl
 !benchmarks/results/exploratory-ho1/*.json
+
+# local visual probes
+web/e2e/_probe*.ts
+docs/_probe*.png

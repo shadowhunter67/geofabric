@@ -17,8 +17,7 @@ test.describe("Explorer mode (Vietnamese by default)", () => {
   test("loads, lists friendly dataset names, no engine jargon anywhere on screen", async ({ page }) => {
     await expect(page.locator("header")).toContainText("Khám phá");
     const names = await page.getByTestId("dataset").locator(".name").allInnerTexts();
-    expect(names).toContain("Tòa nhà — Nhỏ");
-    expect(names).toContain("Tòa nhà Overture");
+    for (const n of ["Tòa nhà", "Đường giao thông", "Ranh giới hành chính", "Địa điểm"]) expect(names).toContain(n);
     expect(names.some((n) => /clustered|_/.test(n))).toBe(false);
     await expect(page.getByTestId("status")).toContainText("kết quả");
     await tab(page, "execution").click();
@@ -64,14 +63,14 @@ test.describe("Explorer mode (Vietnamese by default)", () => {
   });
 
   test("dataset details expand on request; raw ids stay out of Explorer", async ({ page }) => {
-    const item = page.locator('[data-testid="dataset"][data-id="clustered_10mb_spatial"]');
+    const item = page.locator('[data-testid="dataset"][data-id="overture_transport_hcm"]');
     await expect(item.getByTestId("dataset-detail")).toHaveCount(0);
     await item.getByRole("button", { name: /Chi tiết/ }).click();
     const d = item.getByTestId("dataset-detail");
-    await expect(d).toContainText("Định dạng");
-    await expect(d).toContainText("Hệ tọa độ");
-    await expect(d).toContainText("Cập nhật");
-    await expect(d).not.toContainText("clustered_10mb_spatial");
+    await expect(d).toContainText("ODbL");
+    await expect(d).toContainText("Ho Chi Minh City");
+    await expect(d).not.toContainText("overture_transport_hcm");
+    await expect(d).not.toContainText("EPSG");
     await expect(d).not.toContainText("Row groups");
   });
 

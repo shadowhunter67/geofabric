@@ -7,6 +7,7 @@ import hashlib
 import heapq
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 from collections import Counter
@@ -469,22 +470,103 @@ def command_seal(args: argparse.Namespace) -> int:
     return 0
 
 
+def _flag_value(arguments: list[str], flag: str) -> str | None:
+    """Return the value following `flag` in a fetch argument list (None when the flag is absent)."""
+
+    if flag in arguments:
+        index = arguments.index(flag)
+        if index + 1 < len(arguments):
+            return arguments[index + 1]
+    return None
+
+
+def _repo_script(manifest: dict[str, Any]) -> Path:
+    """Resolve the fetch script and refuse anything outside the repository (a manifest is data, never a path to run)."""
+
+    script = (ROOT / manifest["fetch"]["script"]).resolve()
+    if ROOT.resolve() not in script.parents:
+        raise ValueError(f"{manifest['id']}: fetch.script is outside the repository: {manifest['fetch']['script']}")
+    if not script.is_file():
+        raise ValueError(f"{manifest['id']}: fetch.script does not exist: {manifest['fetch']['script']}")
+    return script
+
+
+def _produced_paths(manifest: dict[str, Any]) -> list[str]:
+    """Find the files a fetch run writes, from its own arguments, so they can be sealed afterwards.
+
+    `--out <file>` (fetch_overture), `--out-dir <dir>` (fetch_dem: every *.tif) and `--out <dir> --theme --name`
+    (benchmarks/overture_fetch.py: overture_<theme>_<name>.parquet) are the three conventions in use.
+    """
+
+    arguments = manifest["fetch"]["args"]
+    out_dir = _flag_value(arguments, "--out-dir")
+    if out_dir:
+        folder = ROOT / out_dir
+        return sorted(path.relative_to(ROOT).as_posix() for path in folder.glob("*.tif"))
+    out = _flag_value(arguments, "--out")
+    if out is None:
+        raise ValueError(f"{manifest['id']}: cannot tell where the fetch script writes (no --out / --out-dir)")
+    if out.endswith((".parquet", ".tif")):
+        return [out]
+    theme = _flag_value(arguments, "--theme") or "buildings"
+    name = _flag_value(arguments, "--name")
+    if name is None:
+        raise ValueError(f"{manifest['id']}: --out is a directory but --name is missing")
+    return [f"{out.rstrip('/')}/overture_{theme}_{name}.parquet"]
+
+
+def _is_verified(manifest: dict[str, Any]) -> bool:
+    """True when every sealed file exists with the sealed size and sha256 (so fetching again would change nothing)."""
+
+    files = manifest["files"]
+    if not files:
+        return False
+    for file_info in files:
+        path = ROOT / file_info["path"]
+        if not path.is_file() or path.stat().st_size != file_info["size_bytes"]:
+            return False
+        if sha256_file(path).lower() != file_info["sha256"].lower():
+            return False
+    return True
+
+
 def command_bootstrap(args: argparse.Namespace) -> int:
-    """Show deterministic reproduction commands while M1 intentionally stays offline."""
+    """List (default) or run the fetch commands of a region in a deterministic order.
 
-    if args.run:
-        raise ValueError("not implemented in M1")
+    `--run` skips datasets whose sealed files verify, runs the fetch script of the others, seals what it produced and
+    writes quality reports for vector data. `--dry-run` prints the commands and runs nothing. Stops at the first failure.
+    """
 
-    matching = [
+    only = getattr(args, "ids", None) or None
+    selected = [
         manifest
-        for _, manifest in all_manifests()
+        for _, manifest in all_manifests(only)
         if manifest["coverage"]["name"] == args.region
     ]
-    matching.sort(key=lambda manifest: (GROUP_ORDER[manifest["group"]], manifest["id"]))
+    selected.sort(key=lambda manifest: (GROUP_ORDER[manifest["group"]], manifest["id"]))
 
-    for manifest in matching:
+    for manifest in selected:
         command = " ".join([manifest["fetch"]["script"], *manifest["fetch"]["args"]]).rstrip()
-        print(f"{manifest['id']}: {command}")
+        if not args.run:
+            print(f"{manifest['id']}: {command}")
+            continue
+        script = _repo_script(manifest)
+        if getattr(args, "dry_run", False):
+            print(f"DRY-RUN {manifest['id']}: {command}")
+            continue
+        if _is_verified(manifest):
+            print(f"SKIP {manifest['id']} (verified)")
+            continue
+        print(f"RUN {manifest['id']}: {command}", flush=True)
+        completed = subprocess.run([sys.executable, str(script), *manifest["fetch"]["args"]], cwd=ROOT, check=False)
+        if completed.returncode != 0:
+            raise ValueError(f"{manifest['id']}: fetch script failed with exit code {completed.returncode}")
+        produced = _produced_paths(manifest)
+        if not produced:
+            raise ValueError(f"{manifest['id']}: the fetch script produced no files")
+        command_seal(argparse.Namespace(id=manifest["id"], paths=produced))
+        command_report(argparse.Namespace(ids=[manifest["id"]]))
+        print(f"SEALED {manifest['id']}: {len(produced)} file(s)")
 
     return 0
 
@@ -514,6 +596,8 @@ def build_parser() -> argparse.ArgumentParser:
     bootstrap_parser = subcommands.add_parser("bootstrap")
     bootstrap_parser.add_argument("region")
     bootstrap_parser.add_argument("--run", action="store_true")
+    bootstrap_parser.add_argument("--dry-run", action="store_true", dest="dry_run")
+    bootstrap_parser.add_argument("--only", nargs="+", dest="ids", default=None)
     bootstrap_parser.set_defaults(func=command_bootstrap)
 
     return parser

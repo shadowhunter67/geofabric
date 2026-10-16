@@ -12,6 +12,12 @@ import { datasetLabel, isPrimaryDataset, fieldLabel, fmtBytes, fmtDate, fmtInt, 
 import { pipelineSteps, summarize } from "./ui/explain.ts";
 import { icon } from "./ui/icons.ts";
 import { extentOf, planFocus } from "./focus.ts";
+import { fetchCatalog, datasetsByGroup, sourceIdOf, attributionText } from "./catalog.ts";
+import type { Catalog, CatalogDataset } from "./catalog.ts";
+import { classFilter, layerSpecs, loadLayerStates, renderPolicy, saveLayerStates } from "./layers.ts";
+import type { LayerState } from "./layers.ts";
+import { inspectorRows } from "./inspector-schema.ts";
+import { lengthOf } from "./measure.ts";
 import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
 // ---------- tiny DOM helper (text only: file contents are untrusted) ----------
@@ -60,7 +66,10 @@ setLang(initialLang);
 // ---------- state ----------
 const S = {
   sources: [] as SourceMeta[],
+  catalog: null as Catalog | null,
   cur: null as SourceMeta | null,
+  layers: loadLayerStates() as Record<string, LayerState>,
+  context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number }>(),
   last: null as RunResp | null,
   lastChosen: false,
   derived: [] as { label: string; resp: RunResp }[],
@@ -107,7 +116,8 @@ const bottom = el("div", { class: "bottom", role: "region" }, resizer, tabsEl, t
 const legendEl = el("div", { class: "legend" });
 const popover = el("div", { class: "popover", hidden: true, role: "dialog" });
 app.append(header, left, mapDiv, right, bottom, popover);
-mapDiv.append(legendEl);
+const attributionEl = el("div", { class: "map-attribution", tabindex: "0" });
+mapDiv.append(legendEl, attributionEl);
 
 function log(msg: string, isErr = false) {
   S.logs.push(`${new Date().toISOString().slice(11, 23)} ${isErr ? "ERROR " : ""}${msg}`);
@@ -276,7 +286,12 @@ async function installBasemap(): Promise<void> {
 }
 function addResultLayers() {
   // result layers go below the first place-name (symbol) layer of the basemap, so names stay readable above the features
-  const before = map.getStyle().layers?.find((l) => l.type === "symbol")?.id;
+  // Anchor = the first label (symbol) layer that comes AFTER the last geometry layer of the basemap. Basemaps interleave symbol
+  // layers with roads and buildings (OpenFreeMap puts a water label before them), so "the first symbol layer" would bury our
+  // layers under the basemap's own roads and buildings.
+  const basemapLayers = map.getStyle().layers ?? [];
+  const lastGeometry = basemapLayers.reduce((n, l, i) => (l.type !== "symbol" && l.type !== "background" ? i : n), -1);
+  const before = basemapLayers.find((l, i) => i > lastGeometry && l.type === "symbol")?.id;
   map.addSource("extent", { type: "geojson", data: empty });
   map.addSource("rowgroups", { type: "geojson", data: empty });
   map.addSource("result", { type: "geojson", data: empty });
@@ -317,9 +332,11 @@ function renderLegend() {
 }
 let moveTimer: number | undefined;
 map.on("moveend", () => {
-  if (!S.liveRequery || !S.cur || S.busy) return;
   window.clearTimeout(moveTimer);
-  moveTimer = window.setTimeout(() => void run(), 400);
+  moveTimer = window.setTimeout(() => {
+    if (S.liveRequery && S.cur && !S.busy) void run();
+    void refreshContext();
+  }, 400);
 });
 function setData(id: string, data: GeoJSON.FeatureCollection) {
   (map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(data);
@@ -341,7 +358,9 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 async function loadSources() {
   setStatus("status.loading");
   try {
-    S.sources = (await api<{ sources: SourceMeta[] }>("/api/sources")).sources;
+    const [sources, catalog] = await Promise.all([api<{ sources: SourceMeta[] }>("/api/sources"), fetchCatalog()]);
+    S.sources = sources.sources;
+    S.catalog = catalog;
     renderLeft();
     // real buildings over the real basemap when the Overture subset is present; else the small synthetic file
     const first = S.sources.find((s) => s.id === params.get("source") && !s.error) ?? S.sources.find((s) => s.id === "overture_buildings_vn_south" && !s.error) ?? S.sources.find((s) => s.id === "clustered_10mb_spatial") ?? S.sources.find((s) => !s.error);
@@ -422,7 +441,7 @@ async function run() {
     const req = currentRequest();
     S.lastChosen = S.engine !== "auto";
     await handle(
-      await placement.placeWithFallback(await api<RunResp>("/api/query", req), () => api<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
+      await placement.placeWithFallback(await apiRetryBusy<RunResp>("/api/query", req), () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
       `${S.kind} @ ${S.cur.id}`,
     );
   } catch (e) {
@@ -444,7 +463,7 @@ async function handle(r: RunResp, label: string, record = true) {
   S.selected = null;
   setStatus("status.drawing");
   if (r.geojson) {
-    r.geojson.features.forEach((f, i) => { (f.properties ??= {}).__i = i; });
+    r.geojson.features.forEach((f, i) => { (f.properties ??= {}).__i = i; (f.properties ??= {}).__layer = S.cur?.id ?? ""; });
     setData("result", r.geojson);
   } else setData("result", empty);
   const kept = new Set(r.physical.scans[0]?.prune.kept ?? []);
@@ -475,9 +494,17 @@ function measure(g: GeoJSON.Geometry): { area: number; perim: number } | null {
 }
 function select(f: GeoJSON.Feature) {
   S.selected = f;
+  const sourceId = String(f.properties?.__layer ?? S.cur?.id ?? "");
   const sel = ["==", ["get", "__i"], (f.properties?.__i as number) ?? -1] as maplibregl.FilterSpecification;
   map.setFilter("res-sel", sel);
   map.setFilter("res-sel-fill", sel);
+  for (const id of S.catalog?.datasets.map((d) => d.id) ?? []) {
+    const source = `ctx-${id}`;
+    for (const suffix of ["sel-fill", "sel-line"]) {
+      const layer = `${source}-${suffix}`;
+      if (map.getLayer(layer)) map.setFilter(layer, id === sourceId ? sel : ["==", ["get", "__i"], -1]);
+    }
+  }
   renderLegend();
   syncInspectorVisibility();
   renderRight();
@@ -499,13 +526,25 @@ function renderRight() {
   const tbl = el("table", { class: "kv", "data-testid": "inspector-props" });
   const add = (k: string, v: string, raw?: string) =>
     tbl.append(el("tr", {}, el("th", { scope: "row" }, k, DEV() && raw ? el("div", { class: "raw" }, t("inspector.raw_field", { name: raw })) : null), el("td", {}, v)));
-  // Explorer shows the facts that exist; empty attributes (null) are noise there, Developer still lists them
-  for (const [k, v] of Object.entries(f.properties ?? {})) if (k !== "__i" && (DEV() || (v !== null && v !== undefined && v !== ""))) add(fieldLabel(k), typeof v === "boolean" ? t(v ? "value.yes" : "value.no") : String(v), k);
+  // Type-specific rows for catalog layers (buildings, roads, boundaries, places, land use); other sources keep the generic list.
+  // Explorer shows the facts that exist; empty attributes (null) are noise there, Developer still lists them.
+  const dataset = S.catalog?.datasets.find((d) => d.id === f.properties?.__layer) ?? null;
+  const crs = dataset?.crs ?? S.cur?.crs ?? "";
+  const m = ["EPSG:4326", "OGC:CRS84"].includes(crs) ? measure(f.geometry) : null;
+  if (dataset) {
+    const rows = inspectorRows(dataset.group, f.properties ?? {}, {
+      lang: getLang(), developer: DEV(), datasetTitle: dataset.title[getLang()], area: m?.area, perimeter: m?.perim, length: lengthOf(f.geometry),
+    });
+    for (const r of rows) add(r.label, r.value, r.raw);
+  } else {
+    for (const [k, v] of Object.entries(f.properties ?? {})) {
+      if (k !== "__i" && k !== "__layer" && (DEV() || (v !== null && v !== undefined && v !== ""))) add(fieldLabel(k), typeof v === "boolean" ? t(v ? "value.yes" : "value.no") : String(v), k);
+    }
+    add(t("inspector.source"), S.cur ? datasetLabel(S.cur.id).title : "—");
+    if (m) { add(t("inspector.area"), `${fmtInt(Math.round(m.area * 10) / 10)} m²`); add(t("inspector.perimeter"), `${fmtInt(Math.round(m.perim * 10) / 10)} m`); }
+  }
   add(t("inspector.geometry"), geometryLabel(f.geometry.type));
-  add(t("inspector.source"), S.cur ? datasetLabel(S.cur.id).title : "—");
-  if (DEV()) add(t("inspector.crs"), S.cur?.crs ?? "—");
-  const m = ["EPSG:4326", "OGC:CRS84"].includes(S.cur?.crs ?? "") ? measure(f.geometry) : null;
-  if (m) { add(t("inspector.area"), `${fmtInt(Math.round(m.area * 10) / 10)} m²`); add(t("inspector.perimeter"), `${fmtInt(Math.round(m.perim * 10) / 10)} m`); }
+  if (DEV()) add(t("inspector.crs"), crs || "—");
   right.append(el("h3", {}, t("inspector.properties")), tbl);
   if (m) right.append(el("div", { class: "note" }, t("inspector.sphere_note", { r: R })));
   right.append(el("h3", {}, t("inspector.history")));
@@ -518,39 +557,149 @@ function renderRight() {
 
 // ---------- left: data ----------
 function row(k: string, v: string) { return el("tr", {}, el("th", { scope: "row" }, k), el("td", {}, v)); }
-function renderLeft() {
-  left.setAttribute("aria-label", t("a11y.sources"));
-  const list = el("div", { class: "list", role: "list" });
-  if (!S.sources.length) list.append(el("div", { class: "empty" }, t("data.none")));
-  // Explorer lists the datasets a person would pick; benchmark variants (shuffled, other draws) are for Developer mode
-  const shown = (DEV() ? S.sources : S.sources.filter((s) => isPrimaryDataset(s.id) || s.id === S.cur?.id || s.error)).slice().sort((a, b) => (a.size_bytes ?? 0) - (b.size_bytes ?? 0));
-  for (const s of shown) {
-    if (s.error) { list.append(el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error))); continue; }
-    const lab = datasetLabel(s.id);
-    const open = S.expanded.has(s.id);
-    const traits = [...(s.geometry_type === "unknown" ? [] : [geometryLabel(s.geometry_type === "polygon" ? "Polygon" : s.geometry_type)]), fmtBytes(s.size_bytes), ...(DEV() ? lab.traits : [])];
-    const detail = el("table", { class: "kv detail", "data-testid": "dataset-detail" },
-      row(t("data.format"), s.format), row(t("data.crs"), s.crs), row(t("data.rows"), fmtInt(s.rows)), row(t("data.updated"), fmtDate(s.modified)), row(t("data.origin"), lab.origin),
-      ...(DEV() ? [row(t("data.row_groups"), String(s.row_groups)), row(t("data.covering"), s.has_covering ? t(s.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")), row("id", s.id)] : []));
-    list.append(el("div", { class: `item${S.cur?.id === s.id ? " sel" : ""}`, role: "listitem", "data-testid": "dataset", "data-id": s.id },
-      el("button", { type: "button", class: "pick", "aria-current": S.cur?.id === s.id ? "true" : null, onclick: () => void selectSource(s) },
-        el("span", { class: "name" }, lab.title),
-        el("span", { class: "meta" }, traits.join(" · ")),
-        DEV() ? el("span", { class: "meta raw" }, `${s.id} · ${fmtInt(s.rows)} · ${s.row_groups} rg · ${s.crs}`) : null),
-      el("button", { type: "button", class: "more", "aria-expanded": open, title: t(open ? "data.hide_details" : "data.details"), onclick: () => { if (open) S.expanded.delete(s.id); else S.expanded.add(s.id); renderLeft(); } },
-        icon("chevron", 14), el("span", {}, t(open ? "data.hide_details" : "data.details"))),
-      open ? detail : null));
-  }
-  const recent = S.derived.length
+function renderSourceItem(s: SourceMeta): HTMLElement {
+  if (s.error) return el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error));
+  const lab = datasetLabel(s.id);
+  const open = S.expanded.has(s.id);
+  const traits = [...(s.geometry_type === "unknown" ? [] : [geometryLabel(s.geometry_type === "polygon" ? "Polygon" : s.geometry_type)]), fmtBytes(s.size_bytes), ...(DEV() ? lab.traits : [])];
+  const detail = el("table", { class: "kv detail", "data-testid": "dataset-detail" },
+    row(t("data.format"), s.format), row(t("data.crs"), s.crs), row(t("data.rows"), fmtInt(s.rows)), row(t("data.updated"), fmtDate(s.modified)), row(t("data.origin"), lab.origin),
+    ...(DEV() ? [row(t("data.row_groups"), String(s.row_groups)), row(t("data.covering"), s.has_covering ? t(s.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")), row("id", s.id)] : []));
+  return el("div", { class: `item${S.cur?.id === s.id ? " sel" : ""}`, role: "listitem", "data-testid": "dataset", "data-id": s.id },
+    el("button", { type: "button", class: "pick", "aria-current": S.cur?.id === s.id ? "true" : null, onclick: () => void selectSource(s) },
+      el("span", { class: "name" }, lab.title),
+      el("span", { class: "meta" }, traits.join(" · ")),
+      DEV() ? el("span", { class: "meta raw" }, `${s.id} · ${fmtInt(s.rows)} · ${s.row_groups} rg · ${s.crs}`) : null),
+    el("button", { type: "button", class: "more", "aria-expanded": open, title: t(open ? "data.hide_details" : "data.details"), onclick: () => { if (open) S.expanded.delete(s.id); else S.expanded.add(s.id); renderLeft(); } },
+      icon("chevron", 14), el("span", {}, t(open ? "data.hide_details" : "data.details"))),
+    open ? detail : null);
+}
+
+function renderRecent(): HTMLElement {
+  return S.derived.length
     ? el("div", { class: "list", role: "list" }, ...S.derived.map((d, i) => el("div", { class: `item${i === 0 ? " sel" : ""}`, role: "listitem" },
         el("button", { type: "button", class: "pick", onclick: () => void handle(d.resp, d.label, false) },
           el("span", { class: "name" }, DEV() ? d.label : datasetLabel(d.label.split("@ ")[1] ?? "").title),
           el("span", { class: "meta" }, t("status.results", { n: fmtInt(d.resp.rows_total), time: fmtMs(d.resp.timing.total_ms.value ?? 0) }))))))
     : el("div", { class: "empty" }, t("data.recent_empty"));
-  left.replaceChildren(el("h2", {}, t("data.title")), el("h3", {}, t("data.sources")), list, el("h3", {}, t("data.recent")), recent);
+}
+
+function renderLeft() {
+  left.setAttribute("aria-label", t("a11y.sources"));
+  const list = el("div", { class: "list", role: "list" });
+  if (S.catalog) {
+    // product catalog: groups of friendly datasets (Explorer); Developer adds the benchmark files that are not part of the pack
+    for (const { group, datasets } of datasetsByGroup(S.catalog, { developer: DEV() })) {
+      list.append(el("h3", { class: "catalog-group" }, t(`catalog.group.${group}` as Key)));
+      for (const d of datasets) list.append(renderCatalogDataset(d));
+    }
+    if (!list.children.length) list.append(el("div", { class: "empty" }, t("catalog.empty")));
+    if (DEV()) {
+      const claimed = new Set(S.catalog.datasets.flatMap((d) => d.source_ids));
+      const bench = S.sources.filter((s) => !claimed.has(s.id)).slice().sort((a, b) => (a.size_bytes ?? 0) - (b.size_bytes ?? 0));
+      if (bench.length) {
+        list.append(el("h3", { class: "catalog-group" }, t("catalog.group.benchmark" as Key)));
+        for (const s of bench) list.append(renderSourceItem(s));
+      }
+    }
+    left.replaceChildren(el("h2", {}, t("data.title")), list, el("h3", {}, t("data.recent")), renderRecent());
+    list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
+    return;
+  }
+  if (!S.sources.length) list.append(el("div", { class: "empty" }, t("data.none")));
+  // Explorer lists the datasets a person would pick; benchmark variants (shuffled, other draws) are for Developer mode
+  const shown = (DEV() ? S.sources : S.sources.filter((s) => isPrimaryDataset(s.id) || s.id === S.cur?.id || s.error)).slice().sort((a, b) => (a.size_bytes ?? 0) - (b.size_bytes ?? 0));
+  for (const s of shown) list.append(renderSourceItem(s));
+  left.replaceChildren(el("h2", {}, t("data.title")), el("h3", {}, t("data.sources")), list, el("h3", {}, t("data.recent")), renderRecent());
   list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
 }
 
+function renderCatalogDataset(d: CatalogDataset): HTMLElement {
+  const source = sourceIdOf(d);
+  const state = S.layers[d.id] ?? { visible: S.cur?.id === source, opacity: 1 };
+  const info = S.context.get(d.id);
+  const zoom = map.getZoom(), policy = renderPolicy(d.group, zoom);
+  const toggle = (e: Event) => {
+    S.layers[d.id] = { ...state, visible: (e.target as HTMLInputElement).checked };
+    saveLayerStates(S.layers); void refreshContext(); renderLeft();
+  };
+  const opacity = (e: Event) => {
+    S.layers[d.id] = { ...state, opacity: Number((e.target as HTMLInputElement).value) / 100 };
+    saveLayerStates(S.layers); removeContext(d.id); void refreshContext(); renderLeft();
+  };
+  const details = S.expanded.has(d.id);
+  const fileRows = d.files.reduce((n, f) => n + (f.rows ?? 0), 0);
+  return el("div", { class: `item${S.cur?.id === source ? " sel" : ""}`, "data-testid": "dataset", "data-id": d.id },
+    el("button", { type: "button", class: "pick", onclick: () => { const found = S.sources.find((s) => s.id === source); if (found) void selectSource(found); } },
+      el("span", { class: "name" }, d.title[getLang()]),
+      el("span", { class: "meta" }, `${geometryLabel(d.geometry_type)} · ${fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))}`)),
+    source ? el("div", { class: "layer-controls" },
+      el("label", { class: "check" }, el("input", { type: "checkbox", checked: state.visible, "aria-label": t("catalog.layer_visible", { name: d.title[getLang()] }), onchange: toggle }), t("catalog.visible")),
+      el("input", { type: "range", min: "0", max: "100", step: "10", value: String(state.opacity * 100), "aria-label": t("catalog.opacity", { name: d.title[getLang()] }), "aria-valuetext": `${state.opacity * 100}%`, onchange: opacity }),
+      el("button", { type: "button", title: t("catalog.zoom_to"), onclick: () => map.fitBounds(d.coverage.bbox, { padding: 40, maxZoom: 14, duration: 0 }) }, t("catalog.zoom_to")),
+      el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
+    el("button", { type: "button", class: "more", "aria-expanded": details, onclick: () => { details ? S.expanded.delete(d.id) : S.expanded.add(d.id); renderLeft(); } }, t(details ? "data.hide_details" : "data.details")),
+    details ? el("table", { class: "kv detail", "data-testid": "dataset-detail" },
+      row(t("catalog.provider"), d.provider), row(t("catalog.license"), d.license.name), d.license.attribution ? row(t("catalog.attribution"), d.license.attribution) : null,
+      row(t("catalog.coverage"), d.coverage.name), row(t("data.rows"), fmtInt(fileRows)), row(t("catalog.size"), fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))),
+      DEV() ? row(t("data.crs"), d.crs) : null,
+      d.quality ? row(t("catalog.quality"), t("catalog.quality_value", { rows: d.quality.rows ?? 0, nulls: d.quality.null_geometry_count ?? 0, invalid: d.quality.invalid_geometry_count ?? 0 })) : null) : null);
+}
+function removeContext(id: string) {
+  for (const l of map.getStyle().layers ?? []) if (l.id.startsWith(`ctx-${id}-`)) map.removeLayer(l.id);
+  if (map.getSource(`ctx-${id}`)) map.removeSource(`ctx-${id}`);
+}
+/** The gateway runs 2 queries at a time and answers "busy" (429) beyond that: wait a moment and ask again. */
+async function apiRetryBusy<T>(path: string, body?: unknown): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await api<T>(path, body);
+    } catch (e) {
+      if (attempt >= 8 || !String(e).includes("busy")) throw e;
+      await new Promise((done) => setTimeout(done, 250 * (attempt + 1)));
+    }
+  }
+}
+/** One refresh at a time; a move during a refresh asks for one more pass (the old pass would show a stale view). */
+let contextRefreshing = false;
+let contextRefreshAgain = false;
+async function refreshContext(): Promise<void> {
+  if (contextRefreshing) { contextRefreshAgain = true; return; }
+  contextRefreshing = true;
+  try {
+    do { contextRefreshAgain = false; await refreshContextOnce(); } while (contextRefreshAgain);
+  } finally { contextRefreshing = false; }
+}
+async function refreshContextOnce(): Promise<void> {
+  if (!S.catalog) return;
+  const candidates = S.catalog.datasets.filter((d) => sourceIdOf(d) && sourceIdOf(d) !== S.cur?.id && (S.layers[d.id]?.visible ?? false));
+  for (const d of candidates) {
+    const policy = renderPolicy(d.group, map.getZoom());
+    const old = S.context.get(d.id) ?? { features: 0, minZoom: policy.minZoom, limitHit: false, visible: true, loading: false, seq: 0 };
+    if (policy.hint) { removeContext(d.id); S.context.set(d.id, { ...old, minZoom: policy.minZoom, loading: false }); continue; }
+    const seq = old.seq + 1; S.context.set(d.id, { ...old, loading: true, seq, minZoom: policy.minZoom }); renderLeft();
+    try {
+      const b = map.getBounds();
+      const filter = d.group === "transport" ? classFilter(map.getZoom()) : null;
+      const req = { source: sourceIdOf(d), kind: "features", bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], crs: d.crs, limit: policy.limit, filter: filter ? { column: "class", op: "in", values: filter } : undefined, browser: false, client: { warm: wasm.isWarm() } };
+      const response = await placement.placeWithFallback(await apiRetryBusy<RunResp>("/api/query", req), () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb" }));
+      const current = S.context.get(d.id);
+      if (!current || current.seq !== seq) continue;
+      const fc = response.geojson ?? empty;
+      fc.features.forEach((f, i) => { (f.properties ??= {}).__i = i; (f.properties ??= {}).__layer = d.id; });
+      removeContext(d.id);
+      map.addSource(`ctx-${d.id}`, { type: "geojson", data: fc });
+      const before = map.getStyle().layers?.find((l) => l.id === "res-fill")?.id;
+      for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, before);
+      S.context.set(d.id, { ...current, features: fc.features.length, limitHit: fc.features.length >= policy.limit, loading: false });
+    } catch (e) { log(String(e), true); S.context.set(d.id, { ...old, loading: false, seq }); }
+    renderLeft();
+  }
+  const visible = candidates.map((d) => d.id);
+  const text = attributionText(S.catalog, visible);
+  attributionEl.textContent = visible.length ? `${t("catalog.data_credit")}: ${text}` : "";
+  attributionEl.title = text; attributionEl.setAttribute("aria-label", text);
+}
 // ---------- tabs ----------
 function tabList(): [string, Key][] {
   return [["query", "tab.query"], ["results", "tab.results"], ["execution", "tab.execution"], ...(DEV() ? [["profile", "tab.profile"] as [string, Key]] : []), ["logs", "tab.logs"]];
@@ -826,6 +975,8 @@ if (params.has("e2e")) {
     basemapLoaded: () => basemapLoaded, baseLayerIds: () => baseLayerIds,
     layerVisibility: (id: string) => (map.getLayer(id) ? map.getLayoutProperty(id, "visibility") ?? "visible" : null),
     layerOrder: () => map.getStyle().layers.map((l) => l.id),
+    layers: S.layers,
+    contextInfo: () => Object.fromEntries([...S.context.entries()].map(([id, x]) => [id, { id, features: x.features, minZoom: x.minZoom, limitHit: x.limitHit, visible: x.visible }])),
   };
   // tests read `state.probe`; the probe state lives in the placement module
   Object.defineProperty(S, "probe", { get: () => placement.state.probe, set: (v) => { placement.state.probe = v; }, enumerable: true });

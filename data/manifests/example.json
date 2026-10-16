@@ -33,8 +33,10 @@
   "geometry_type": "Point",
   "files": [],
   "fetch": {
-    "script": "data/scripts/generate_sample_points.py",
-    "args": []
+    "script": "data/scripts/geo_data.py",
+    "args": [
+      "validate"
+    ]
   },
   "notes": "Tiny generated documentation fixture."
 }

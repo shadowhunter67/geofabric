@@ -153,9 +153,13 @@ def sql_string(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def build_sql(preset: Preset, bbox: list[float], release: str, out_tmp: Path) -> str:
-    """Build deterministic COPY SQL without ORDER BY to retain Overture row order."""
+def build_sql(preset: Preset | str, bbox: list[float], release: str, out_tmp: Path) -> str:
+    """Build deterministic COPY SQL without ORDER BY to retain Overture row order (a preset name is accepted)."""
 
+    if isinstance(preset, str):
+        if preset not in PRESETS:
+            raise ValueError(f"unknown preset: {preset}")
+        preset = PRESETS[preset]
     x0, y0, x1, y1 = bbox
     source = (
         "s3://overturemaps-us-west-2/release/"
