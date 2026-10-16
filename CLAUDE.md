@@ -55,3 +55,14 @@ cargo build --release -p geo-bench && target/release/geo-bench.exe --data benchm
 | [`docs/claude/planner-hardening.md`](docs/claude/planner-hardening.md) | Sửa planner/probe/health/network hoặc engine trình duyệt; chạy held-out |
 
 **Quy tắc duy trì:** mục mới/lịch sử ghi vào `docs/claude/`, KHÔNG nối dài CLAUDE.md.
+
+
+## Process safety (mandatory, added 2026-10-16)
+
+NEVER terminate processes globally by executable name.
+
+Forbidden: `taskkill /IM node.exe`, `taskkill /IM python.exe`, `pkill node`, `killall python` (and any other name-based kill).
+
+Only terminate processes this project started, by a verified PID or an owned process handle (`taskkill /F /PID <pid>`; check with `netstat -ano` / `tasklist` first, and check that a port is free before starting a server on it: a stale server on the same port silently serves every test, see `docs/claude/planner-hardening.md`).
+
+Do not change the global Node installation, the nvm default, or any shared toolchain. If a specific version is needed, put it on PATH for the command only (here Node 24 at `C:/Users/<user>/AppData/Local/nvm/v24.16.0`; never `nvm use`).

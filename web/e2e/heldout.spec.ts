@@ -40,7 +40,7 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
   const rows: Record<string, unknown>[] = [];
   let page = await context.newPage();
   const open = async () => {
-    await page.goto("/?e2e=1&mode=developer&lang=en");
+    await page.goto("/?e2e=1&mode=developer&lang=en&source=clustered_10mb_spatial");
     await expect(page.getByTestId("status")).toContainText("results", { timeout: 120_000 });
     await page.waitForFunction(() => (window as unknown as { __gf: { state: { probe: unknown } } }).__gf.state.probe !== null, null, { timeout: 120_000 });
     await page.evaluate(() => { window.__gf.wasm.recycleBudget = Number.POSITIVE_INFINITY; });

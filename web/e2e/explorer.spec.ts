@@ -119,7 +119,7 @@ test.describe("Explorer mode (Vietnamese by default)", () => {
   });
 });
 
-for (const size of [{ w: 1366, h: 768 }, { w: 1920, h: 1080 }]) {
+for (const size of [{ w: 1366, h: 768 }, { w: 1440, h: 900 }, { w: 1920, h: 1080 }]) {
   test(`layout at ${size.w}x${size.h}: the map keeps most of the screen, nothing overflows`, async ({ page }) => {
     await page.setViewportSize({ width: size.w, height: size.h });
     await openApp(page, { mode: "explorer", lang: "vi" });
@@ -212,20 +212,54 @@ test.describe("accessibility", () => {
   });
 });
 
-test("UI screenshots (UI_SHOTS=1): Explorer vi/en and Developer, same layout", async ({ page }) => {
+test("UI screenshots (UI_SHOTS=1): final Explorer vi/en, Developer, selected feature, execution, same layout", async ({ page }) => {
   test.skip(!process.env.UI_SHOTS, "set UI_SHOTS=1");
+  test.setTimeout(240_000);
   await page.setViewportSize({ width: 1600, height: 900 });
   const out = "../docs";
   fs.mkdirSync(out, { recursive: true });
-  const shot = async (mode: "explorer" | "developer", lang: "vi" | "en", file: string) => {
-    await openApp(page, { mode, lang });
-    await tab(page, "execution").click();
-    await expect(page.getByTestId("exec-summary")).toBeVisible({ timeout: 20_000 });
-    await page.evaluate(() => { window.__gf.select(window.__gf.state.last!.geojson!.features[0]); });
-    await page.waitForTimeout(700);
-    await page.screenshot({ path: `${out}/${file}` });
+  type G = { map: { loaded: () => boolean; isMoving: () => boolean; once: (e: string, f: () => void) => void; triggerRepaint: () => void; project: (c: [number, number]) => { x: number; y: number }; getCanvas: () => HTMLCanvasElement; queryRenderedFeatures: (p: unknown, o?: unknown) => { geometry: GeoJSON.Geometry }[] } };
+  const settle = async () => {
+    // real basemap tiles (the one test that goes to the public tile server): wait for them, then a moment for the draw
+    await page.evaluate(() => new Promise<void>((done) => { const m = (window as unknown as { __gf: G }).__gf.map; const t0 = Date.now(); const poll = () => (m.loaded() && !m.isMoving()) || Date.now() - t0 > 20_000 ? done() : setTimeout(poll, 200); poll(); }));
+    await page.waitForTimeout(1200);
   };
-  await shot("explorer", "vi", "ui-explorer-vi.png");
-  await shot("explorer", "en", "ui-explorer-en.png");
-  await shot("developer", "en", "ui-developer.png");
+  const open = async (mode: "explorer" | "developer", lang: "vi" | "en") => { await openApp(page, { mode, lang, tiles: "network", source: "overture_buildings_vn_south" }); await settle(); };
+  const shot = (file: string) => page.screenshot({ path: `${out}/${file}` });
+
+  await open("explorer", "vi");
+  await tab(page, "execution").click();
+  await expect(page.getByTestId("exec-summary")).toBeVisible({ timeout: 20_000 });
+  await shot("ui-final-explorer-vi.png");
+  await page.getByTestId("advanced-toggle").click();
+  await page.waitForTimeout(300);
+  await shot("ui-final-execution.png");
+
+  await open("explorer", "en");
+  await tab(page, "execution").click();
+  await expect(page.getByTestId("exec-summary")).toBeVisible({ timeout: 20_000 });
+  await shot("ui-final-explorer-en.png");
+
+  await open("developer", "en");
+  await tab(page, "execution").click();
+  await expect(page.getByTestId("exec-summary")).toBeVisible({ timeout: 20_000 });
+  await shot("ui-final-developer.png");
+
+  // a real click on a drawn polygon
+  await open("explorer", "vi");
+  await tab(page, "execution").click();
+  const at = await page.evaluate(() => {
+    const g = (window as unknown as { __gf: G }).__gf;
+    const fs = g.map.queryRenderedFeatures(undefined, { layers: ["res-fill"] });
+    const f = fs[Math.floor(fs.length / 2)];
+    const ring = (f.geometry as GeoJSON.Polygon).coordinates[0];
+    const px = g.map.project([ring.reduce((a, p) => a + p[0], 0) / ring.length, ring.reduce((a, p) => a + p[1], 0) / ring.length]);
+    const r = g.map.getCanvas().getBoundingClientRect();
+    return { x: r.left + px.x, y: r.top + px.y };
+  });
+  await page.mouse.click(at.x, at.y);
+  await expect(page.getByTestId("inspector-props")).toBeVisible();
+  await page.mouse.move(5, 5);
+  await settle();
+  await shot("ui-final-feature-selected.png");
 });

@@ -28,7 +28,7 @@ test("Explorer text never contains engine or planner jargon", () => {
     const d = dictionary(lang);
     for (const [k, v] of Object.entries(d)) {
       // developer-only strings are allowed to name things
-      if (k.startsWith("dev.") || k.startsWith("metric.") || k === "data.row_groups" || k.startsWith("map.legend.") && k.endsWith("_dev") || k === "settings.mode_note" || k === "data.covering" || k.startsWith("data.covering_") || k === "query.ir" || k === "query.ir_note" || k === "top.engine" || k === "top.network" || k === "top.probe" || k.startsWith("profile.") || k === "settings.network" || k === "settings.network_note") continue;
+      if (k.startsWith("dev.") || k.startsWith("metric.") || k === "data.row_groups" || k.startsWith("map.legend.") && k.endsWith("_dev") || k === "settings.mode_note" || k === "data.covering" || k.startsWith("data.covering_") || k === "query.ir" || k === "query.ir_note" || k === "top.engine" || k === "top.network" || k === "top.probe" || k.startsWith("profile.") || k === "settings.network" || k === "settings.network_note" || k === "settings.overlays") continue;
       assert.ok(!jargon.test(v), `${lang} ${k}: "${v}"`);
     }
   }

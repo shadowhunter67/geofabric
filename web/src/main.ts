@@ -8,9 +8,10 @@ import { usable } from "./engine/probe.ts";
 import { createPlacement } from "./placement.ts";
 import { getLang, LANGS, onLangChange, setLang, t } from "./ui/i18n.ts";
 import type { Key, Lang } from "./ui/i18n.ts";
-import { datasetLabel, fieldLabel, fmtBytes, fmtDate, fmtInt, fmtMs, fmtPct, geometryLabel } from "./ui/labels.ts";
+import { datasetLabel, isPrimaryDataset, fieldLabel, fmtBytes, fmtDate, fmtInt, fmtMs, fmtPct, geometryLabel } from "./ui/labels.ts";
 import { pipelineSteps, summarize } from "./ui/explain.ts";
 import { icon } from "./ui/icons.ts";
+import { extentOf, planFocus } from "./focus.ts";
 import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
 // ---------- tiny DOM helper (text only: file contents are untrusted) ----------
@@ -72,6 +73,9 @@ const S = {
   filter: { column: "", op: "eq", value: "" },
   groupBy: "",
   busy: false,
+  settling: false, // true while a dataset is being opened (first query, then the focus query)
+  overlays: stored("gf.overlays") === "1", // developer-only debug layers (row groups, dataset extent); never shown in Explorer
+  basemap: stored("gf.basemap") !== "0",
   engine: "auto",
   allowBrowser: true,
   network: "LOCAL",
@@ -217,7 +221,9 @@ function renderPopover() {
       el("select", { "data-testid": "network-select", onchange: (e: Event) => void setNetwork((e.target as HTMLSelectElement).value) },
         ...["LOCAL", "FAST_LAN", "GOOD_BROADBAND", "MOBILE", "HIGH_LATENCY"].map((n) => el("option", { value: n, selected: n === S.network }, n)))) : null,
     DEV() ? el("div", { class: "note" }, t("settings.network_note")) : null,
-    el("div", { class: "note" }, t("settings.basemap")),
+    el("label", { class: "check" }, el("input", { type: "checkbox", "data-testid": "basemap-toggle", checked: S.basemap, onchange: (e: Event) => { S.basemap = (e.target as HTMLInputElement).checked; store("gf.basemap", S.basemap ? "1" : "0"); applyMapVisibility(); } }), t("settings.basemap")),
+    el("div", { class: "note" }, t("settings.basemap_note")),
+    DEV() ? el("label", { class: "check" }, el("input", { type: "checkbox", "data-testid": "overlays-toggle", checked: S.overlays, onchange: (e: Event) => { S.overlays = (e.target as HTMLInputElement).checked; store("gf.overlays", S.overlays ? "1" : "0"); applyMapVisibility(); renderLegend(); } }), t("settings.overlays")) : null,
     el("div", { class: "note" }, t("settings.mode_note")),
     el("button", { type: "button", onclick: closePopover }, t("help.close")),
   );
@@ -233,28 +239,64 @@ async function setNetwork(name: string) {
 }
 
 // ---------- map ----------
+// Layer order, bottom to top: basemap (roads, water, areas) -> debug overlays (Developer only, off by default) -> result features
+// -> selected feature -> basemap place names. The debug layers show what the engine read; they are never the result and never above it.
 maplibregl.setWorkerUrl(workerUrl);
 const css = getComputedStyle(document.documentElement);
-const map = new maplibregl.Map({
-  container: mapDiv,
-  style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": css.getPropertyValue("--bg").trim() || "#14181c" } }] },
-  center: [105, 14], zoom: 5,
-  attributionControl: false,
-});
+/** OpenFreeMap: vector basemap without an API key. Fetched once; offline or blocked -> the map works on a plain background. */
+const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
+const BG_STYLE: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": css.getPropertyValue("--bg").trim() || "#14181c" } }] };
+const map = new maplibregl.Map({ container: mapDiv, style: BG_STYLE, center: [105, 14], zoom: 5, attributionControl: false });
+map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
 map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
 const empty: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
-map.on("load", () => {
+const DEBUG_LAYERS = ["rg-fill", "rg-line", "extent-line"];
+let baseLayerIds: string[] = [];
+let basemapLoaded = false;
+function applyMapVisibility() {
+  const vis = (on: boolean) => (on ? "visible" : "none");
+  for (const id of baseLayerIds) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis(S.basemap));
+  for (const id of DEBUG_LAYERS) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis(DEV() && S.overlays));
+}
+async function installBasemap(): Promise<void> {
+  try {
+    const ctl = new AbortController();
+    const timer = window.setTimeout(() => ctl.abort(), 6000);
+    const r = await fetch(BASEMAP_STYLE, { signal: ctl.signal });
+    window.clearTimeout(timer);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const style = (await r.json()) as maplibregl.StyleSpecification;
+    await new Promise<void>((done) => { map.once("style.load", () => done()); map.setStyle(style); });
+    baseLayerIds = (map.getStyle().layers ?? []).filter((l) => l.type !== "background").map((l) => l.id);
+    basemapLoaded = true;
+  } catch (e) {
+    log(`basemap unavailable (${String(e)}); continuing on a plain background`, true);
+  }
+}
+function addResultLayers() {
+  // result layers go below the first place-name (symbol) layer of the basemap, so names stay readable above the features
+  const before = map.getStyle().layers?.find((l) => l.type === "symbol")?.id;
   map.addSource("extent", { type: "geojson", data: empty });
   map.addSource("rowgroups", { type: "geojson", data: empty });
   map.addSource("result", { type: "geojson", data: empty });
-  map.addLayer({ id: "rg-fill", type: "fill", source: "rowgroups", paint: { "fill-color": ["match", ["get", "state"], "kept", "#5fbf8a", "skipped", "#6b7782", "#40a9a0"], "fill-opacity": ["match", ["get", "state"], "kept", 0.12, "skipped", 0.04, 0.05] } });
-  map.addLayer({ id: "rg-line", type: "line", source: "rowgroups", paint: { "line-color": ["match", ["get", "state"], "kept", "#5fbf8a", "skipped", "#6b7782", "#40a9a0"], "line-width": 1, "line-dasharray": [2, 2] } });
-  map.addLayer({ id: "extent-line", type: "line", source: "extent", paint: { "line-color": "#e0a84a", "line-width": 1.5 } });
-  map.addLayer({ id: "res-fill", type: "fill", source: "result", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#e0a84a", "fill-opacity": 0.45 } });
-  map.addLayer({ id: "res-line", type: "line", source: "result", paint: { "line-color": "#f2c36b", "line-width": 1 } });
-  map.addLayer({ id: "res-pt", type: "circle", source: "result", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 3, "circle-color": "#f2c36b" } });
-  map.addLayer({ id: "res-sel", type: "line", source: "result", filter: ["==", ["get", "__i"], -1], paint: { "line-color": "#ffffff", "line-width": 3 } });
+  const add = (l: maplibregl.LayerSpecification) => map.addLayer(l, before);
+  // debug overlays (below the result)
+  add({ id: "rg-fill", type: "fill", source: "rowgroups", layout: { visibility: "none" }, paint: { "fill-color": ["match", ["get", "state"], "kept", "#5fbf8a", "skipped", "#6b7782", "#40a9a0"], "fill-opacity": ["match", ["get", "state"], "kept", 0.1, "skipped", 0.04, 0.05] } });
+  add({ id: "rg-line", type: "line", source: "rowgroups", layout: { visibility: "none" }, paint: { "line-color": ["match", ["get", "state"], "kept", "#5fbf8a", "skipped", "#6b7782", "#40a9a0"], "line-width": 1, "line-dasharray": [2, 2] } });
+  add({ id: "extent-line", type: "line", source: "extent", layout: { visibility: "none" }, paint: { "line-color": "#8a96a3", "line-width": 1, "line-dasharray": [4, 3] } });
+  // result features: the actual geometries
+  add({ id: "res-fill", type: "fill", source: "result", filter: ["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]], paint: { "fill-color": "#4aa3ff", "fill-opacity": 0.5 } });
+  add({ id: "res-line", type: "line", source: "result", paint: { "line-color": "#8cc4ff", "line-width": 1 } });
+  add({ id: "res-pt", type: "circle", source: "result", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 4, "circle-color": "#4aa3ff", "circle-stroke-color": "#0e1318", "circle-stroke-width": 1 } });
+  // selected feature, above every result layer
+  add({ id: "res-sel-fill", type: "fill", source: "result", filter: ["==", ["get", "__i"], -1], paint: { "fill-color": "#ffd34a", "fill-opacity": 0.55 } });
+  add({ id: "res-sel", type: "line", source: "result", filter: ["==", ["get", "__i"], -1], paint: { "line-color": "#ffffff", "line-width": 3 } });
+}
+map.on("load", async () => {
+  await installBasemap();
+  addResultLayers();
+  applyMapVisibility();
   for (const id of ["res-fill", "res-pt"]) {
     map.on("mouseenter", id, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", id, () => (map.getCanvas().style.cursor = ""));
@@ -267,10 +309,11 @@ map.on("load", () => {
   void placement.probeRuntime("startup");
 });
 function renderLegend() {
+  const showDebug = DEV() && S.overlays;
   legendEl.replaceChildren(
-    el("i", { style: "background:#e0a84a" }), t("map.legend.result"), "  ",
-    el("i", { style: "background:#5fbf8a" }), t(DEV() ? "map.legend.read_dev" : "map.legend.read"), "  ",
-    el("i", { style: "background:#6b7782" }), t(DEV() ? "map.legend.skipped_dev" : "map.legend.skipped"));
+    el("i", { style: "background:#4aa3ff" }), t("map.legend.result"),
+    ...(showDebug ? ["  ", el("i", { style: "background:#5fbf8a" }), t("map.legend.read_dev"), "  ", el("i", { style: "background:#6b7782" }), t("map.legend.skipped_dev")] : []),
+    ...(S.selected ? ["  ", el("i", { style: "background:#ffd34a" }), t("map.legend.selected")] : []));
 }
 let moveTimer: number | undefined;
 map.on("moveend", () => {
@@ -296,10 +339,12 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
 }
 
 async function loadSources() {
+  setStatus("status.loading");
   try {
     S.sources = (await api<{ sources: SourceMeta[] }>("/api/sources")).sources;
     renderLeft();
-    const first = S.sources.find((s) => s.id === "clustered_10mb_spatial") ?? S.sources.find((s) => !s.error);
+    // real buildings over the real basemap when the Overture subset is present; else the small synthetic file
+    const first = S.sources.find((s) => s.id === params.get("source") && !s.error) ?? S.sources.find((s) => s.id === "overture_buildings_vn_south" && !s.error) ?? S.sources.find((s) => s.id === "clustered_10mb_spatial") ?? S.sources.find((s) => !s.error);
     if (first) await selectSource(first);
   } catch (e) {
     log(String(e), true);
@@ -308,13 +353,17 @@ async function loadSources() {
 }
 
 async function selectSource(s: SourceMeta) {
+  S.settling = true;
+  try { await openSource(s); } finally { S.settling = false; }
+}
+async function openSource(s: SourceMeta) {
   S.cur = s;
   S.filter.column = s.columns.find((c) => c.type === "utf8")?.name ?? "";
   S.groupBy = S.filter.column;
   renderLeft();
   if (s.bbox) {
     const [x0, y0, x1, y1] = s.bbox;
-    setData("extent", { type: "FeatureCollection", features: [rect(x0, y0, x1, y1, {})] });
+    setData("extent", { type: "FeatureCollection", features: [rect(x0, y0, x1, y1, {})] }); // debug overlay only
     map.fitBounds([[x0, y0], [x1, y1]], { padding: 40, duration: 0 });
   }
   try {
@@ -322,6 +371,22 @@ async function selectSource(s: SourceMeta) {
     setData("rowgroups", { type: "FeatureCollection", features: rg.row_groups.filter((r) => r.bbox).map((r) => rect(r.bbox![0], r.bbox![1], r.bbox![2], r.bbox![3], { index: r.index, state: "unknown" })) });
   } catch (e) { log(String(e), true); }
   renderTab();
+  await run();
+  await focusOnResult();
+}
+
+/**
+ * First view of a dataset: fitted to the whole dataset its features are sub-pixel. If the result cannot be seen at this zoom, go to the
+ * densest area at a zoom where a typical feature is several pixels wide, and run the query again for what is in view.
+ */
+async function focusOnResult() {
+  const fc = S.last?.geojson;
+  if (!fc || S.busy) return;
+  const f = planFocus(fc, { zoom: map.getZoom() });
+  if (!f) return;
+  log(`result features are ~${f.medianPx.toFixed(2)} px at zoom ${map.getZoom().toFixed(1)}; focusing on the densest area (zoom ${f.zoom.toFixed(1)})`);
+  setStatus("status.focusing");
+  await new Promise<void>((done) => { map.once("moveend", () => done()); map.jumpTo({ center: f.center, zoom: f.zoom }); });
   await run();
 }
 
@@ -377,6 +442,7 @@ async function handle(r: RunResp, label: string, record = true) {
     S.derived = S.derived.slice(0, 8);
   }
   S.selected = null;
+  setStatus("status.drawing");
   if (r.geojson) {
     r.geojson.features.forEach((f, i) => { (f.properties ??= {}).__i = i; });
     setData("result", r.geojson);
@@ -409,7 +475,10 @@ function measure(g: GeoJSON.Geometry): { area: number; perim: number } | null {
 }
 function select(f: GeoJSON.Feature) {
   S.selected = f;
-  map.setFilter("res-sel", ["==", ["get", "__i"], (f.properties?.__i as number) ?? -1]);
+  const sel = ["==", ["get", "__i"], (f.properties?.__i as number) ?? -1] as maplibregl.FilterSpecification;
+  map.setFilter("res-sel", sel);
+  map.setFilter("res-sel-fill", sel);
+  renderLegend();
   syncInspectorVisibility();
   renderRight();
 }
@@ -430,10 +499,11 @@ function renderRight() {
   const tbl = el("table", { class: "kv", "data-testid": "inspector-props" });
   const add = (k: string, v: string, raw?: string) =>
     tbl.append(el("tr", {}, el("th", { scope: "row" }, k, DEV() && raw ? el("div", { class: "raw" }, t("inspector.raw_field", { name: raw })) : null), el("td", {}, v)));
-  for (const [k, v] of Object.entries(f.properties ?? {})) if (k !== "__i") add(fieldLabel(k), String(v), k);
+  // Explorer shows the facts that exist; empty attributes (null) are noise there, Developer still lists them
+  for (const [k, v] of Object.entries(f.properties ?? {})) if (k !== "__i" && (DEV() || (v !== null && v !== undefined && v !== ""))) add(fieldLabel(k), typeof v === "boolean" ? t(v ? "value.yes" : "value.no") : String(v), k);
   add(t("inspector.geometry"), geometryLabel(f.geometry.type));
   add(t("inspector.source"), S.cur ? datasetLabel(S.cur.id).title : "—");
-  add(t("inspector.crs"), S.cur?.crs ?? "—");
+  if (DEV()) add(t("inspector.crs"), S.cur?.crs ?? "—");
   const m = ["EPSG:4326", "OGC:CRS84"].includes(S.cur?.crs ?? "") ? measure(f.geometry) : null;
   if (m) { add(t("inspector.area"), `${fmtInt(Math.round(m.area * 10) / 10)} m²`); add(t("inspector.perimeter"), `${fmtInt(Math.round(m.perim * 10) / 10)} m`); }
   right.append(el("h3", {}, t("inspector.properties")), tbl);
@@ -452,11 +522,13 @@ function renderLeft() {
   left.setAttribute("aria-label", t("a11y.sources"));
   const list = el("div", { class: "list", role: "list" });
   if (!S.sources.length) list.append(el("div", { class: "empty" }, t("data.none")));
-  for (const s of S.sources) {
+  // Explorer lists the datasets a person would pick; benchmark variants (shuffled, other draws) are for Developer mode
+  const shown = (DEV() ? S.sources : S.sources.filter((s) => isPrimaryDataset(s.id) || s.id === S.cur?.id || s.error)).slice().sort((a, b) => (a.size_bytes ?? 0) - (b.size_bytes ?? 0));
+  for (const s of shown) {
     if (s.error) { list.append(el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error))); continue; }
     const lab = datasetLabel(s.id);
     const open = S.expanded.has(s.id);
-    const traits = [geometryLabel(s.geometry_type === "polygon" ? "Polygon" : s.geometry_type), fmtBytes(s.size_bytes), ...lab.traits];
+    const traits = [...(s.geometry_type === "unknown" ? [] : [geometryLabel(s.geometry_type === "polygon" ? "Polygon" : s.geometry_type)]), fmtBytes(s.size_bytes), ...(DEV() ? lab.traits : [])];
     const detail = el("table", { class: "kv detail", "data-testid": "dataset-detail" },
       row(t("data.format"), s.format), row(t("data.crs"), s.crs), row(t("data.rows"), fmtInt(s.rows)), row(t("data.updated"), fmtDate(s.modified)), row(t("data.origin"), lab.origin),
       ...(DEV() ? [row(t("data.row_groups"), String(s.row_groups)), row(t("data.covering"), s.has_covering ? t(s.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")), row("id", s.id)] : []));
@@ -476,6 +548,7 @@ function renderLeft() {
           el("span", { class: "meta" }, t("status.results", { n: fmtInt(d.resp.rows_total), time: fmtMs(d.resp.timing.total_ms.value ?? 0) }))))))
     : el("div", { class: "empty" }, t("data.recent_empty"));
   left.replaceChildren(el("h2", {}, t("data.title")), el("h3", {}, t("data.sources")), list, el("h3", {}, t("data.recent")), recent);
+  list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
 }
 
 // ---------- tabs ----------
@@ -725,7 +798,7 @@ function renderPipeline() {
 function renderAll() {
   document.body.dataset.mode = S.mode;
   mapDiv.setAttribute("aria-label", t("a11y.map"));
-  renderHeader(); renderLegend(); renderLeft(); renderRight(); renderTab(); renderPipeline(); renderPopover();
+  renderHeader(); renderLegend(); renderLeft(); renderRight(); renderTab(); renderPipeline(); renderPopover(); applyMapVisibility();
 }
 
 applyBottomH();
@@ -738,6 +811,21 @@ if (params.has("e2e")) {
   const gf = {
     map, state: S, select, setTab, setMode, setLang: changeLang, wasm, resolvePlacement: placement.resolvePlacement, bindSources: placement.bindSources,
     probeRuntime: placement.probeRuntime, placeWithFallback: placement.placeWithFallback, reportRun: placement.reportRun, compile, placement, run,
+    focusOnResult, applyMapVisibility,
+    /** What the result layer really holds: feature count, distinct geometries, and the largest feature relative to the dataset extent. */
+    async resultInfo() {
+      const src = map.getSource("result") as maplibregl.GeoJSONSource;
+      const fc = (await src.getData()) as GeoJSON.FeatureCollection;
+      const keys = new Set(fc.features.map((f) => JSON.stringify(f.geometry)));
+      const ext = extentOf(fc);
+      const ds = S.cur?.bbox ?? null;
+      const dsArea = ds ? (ds[2] - ds[0]) * (ds[3] - ds[1]) : 0;
+      const maxFeatArea = Math.max(0, ...fc.features.map((f) => { const b = extentOf({ type: "FeatureCollection", features: [f] }); return b ? (b[2] - b[0]) * (b[3] - b[1]) : 0; }));
+      return { features: fc.features.length, distinct: keys.size, extent: ext, maxFeatureShareOfDataset: dsArea ? maxFeatArea / dsArea : 0 };
+    },
+    basemapLoaded: () => basemapLoaded, baseLayerIds: () => baseLayerIds,
+    layerVisibility: (id: string) => (map.getLayer(id) ? map.getLayoutProperty(id, "visibility") ?? "visible" : null),
+    layerOrder: () => map.getStyle().layers.map((l) => l.id),
   };
   // tests read `state.probe`; the probe state lives in the placement module
   Object.defineProperty(S, "probe", { get: () => placement.state.probe, set: (v) => { placement.state.probe = v; }, enumerable: true });

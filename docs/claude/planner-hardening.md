@@ -27,3 +27,11 @@ Báo cáo: `REPORT-GEOFABRIC-PLANNER-HARDENING-II.md`. ADR-009 Accepted (phạm 
 - Chạy Rust/Playwright trong **PowerShell** với `DUCKDB_LIB_DIR` + PATH tới `tools/.cache/duckdb-1.5.6/lib` (bash export đường dẫn có dấu → `duckdb.lib`/DLL not found khi cargo do Playwright webServer gọi). Node 24 qua PATH nvm (`C:\Users\<user>\AppData\Local\nvm\v24.16.0`), KHÔNG `nvm use`.
 - Kill gateway theo PID, không theo tên exe node/python.
 - Còn mở: median thời gian browser 1.37× (đích 1.25×), LOCAL/HIGH_LATENCY P90 > 3×; thiết bị thứ hai thật; >1 GB chưa đo.
+
+# UI finalization (2026-10-16)
+
+Báo cáo: `REPORT-GEOFABRIC-UI-FINALIZATION.md`.
+- Bug "một khối chữ nhật xanh": KHÔNG phải result geometry sai — là lớp debug (extent + row group) bật mặc định + camera fit cả dataset (feature < 1 px) + không basemap. Sửa: debug tách lớp (ẩn ở Explorer), `web/src/focus.ts` zoom tới vùng dày nhất khi feature < 4 px rồi query lại, basemap thật.
+- Basemap: OpenFreeMap style `dark` (không cần key). CARTO raster miễn phí giờ trả watermark "API KEY REQUIRED" — đừng dùng lại. Offline → nền phẳng (có test). Test e2e chặn `tiles.openfreemap.org`; chỉ test chụp ảnh dùng mạng thật.
+- Dataset mặc định = Overture (nếu có), `?source=<id>` ghim dataset (harness/e2e dùng `clustered_10mb_spatial`).
+- Test cổng phát hành: `web/e2e/map.spec.ts` (đếm feature riêng biệt + queryRenderedFeatures). Chạy Playwright/cargo trong PowerShell (xem trên).

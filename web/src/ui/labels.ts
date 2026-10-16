@@ -39,6 +39,11 @@ export interface DatasetLabel {
 
 const SIZE: Record<string, Key> = { "10mb": "data.size.small", "30mb": "data.size.medium", "100mb": "data.size.large", "1gb": "data.size.xlarge" };
 
+/** The datasets Explorer lists: the size ladder of the synthetic buildings (spatially sorted) and the real Overture subset. */
+export function isPrimaryDataset(id: string): boolean {
+  return /^clustered_(10mb|30mb|100mb|1gb)_spatial$/.test(id) || id.startsWith("overture_");
+}
+
 /** Friendly label of a dataset id such as `clustered_100mb_spatial` or `overture_buildings_vn_south`. */
 export function datasetLabel(id: string): DatasetLabel {
   const syn = /^(clustered|uniform)_(10mb|30mb|100mb|1gb)_(spatial|shuffled)(_s2)?$/.exec(id);

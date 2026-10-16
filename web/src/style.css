@@ -15,7 +15,7 @@
   --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
   --top-h: 48px;
   --left-w: clamp(240px, 17vw, 300px);
-  --right-w: clamp(290px, 21vw, 350px);
+  --right-w: clamp(320px, 23vw, 400px);
   --bottom-h: 300px;
 }
 @media (prefers-color-scheme: light) {
@@ -77,13 +77,16 @@ h3 { margin: 0; padding: 10px 14px 4px; font-size: 12px; text-transform: upperca
 .item button.more { display: inline-flex; gap: 4px; align-items: center; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; padding: 2px 14px 6px; min-height: 26px; }
 .item button.more svg { transition: transform .12s; }
 .item button.more[aria-expanded="true"] svg { transform: rotate(90deg); }
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--line); }
 tbody th { color: var(--muted); font-weight: 500; width: 40%; }
 table.detail { margin: 0 0 6px; }
 table.detail th, table.detail td { padding: 3px 14px; font-size: 12.5px; }
 thead th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); white-space: nowrap; }
 table td { white-space: nowrap; }
+table.kv { table-layout: fixed; }
+.kv th { width: 40%; overflow-wrap: anywhere; }
+.kv td { white-space: normal; overflow-wrap: anywhere; }
 .kv .raw { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
 ol.history { margin: 4px 14px 10px 32px; padding: 0; }
 ol.history li { padding: 2px 0; }
@@ -102,18 +105,18 @@ ol.history li { padding: 2px 0; }
 .pipeline .node.last { border-color: var(--accent); }
 .pipeline .node .ic { color: var(--accent); display: inline-flex; }
 .pipeline .node .tx { display: flex; flex-direction: column; line-height: 1.2; }
-.pipeline .node .t { font-weight: 600; font-size: 13px; }
+.pipeline .node .t { font-weight: 600; font-size: 14px; }
 .pipeline .node .s { color: var(--muted); font-size: 12px; }
 
 /* ---- forms ---- */
 .form { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
 .form label { display: flex; flex-direction: column; gap: 3px; color: var(--muted); font-size: 12.5px; }
-.form label.check, label.check { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: 13px; }
+.form label.check, label.check { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: 14px; }
 textarea.ir { width: 100%; height: 120px; font-family: var(--mono); font-size: 12px; margin-top: 8px; resize: vertical; }
 
 /* ---- Explorer execution summary ---- */
 .rec { border: 1px solid var(--line); border-left: 4px solid var(--ok); background: var(--panel-2); border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
-.rec-head { display: flex; align-items: center; gap: 6px; color: var(--ok); font-weight: 600; font-size: 13px; }
+.rec-head { display: flex; align-items: center; gap: 6px; color: var(--ok); font-weight: 600; font-size: 14px; }
 .rec-where { display: flex; align-items: center; gap: 8px; font-size: 18px; margin: 4px 0; }
 .rec-where svg { color: var(--accent); }
 ul.why, .opt ul { list-style: none; margin: 4px 0; padding: 0; }
@@ -144,7 +147,7 @@ button.adv-toggle.open svg { transform: rotate(90deg); }
 .dec .o-chosen { color: var(--ok); } .dec .o-rejected { color: var(--bad); } .dec .o-warning { color: var(--accent-2); } .dec .o-info { color: var(--muted); }
 .log { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
 .log .err { color: var(--bad); }
-.legend { position: absolute; left: 10px; bottom: 10px; z-index: 2; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); padding: 5px 9px; border-radius: 5px; font-size: 12.5px; pointer-events: none; }
+.legend { position: absolute; left: 10px; bottom: 34px; z-index: 2; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); padding: 5px 9px; border-radius: 5px; font-size: 12.5px; pointer-events: none; }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
 .badge { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 3px; font-size: 11.5px; letter-spacing: .03em; border: 1px solid var(--line); vertical-align: 1px; }
 .badge.ok { color: var(--ok); border-color: var(--ok); }

@@ -30,7 +30,7 @@ test("browser envelope", async ({ browser }) => {
     let page = await context.newPage();
     const row: Record<string, unknown> = { ...r, browser: browser.browserType().name() + " " + browser.version() };
     try {
-      await page.goto("/?e2e=1&mode=developer&lang=en");
+      await page.goto("/?e2e=1&mode=developer&lang=en&source=clustered_10mb_spatial");
       await expect(page.getByTestId("status")).toContainText("results", { timeout: 120_000 });
       await page.waitForFunction(() => (window as unknown as { __gf: { state: { probe: unknown } } }).__gf.state.probe !== null, null, { timeout: 120_000 });
       const ov = r.source.startsWith("overture");
