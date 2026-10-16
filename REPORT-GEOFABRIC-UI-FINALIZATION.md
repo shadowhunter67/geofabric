@@ -117,4 +117,4 @@ Unchanged from `REPORT-GEOFABRIC-PLANNER-HARDENING-II.md`: browser time model me
 
 ## Commit
 
-(filled in after commit)
+Commit titled "UI finalization: real feature geometry visible (focus on densest area), …" (the report is in it; its hash is in `git log`).
