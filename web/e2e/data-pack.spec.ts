@@ -116,6 +116,43 @@ test.describe("data pack (Explorer, Vietnamese)", () => {
     expect(html).not.toMatch(/place\.category|transport\.class|admin\.subtype|landuse\.class/);
   });
 
+  test("switching a layer off removes it from the map; the active dataset's switch hides its result", async ({ page }) => {
+    await toggle(page, "overture_admin_hcm").check();
+    await goTo(page, [106.70, 10.78], 12);
+    await expect.poll(() => layerCount(page, "ctx-overture_admin_hcm-"), { timeout: 60_000 }).toBeGreaterThan(0);
+    await toggle(page, "overture_admin_hcm").uncheck();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __gf: GF }).__gf.map.getStyle().layers.some((l) => l.id.startsWith("ctx-overture_admin_hcm-")))).toBe(false);
+    // the active dataset (buildings) draws through the result layers: its switch shows and hides them
+    const resVisibility = () => page.evaluate(() => (window as unknown as { __gf: { map: { getLayoutProperty: (id: string, p: string) => unknown } } }).__gf.map.getLayoutProperty("res-fill", "visibility") ?? "visible");
+    expect(await resVisibility()).toBe("visible");
+    await toggle(page, "overture_buildings_vn_south").uncheck();
+    await expect.poll(resVisibility).toBe("none");
+    await toggle(page, "overture_buildings_vn_south").check();
+    await expect.poll(resVisibility).toBe("visible");
+  });
+
+  test("Settings lists every source with its licence link and required credit; says what the basemap server sees", async ({ page }) => {
+    await page.getByTestId("settings").click();
+    const credit = page.getByTestId("sources-credit");
+    await expect(credit).toContainText("OpenStreetMap");
+    await expect(credit).toContainText("Copernicus Digital Elevation Model");
+    await expect(credit).toContainText("Foursquare");
+    await expect(credit.locator("a[href^='https://']").first()).toBeVisible();
+    await expect(page.locator(".popover")).toContainText("không được gửi cho nhà cung cấp bản đồ nền");
+  });
+
+  test("dataset search folds diacritics and hides the groups it empties", async ({ page }) => {
+    const search = page.getByTestId("dataset-search");
+    await search.fill("duong");
+    await expect(page.locator('[data-testid="dataset"][data-id="overture_transport_hcm"]')).toBeVisible();
+    await expect(page.locator('[data-testid="dataset"][data-id="overture_places_hcm"]')).toBeHidden();
+    await expect(page.locator("aside.left .catalog-group:visible")).toHaveCount(1);
+    await search.fill("");
+    await expect(page.locator('[data-testid="dataset"][data-id="overture_places_hcm"]')).toBeVisible();
+    await search.fill("zzzz-nothing");
+    await expect(page.locator('[data-testid="dataset"]:visible')).toHaveCount(0);
+  });
+
   test("the opacity slider restyles a layer without asking the server again", async ({ page }) => {
     await toggle(page, "overture_admin_hcm").check();
     await goTo(page, [106.70, 10.78], 12);
@@ -190,4 +227,19 @@ test("English shows the same demos and groups", async ({ page }) => {
   for (const n of ["Buildings", "Roads", "Administrative boundaries", "Places", "Land use", "Terrain elevation"]) expect(names).toContain(n);
   await page.getByTestId("tab-query").click();
   for (const id of ["a", "b", "c", "d", "e"]) await expect(page.getByTestId(`demo-${id}`)).toBeVisible();
+});
+
+test("Developer mode adds the benchmark datasets (Explorer never lists them)", async ({ page }) => {
+  await openApp(page, { mode: "developer", lang: "en", source: "overture_buildings_vn_south" });
+  test.skip(!(await packPresent(page)), "the Vietnam data pack is not in data/local");
+  await expect(page.locator('[data-testid="dataset"][data-id="clustered_10mb_spatial"]')).toBeVisible();
+  await expect(page.locator("aside.left .catalog-group", { hasText: "Benchmark" })).toBeVisible();
+  const roads = page.locator('[data-testid="dataset"][data-id="overture_transport_hcm"]');
+  await roads.getByRole("button", { name: /Details/ }).click();
+  await expect(roads.getByTestId("dataset-detail")).toContainText("overture_transport_hcm");
+  await expect(roads.getByTestId("dataset-detail")).toContainText("data/local/overture_transport_hcm.parquet");
+  await expect(roads.getByTestId("dataset-detail")).toContainText("OGC:CRS84");
+  await expect(roads.getByTestId("dataset-detail")).toContainText("Row groups");
+  await openApp(page, { mode: "explorer", lang: "en", source: "overture_buildings_vn_south" });
+  await expect(page.locator('[data-testid="dataset"][data-id="clustered_10mb_spatial"]')).toHaveCount(0);
 });

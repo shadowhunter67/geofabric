@@ -52,6 +52,7 @@ test.describe("result geometry on the map (Explorer, basemap tiles blocked)", ()
     expect(i.features).toBe(10);
     expect(i.distinct).toBe(10);
     expect(i.maxFeatureShareOfDataset).toBeLessThan(0.001);
+    await expect(page.getByTestId("limit-hint"), "the result hit its limit: the map says it shows a sample").toBeVisible();
     const n = await rendered(page, "res-fill");
     expect(n, "the ten polygons are in view and drawn").toBeGreaterThanOrEqual(5);
     expect(n).toBeLessThanOrEqual(10);

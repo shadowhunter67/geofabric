@@ -74,6 +74,7 @@ const S = {
   cur: null as SourceMeta | null,
   layers: loadLayerStates() as Record<string, LayerState>,
   demo: { id: null as string | null, summary: "" },
+  lastLimit: 20000,
   contextData: new Map<string, GeoJSON.FeatureCollection>(),
   raster: new Map<string, { loading: boolean; error: string | null; overlay: DemOverlay | null }>(),
   context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number }>(),
@@ -124,6 +125,25 @@ const legendEl = el("div", { class: "legend" });
 const popover = el("div", { class: "popover", hidden: true, role: "dialog" });
 app.append(header, left, mapDiv, right, bottom, popover);
 const attributionEl = el("div", { class: "map-attribution", tabindex: "0" });
+const searchEl = el("input", { type: "search", class: "dataset-search", "data-testid": "dataset-search", autocomplete: "off",
+  oninput: () => applySearch() }) as HTMLInputElement;
+/** Lower-case, no diacritics, so "duong" finds "Đường giao thông". */
+function foldText(x: string): string {
+  return x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+}
+function applySearch() {
+  const q = foldText(searchEl.value.trim());
+  let shownInGroup = false;
+  let heading: HTMLElement | null = null;
+  const flush = () => { if (heading) heading.hidden = !!q && !shownInGroup; };
+  for (const node of Array.from(left.querySelectorAll<HTMLElement>(".catalog-group, [data-testid='dataset']"))) {
+    if (node.classList.contains("catalog-group")) { flush(); heading = node; shownInGroup = false; continue; }
+    const match = !q || foldText(node.dataset.search ?? "").includes(q);
+    node.hidden = !match;
+    if (match) shownInGroup = true;
+  }
+  flush();
+}
 const demoCardEl = el("div", { class: "demo-card", role: "status", "data-testid": "demo-summary", hidden: true });
 mapDiv.append(legendEl, attributionEl, demoCardEl);
 
@@ -224,6 +244,21 @@ function togglePopover(kind: "settings" | "help") {
 function closePopover() { popover.hidden = true; delete popover.dataset.kind; renderHeader(); }
 window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !popover.hidden) closePopover(); });
 
+/** Every present dataset with its provider, licence (link) and the attribution it requires; the data never leaves this server. */
+function dataSourcesSection(): HTMLElement | null {
+  const present = (S.catalog?.datasets ?? []).filter((d) => d.present);
+  if (!present.length) return null;
+  const safe = (url?: string | null) => (url && /^https?:\/\//i.test(url) ? url : null);
+  return el("section", { class: "sources-credit", "data-testid": "sources-credit" },
+    el("h3", {}, t("settings.sources_title")),
+    el("div", { class: "note" }, t("settings.sources_note")),
+    el("ul", {}, ...present.map((d) => el("li", {},
+      el("strong", {}, d.title[getLang()]), " — ", d.provider, " · ",
+      safe(d.license.url) ? el("a", { href: safe(d.license.url), target: "_blank", rel: "noopener noreferrer" }, d.license.name) : d.license.name,
+      d.license.attribution ? el("div", { class: "note" }, d.license.attribution) : null))),
+    el("div", { class: "note" }, "© OpenFreeMap © OpenMapTiles Data from OpenStreetMap"));
+}
+
 function renderPopover() {
   if (popover.hidden) return;
   const kind = popover.dataset.kind;
@@ -242,6 +277,7 @@ function renderPopover() {
     el("label", { class: "check" }, el("input", { type: "checkbox", "data-testid": "basemap-toggle", checked: S.basemap, onchange: (e: Event) => { S.basemap = (e.target as HTMLInputElement).checked; store("gf.basemap", S.basemap ? "1" : "0"); applyMapVisibility(); } }), t("settings.basemap")),
     el("div", { class: "note" }, t("settings.basemap_note")),
     DEV() ? el("label", { class: "check" }, el("input", { type: "checkbox", "data-testid": "overlays-toggle", checked: S.overlays, onchange: (e: Event) => { S.overlays = (e.target as HTMLInputElement).checked; store("gf.overlays", S.overlays ? "1" : "0"); applyMapVisibility(); renderLegend(); } }), t("settings.overlays")) : null,
+    dataSourcesSection(),
     el("div", { class: "note" }, t("settings.mode_note")),
     el("button", { type: "button", onclick: closePopover }, t("help.close")),
   );
@@ -343,7 +379,8 @@ function renderLegend() {
   legendEl.replaceChildren(
     el("i", { style: "background:#4aa3ff" }), t("map.legend.result"),
     ...(showDebug ? ["  ", el("i", { style: "background:#5fbf8a" }), t("map.legend.read_dev"), "  ", el("i", { style: "background:#6b7782" }), t("map.legend.skipped_dev")] : []),
-    ...(S.selected ? ["  ", el("i", { style: "background:#ffd34a" }), t("map.legend.selected")] : []));
+    ...(S.selected ? ["  ", el("i", { style: "background:#ffd34a" }), t("map.legend.selected")] : []),
+    ...(S.last?.geojson && S.last.rows_total >= S.lastLimit ? [el("br"), el("span", { class: "limit-hint", "data-testid": "limit-hint" }, t("map.limit_hint", { n: fmtInt(S.lastLimit) }))] : []));
 }
 let moveTimer: number | undefined;
 map.on("moveend", () => {
@@ -454,6 +491,7 @@ async function run() {
   S.busy = true; setRunDisabled(true); setStatus("status.running");
   try {
     const req = currentRequest();
+    S.lastLimit = req.limit;
     S.lastChosen = S.engine !== "auto";
     await handle(
       await placement.placeWithFallback(await apiRetryBusy<RunResp>("/api/query", req), () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
@@ -492,7 +530,8 @@ async function handle(r: RunResp, label: string, record = true) {
   setStatus(DEV() ? "status.results_dev" : "status.results", { n: fmtInt(r.rows_total), time: fmtMs(r.timing.total_ms.value ?? 0), engine: r.physical.engine });
   log(t("log.plan", { plan: r.plan_id.slice(0, 10), engine: r.physical.engine, rows: r.rows_total }) + ` skipped(est.)=${r.metrics.row_groups_skipped.value}/${r.metrics.row_groups_total.value}`);
   syncInspectorVisibility();
-  renderLeft(); renderRight(); renderPipeline();
+  applyActiveVisibility();
+  renderLeft(); renderRight(); renderPipeline(); renderLegend();
   setTab(S.tab === "query" ? "execution" : S.tab);
 }
 
@@ -622,7 +661,10 @@ function renderLeft() {
         for (const s of bench) list.append(renderSourceItem(s));
       }
     }
-    left.replaceChildren(el("h2", {}, t("data.title")), list, el("h3", {}, t("data.recent")), renderRecent());
+    searchEl.placeholder = t("catalog.search");
+    searchEl.setAttribute("aria-label", t("catalog.search"));
+    left.replaceChildren(el("h2", {}, t("data.title")), searchEl, list, el("h3", {}, t("data.recent")), renderRecent());
+    applySearch();
     list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
     return;
   }
@@ -632,6 +674,14 @@ function renderLeft() {
   for (const s of shown) list.append(renderSourceItem(s));
   left.replaceChildren(el("h2", {}, t("data.title")), el("h3", {}, t("data.sources")), list, el("h3", {}, t("data.recent")), renderRecent());
   list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
+}
+
+/** Developer-only facts of a catalog dataset: the ids and files behind the friendly name, CRS, row groups, covering. */
+function developerDatasetRows(d: CatalogDataset): HTMLElement[] {
+  const src = S.sources.find((x) => x.id === sourceIdOf(d));
+  const rows = [row("id", d.id), row(t("catalog.files"), d.files.map((f) => f.path).join(" · ")), row(t("data.crs"), d.crs), row(t("catalog.format"), `${d.format_normalized} · ${d.geometry_type}`)];
+  if (src) rows.push(row(t("data.row_groups"), String(src.row_groups)), row(t("data.covering"), src.has_covering ? t(src.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")));
+  return rows;
 }
 
 function rasterStatus(d: CatalogDataset): string {
@@ -658,7 +708,8 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
   };
   const details = S.expanded.has(d.id);
   const fileRows = d.files.reduce((n, f) => n + (f.rows ?? 0), 0);
-  return el("div", { class: `item${S.cur?.id === source ? " sel" : ""}`, "data-testid": "dataset", "data-id": d.id },
+  const searchable = `${d.title.vi} ${d.title.en} ${d.provider} ${t(`catalog.group.${d.group}` as Key)} ${d.coverage.name}`;
+  return el("div", { class: `item${S.cur?.id === source ? " sel" : ""}`, "data-testid": "dataset", "data-id": d.id, "data-search": searchable },
     el("button", { type: "button", class: "pick", onclick: () => { const found = S.sources.find((s) => s.id === source); if (found) void selectSource(found); } },
       el("span", { class: "name" }, d.title[getLang()]),
       el("span", { class: "meta" }, `${geometryLabel(d.geometry_type)} · ${fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))}`)),
@@ -671,7 +722,7 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
     details ? el("table", { class: "kv detail", "data-testid": "dataset-detail" },
       row(t("catalog.provider"), d.provider), row(t("catalog.license"), d.license.name), d.license.attribution ? row(t("catalog.attribution"), d.license.attribution) : null,
       row(t("catalog.coverage"), d.coverage.name), row(t("data.rows"), fmtInt(fileRows)), row(t("catalog.size"), fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))),
-      DEV() ? row(t("data.crs"), d.crs) : null,
+      ...(DEV() ? developerDatasetRows(d) : []),
       d.quality ? row(t("catalog.quality"), t("catalog.quality_value", { rows: d.quality.rows ?? 0, nulls: d.quality.null_geometry_count ?? 0, invalid: d.quality.invalid_geometry_count ?? 0 })) : null) : null);
 }
 function removeContext(id: string) {
@@ -763,8 +814,20 @@ async function refreshContext(): Promise<void> {
     do { contextRefreshAgain = false; await refreshContextOnce(); } while (contextRefreshAgain);
   } finally { contextRefreshing = false; }
 }
+/** The active dataset draws through the result layers; its visibility switch hides/shows them. */
+function applyActiveVisibility() {
+  const active = S.catalog?.datasets.find((d) => sourceIdOf(d) === S.cur?.id);
+  const on = active ? (S.layers[active.id]?.visible ?? true) : true;
+  for (const id of ["res-fill", "res-line", "res-pt"]) if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+}
 async function refreshContextOnce(): Promise<void> {
   if (!S.catalog) return;
+  for (const d of S.catalog.datasets) {
+    if (!sourceIdOf(d)) continue;
+    const wanted = (S.layers[d.id]?.visible ?? false) && sourceIdOf(d) !== S.cur?.id;
+    if (!wanted && (map.getSource(`ctx-${d.id}`) || S.context.has(d.id))) { removeContext(d.id); S.context.delete(d.id); }
+  }
+  applyActiveVisibility();
   await refreshRasters();
   const candidates = S.catalog.datasets.filter((d) => sourceIdOf(d) && sourceIdOf(d) !== S.cur?.id && (S.layers[d.id]?.visible ?? false));
   for (const d of candidates) {
@@ -857,7 +920,13 @@ async function runDemo(spec: DemoSpec): Promise<void> {
     await moveMap(spec.view);
     const bbox = viewportBBox();
     const requests = demoRequests(spec.id).map((r) => ({ ...r, bbox }));
-    const activate = (id: string) => { const found = S.sources.find((x) => x.id === id); if (found) S.cur = found; };
+    S.lastLimit = Number((requests[0] as { limit?: number } | undefined)?.limit ?? 20000);
+    const activate = (id: string) => {
+      const found = S.sources.find((x) => x.id === id);
+      if (found) S.cur = found;
+      const owner = S.catalog?.datasets.find((d) => sourceIdOf(d) === id);
+      if (owner) S.layers[owner.id] = { opacity: S.layers[owner.id]?.opacity ?? 1, visible: true };
+    };
     let summary = "";
     if (spec.id === "a") {
       activate(BUILDINGS);

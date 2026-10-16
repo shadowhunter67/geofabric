@@ -105,7 +105,13 @@ ol.history li { padding: 2px 0; }
 .tabs { display: flex; border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .tab { border: 0; border-right: 1px solid var(--line); border-radius: 0; background: transparent; padding: 0 16px; color: var(--muted); min-height: 0; }
 .tab.on { color: var(--text); box-shadow: inset 0 -3px var(--accent); background: var(--panel); font-weight: 600; }
-.tabbody { overflow: auto; padding: 12px 14px; min-height: 0; }
+.tabbody { overflow: auto; padding: 12px 14px; min-height: 0;
+  /* scroll shadows: a soft edge appears only on the side that has more content, so a clipped panel is visibly scrollable */
+  background:
+    linear-gradient(var(--panel) 30%, transparent) center top / 100% 28px no-repeat local,
+    linear-gradient(transparent, var(--panel) 70%) center bottom / 100% 28px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.28), transparent) center top / 100% 10px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.28), transparent) center bottom / 100% 10px no-repeat scroll; }
 .pipeline { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-top: 1px solid var(--line); background: var(--panel-2); overflow-x: auto; }
 .pipeline .link { color: var(--muted); }
 .pipeline .node { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); white-space: nowrap; }
@@ -192,3 +198,11 @@ button.adv-toggle.open svg { transform: rotate(90deg); }
 .demo-card span { grid-column: 1; color: var(--text); }
 .demo-card button { grid-column: 2; grid-row: 1 / span 2; min-height: 26px; min-width: 26px; padding: 0 6px; }
 .demo-card[hidden] { display: none; }
+
+.dataset-search { display: block; width: calc(100% - 28px); margin: 6px 14px 8px; min-height: 30px; }
+.item[hidden], .catalog-group[hidden] { display: none; }
+.limit-hint { color: #f0b429; font-size: 12.5px; }
+
+.sources-credit ul { margin: 4px 0 6px 18px; padding: 0; }
+.sources-credit li { margin-bottom: 6px; }
+.sources-credit a { color: var(--accent, #4aa3ff); }

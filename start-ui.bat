@@ -25,10 +25,17 @@ if not exist "%DUCKDB_LIB_DIR%\duckdb.dll" (
 set "PATH=%DUCKDB_LIB_DIR%;%PATH%"
 
 rem ---- 2. data ------------------------------------------------------------------------------
+set HAVE_DATA=0
+dir /b "data\local\*.parquet" >nul 2>&1
+if not errorlevel 1 set HAVE_DATA=1
 dir /b "benchmarks\data\*.parquet" >nul 2>&1
-if errorlevel 1 (
-  echo [!] No GeoParquet files in benchmarks\data.
-  echo     Create sample data first, for example:
+if not errorlevel 1 set HAVE_DATA=1
+if "%HAVE_DATA%"=="0" (
+  echo [!] No GeoParquet files in data\local or benchmarks\data.
+  echo     The Vietnam demo pack (buildings, roads, boundaries, places, terrain) comes from:
+  echo       benchmarks\.venv\Scripts\python data\scripts\geo_data.py bootstrap "Ho Chi Minh City" --run
+  echo     (needs the Python environment below; downloads about 0.3 GB; buildings are fetched separately, see data\README.md)
+  echo     Or create synthetic sample data:
   echo       python -m venv benchmarks\.venv
   echo       benchmarks\.venv\Scripts\python -m pip install pyarrow duckdb numpy
   echo       benchmarks\.venv\Scripts\python benchmarks\gen_synthetic.py --size 10mb --out benchmarks\data
@@ -74,7 +81,7 @@ if not errorlevel 1 (
 )
 
 echo [4/4] Starting the gateway on http://127.0.0.1:%PORT% ...
-start "GeoFabric gateway (close this window to stop)" /D "%CD%" cmd /k "set PATH=%DUCKDB_LIB_DIR%;%PATH% && target\release\geo-gateway.exe --data benchmarks\data --web web\dist --port %PORT%"
+start "GeoFabric gateway (close this window to stop)" /D "%CD%" cmd /k "set PATH=%DUCKDB_LIB_DIR%;%PATH% && target\release\geo-gateway.exe --data data\local --data benchmarks\data --manifests data\manifests --repo-root . --web web\dist --port %PORT%"
 
 set /a TRIES=0
 :wait

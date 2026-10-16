@@ -34,7 +34,7 @@ export const HOSPITAL_CATEGORIES = ["hospital"];
 
 export const DEMOS: DemoSpec[] = [
   { id: "a", title: "demo.a.title", desc: "demo.a.desc", layers: [], view: { center: [106.6985, 10.7765], zoom: 15.2 } },
-  { id: "b", title: "demo.b.title", desc: "demo.b.desc", layers: [ROADS], view: { center: [106.70, 10.78], zoom: 14.4 } },
+  { id: "b", title: "demo.b.title", desc: "demo.b.desc", layers: [ROADS], view: { center: [106.70, 10.78], zoom: 15.3 } },
   { id: "c", title: "demo.c.title", desc: "demo.c.desc", layers: [ADMIN], view: { center: [106.70, 10.78], zoom: 13.4 } },
   { id: "d", title: "demo.d.title", desc: "demo.d.desc", layers: [ADMIN], view: { center: [106.70, 10.78], zoom: 14.2 } },
   { id: "e", title: "demo.e.title", desc: "demo.e.desc", layers: [DEM], view: { center: [107.0, 10.95], zoom: 9.2 } },
@@ -47,7 +47,7 @@ export function demoRequests(id: DemoId): Record<string, unknown>[] {
       return [{ source: BUILDINGS, kind: "features", limit: 5000 }];
     case "b":
       return [
-        { source: BUILDINGS, kind: "near", limit: 5000, with: { source: ROADS, filter: { column: "class", op: "in", values: MAIN_ROAD_CLASSES }, distance_m: NEAR_DISTANCE_M } },
+        { source: BUILDINGS, kind: "near", limit: 20000, with: { source: ROADS, filter: { column: "class", op: "in", values: MAIN_ROAD_CLASSES }, distance_m: NEAR_DISTANCE_M } },
         { source: BUILDINGS, kind: "near_count", with: { source: ROADS, filter: { column: "class", op: "in", values: MAIN_ROAD_CLASSES }, distance_m: NEAR_DISTANCE_M } },
       ];
     case "c":

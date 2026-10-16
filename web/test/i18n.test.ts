@@ -74,3 +74,14 @@ test("number formats follow the language", () => {
   assert.equal(fmtPct(0.983), "98.3%");
   setLang("vi");
 });
+
+test("every plan operator has a pipeline title and subtitle in both languages (no raw keys on screen)", async () => {
+  const { dictionary } = await import("../src/ui/i18n.ts");
+  for (const op of ["source", "bbox_filter", "intersects", "filter", "project", "aggregate", "sort", "limit", "buffer", "spatial_join", "server", "browser"]) {
+    for (const lang of ["vi", "en"] as const) {
+      const d = dictionary(lang);
+      assert.ok(`pipe.${op}` in d, `${lang} pipe.${op}`);
+      assert.ok(`pipe.sub.${op}` in d, `${lang} pipe.sub.${op}`);
+    }
+  }
+});

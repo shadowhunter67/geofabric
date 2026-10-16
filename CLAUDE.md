@@ -53,6 +53,7 @@ cargo build --release -p geo-bench && target/release/geo-bench.exe --data benchm
 | [`docs/vision.md`](docs/vision.md), `rfcs/RFC-001..003`, `adr/ADR-001..005` | Cần hiểu thiết kế IR/engine/planner |
 | [`docs/claude/lich-su.md`](docs/claude/lich-su.md) | Cần tra lịch sử sửa lỗi / quyết định thiết kế |
 | [`docs/claude/planner-hardening.md`](docs/claude/planner-hardening.md) | Sửa planner/probe/health/network hoặc engine trình duyệt; chạy held-out |
+| [`docs/claude/real-data.md`](docs/claude/real-data.md) | Gói dữ liệu Việt Nam (Overture, DEM), catalog, demo A–E, bootstrap, gateway nhiều `--data` |
 
 **Quy tắc duy trì:** mục mới/lịch sử ghi vào `docs/claude/`, KHÔNG nối dài CLAUDE.md.
 
@@ -66,3 +67,7 @@ Forbidden: `taskkill /IM node.exe`, `taskkill /IM python.exe`, `pkill node`, `ki
 Only terminate processes this project started, by a verified PID or an owned process handle (`taskkill /F /PID <pid>`; check with `netstat -ano` / `tasklist` first, and check that a port is free before starting a server on it: a stale server on the same port silently serves every test, see `docs/claude/planner-hardening.md`).
 
 Do not change the global Node installation, the nvm default, or any shared toolchain. If a specific version is needed, put it on PATH for the command only (here Node 24 at `C:/Users/<user>/AppData/Local/nvm/v24.16.0`; never `nvm use`).
+
+## Cài đặt thêm (ghi theo rule #7)
+
+- 2026-10-16: `npm install geotiff@3.0.5 --save-exact` trong `web/` (đọc COG trong trình duyệt, range request; chỉ để hiển thị DEM). Dữ liệu tải về nằm ở `data/local/` (không commit), gói Overture buildings ở `benchmarks/data/`.
