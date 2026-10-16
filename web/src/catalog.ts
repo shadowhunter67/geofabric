@@ -12,7 +12,8 @@ export interface CatalogDataset {
   source_ids: string[];
   present: boolean;
   files: CatalogFile[];
-  raster: { files: { name: string; url: string; size_bytes: number }[] } | null;
+  /** COG files of a raster dataset (the gateway returns a plain list), null for vector data */
+  raster: { name: string; url: string; size_bytes: number }[] | null;
   quality: { rows?: number; null_geometry_count?: number; invalid_geometry_count?: number | null } | null;
   notes?: string | null;
 }

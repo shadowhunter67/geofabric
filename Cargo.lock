@@ -697,6 +697,7 @@ dependencies = [
  "geo-source-geoparquet",
  "geo-types",
  "http-body-util",
+ "parquet",
  "serde",
  "serde_json",
  "thiserror",

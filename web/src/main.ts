@@ -18,6 +18,8 @@ import { classFilter, layerSpecs, loadLayerStates, renderPolicy, saveLayerStates
 import type { LayerState } from "./layers.ts";
 import { inspectorRows } from "./inspector-schema.ts";
 import { lengthOf } from "./measure.ts";
+import { loadDem } from "./raster.ts";
+import type { DemOverlay } from "./raster.ts";
 import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
 // ---------- tiny DOM helper (text only: file contents are untrusted) ----------
@@ -69,6 +71,7 @@ const S = {
   catalog: null as Catalog | null,
   cur: null as SourceMeta | null,
   layers: loadLayerStates() as Record<string, LayerState>,
+  raster: new Map<string, { loading: boolean; error: string | null; overlay: DemOverlay | null }>(),
   context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number }>(),
   last: null as RunResp | null,
   lastChosen: false,
@@ -614,9 +617,17 @@ function renderLeft() {
   list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
 }
 
+function rasterStatus(d: CatalogDataset): string {
+  const r = S.raster.get(d.id);
+  if (!r || r.loading) return t("catalog.raster_loading");
+  if (r.error) return t("catalog.raster_error");
+  return r.overlay ? t("catalog.raster_range", { min: fmtInt(Math.round(r.overlay.min)), max: fmtInt(Math.round(r.overlay.max)) }) : "";
+}
+
 function renderCatalogDataset(d: CatalogDataset): HTMLElement {
   const source = sourceIdOf(d);
-  const state = S.layers[d.id] ?? { visible: S.cur?.id === source, opacity: 1 };
+  const isRaster = d.group === "raster" && !!d.raster?.length;
+  const state = S.layers[d.id] ?? { visible: S.cur?.id === source, opacity: isRaster ? 0.65 : 1 };
   const info = S.context.get(d.id);
   const zoom = map.getZoom(), policy = renderPolicy(d.group, zoom);
   const toggle = (e: Event) => {
@@ -625,7 +636,8 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
   };
   const opacity = (e: Event) => {
     S.layers[d.id] = { ...state, opacity: Number((e.target as HTMLInputElement).value) / 100 };
-    saveLayerStates(S.layers); removeContext(d.id); void refreshContext(); renderLeft();
+    saveLayerStates(S.layers);
+    if (isRaster) { if (map.getLayer(`dem-${d.id}`)) map.setPaintProperty(`dem-${d.id}`, "raster-opacity", S.layers[d.id].opacity); } else restyleContext(d);
   };
   const details = S.expanded.has(d.id);
   const fileRows = d.files.reduce((n, f) => n + (f.rows ?? 0), 0);
@@ -633,11 +645,11 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
     el("button", { type: "button", class: "pick", onclick: () => { const found = S.sources.find((s) => s.id === source); if (found) void selectSource(found); } },
       el("span", { class: "name" }, d.title[getLang()]),
       el("span", { class: "meta" }, `${geometryLabel(d.geometry_type)} · ${fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))}`)),
-    source ? el("div", { class: "layer-controls" },
+    (source || isRaster) ? el("div", { class: "layer-controls" },
       el("label", { class: "check" }, el("input", { type: "checkbox", checked: state.visible, "aria-label": t("catalog.layer_visible", { name: d.title[getLang()] }), onchange: toggle }), t("catalog.visible")),
       el("input", { type: "range", min: "0", max: "100", step: "10", value: String(state.opacity * 100), "aria-label": t("catalog.opacity", { name: d.title[getLang()] }), "aria-valuetext": `${state.opacity * 100}%`, onchange: opacity }),
       el("button", { type: "button", title: t("catalog.zoom_to"), onclick: () => map.fitBounds(d.coverage.bbox, { padding: 40, maxZoom: 14, duration: 0 }) }, t("catalog.zoom_to")),
-      el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
+      el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : isRaster ? rasterStatus(d) : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
     el("button", { type: "button", class: "more", "aria-expanded": details, onclick: () => { details ? S.expanded.delete(d.id) : S.expanded.add(d.id); renderLeft(); } }, t(details ? "data.hide_details" : "data.details")),
     details ? el("table", { class: "kv detail", "data-testid": "dataset-detail" },
       row(t("catalog.provider"), d.provider), row(t("catalog.license"), d.license.name), d.license.attribution ? row(t("catalog.attribution"), d.license.attribution) : null,
@@ -649,6 +661,69 @@ function removeContext(id: string) {
   for (const l of map.getStyle().layers ?? []) if (l.id.startsWith(`ctx-${id}-`)) map.removeLayer(l.id);
   if (map.getSource(`ctx-${id}`)) map.removeSource(`ctx-${id}`);
 }
+/** Draw order of the catalog groups, bottom to top (the active result and the selection always sit above all of them). */
+const STACK = ["raster", "thematic", "admin", "buildings", "transport", "places"];
+/** Layer id to insert a group's layers BEFORE, so every group lands between its neighbours whatever order the data arrives in. */
+function stackAnchor(group: string): string | undefined {
+  const rank = STACK.indexOf(group);
+  const groupOf = (layerId: string): string | null => {
+    const d = S.catalog?.datasets.find((x) => layerId.startsWith(`ctx-${x.id}-`) || layerId === `dem-${x.id}`);
+    return d ? d.group : null;
+  };
+  for (const l of map.getStyle().layers ?? []) {
+    const g = groupOf(l.id);
+    if (g !== null && STACK.indexOf(g) > rank) return l.id;
+  }
+  return map.getLayer("rg-fill") && group === "raster" ? "rg-fill" : map.getLayer("res-fill") ? "res-fill" : undefined;
+}
+
+function removeDem(id: string) {
+  if (map.getLayer(`dem-${id}`)) map.removeLayer(`dem-${id}`);
+  if (map.getSource(`dem-${id}`)) map.removeSource(`dem-${id}`);
+}
+/** Terrain overlay: read once (range requests, COG overview), then only restyle. */
+async function ensureDem(d: CatalogDataset): Promise<void> {
+  const state = S.layers[d.id] ?? { visible: false, opacity: 0.65 };
+  const cur = S.raster.get(d.id) ?? { loading: false, error: null, overlay: null };
+  if (cur.loading) return;
+  if (cur.overlay) {
+    if (!map.getLayer(`dem-${d.id}`)) addDemLayer(d, cur.overlay, state.opacity);
+    else map.setPaintProperty(`dem-${d.id}`, "raster-opacity", state.opacity);
+    return;
+  }
+  S.raster.set(d.id, { loading: true, error: null, overlay: null });
+  renderLeft();
+  try {
+    const overlay = await loadDem(d.raster ?? []);
+    S.raster.set(d.id, { loading: false, error: null, overlay });
+    if (S.layers[d.id]?.visible) addDemLayer(d, overlay, (S.layers[d.id]?.opacity ?? 0.65));
+    log(`terrain: ${overlay.tiles} tiles, ${overlay.tilePx} px each, elevation ${Math.round(overlay.min)}..${Math.round(overlay.max)} m`);
+  } catch (e) {
+    log(String(e), true);
+    S.raster.set(d.id, { loading: false, error: String(e), overlay: null });
+  }
+  renderLeft();
+}
+function addDemLayer(d: CatalogDataset, overlay: DemOverlay, opacity: number) {
+  removeDem(d.id);
+  const [w, s2, e, n] = overlay.bbox;
+  map.addSource(`dem-${d.id}`, { type: "image", url: overlay.canvas.toDataURL("image/png"), coordinates: [[w, n], [e, n], [e, s2], [w, s2]] });
+  map.addLayer({ id: `dem-${d.id}`, type: "raster", source: `dem-${d.id}`, paint: { "raster-opacity": opacity, "raster-fade-duration": 0 } }, stackAnchor("raster"));
+}
+async function refreshRasters(): Promise<void> {
+  for (const d of S.catalog?.datasets ?? []) {
+    if (d.group !== "raster" || !d.raster?.length) continue;
+    if (S.layers[d.id]?.visible) await ensureDem(d); else removeDem(d.id);
+  }
+}
+/** Opacity changes restyle the layers that are already on the map; they never ask the server again. */
+function restyleContext(d: CatalogDataset) {
+  const source = `ctx-${d.id}`;
+  if (!map.getSource(source)) return;
+  for (const l of map.getStyle().layers ?? []) if (l.id.startsWith(`ctx-${d.id}-`)) map.removeLayer(l.id);
+  for (const spec of layerSpecs(d, source, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, stackAnchor(d.group));
+}
+
 /** The gateway runs 2 queries at a time and answers "busy" (429) beyond that: wait a moment and ask again. */
 async function apiRetryBusy<T>(path: string, body?: unknown): Promise<T> {
   for (let attempt = 0; ; attempt++) {
@@ -672,6 +747,7 @@ async function refreshContext(): Promise<void> {
 }
 async function refreshContextOnce(): Promise<void> {
   if (!S.catalog) return;
+  await refreshRasters();
   const candidates = S.catalog.datasets.filter((d) => sourceIdOf(d) && sourceIdOf(d) !== S.cur?.id && (S.layers[d.id]?.visible ?? false));
   for (const d of candidates) {
     const policy = renderPolicy(d.group, map.getZoom());
@@ -689,8 +765,7 @@ async function refreshContextOnce(): Promise<void> {
       fc.features.forEach((f, i) => { (f.properties ??= {}).__i = i; (f.properties ??= {}).__layer = d.id; });
       removeContext(d.id);
       map.addSource(`ctx-${d.id}`, { type: "geojson", data: fc });
-      const before = map.getStyle().layers?.find((l) => l.id === "res-fill")?.id;
-      for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, before);
+      for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, stackAnchor(d.group));
       S.context.set(d.id, { ...current, features: fc.features.length, limitHit: fc.features.length >= policy.limit, loading: false });
     } catch (e) { log(String(e), true); S.context.set(d.id, { ...old, loading: false, seq }); }
     renderLeft();

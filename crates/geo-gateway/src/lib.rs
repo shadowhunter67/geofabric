@@ -9,6 +9,7 @@
 //! the boundary, purely for map display.
 
 pub mod catalog;
+pub mod templates;
 pub mod wkb;
 
 use arrow_array::cast::AsArray;
@@ -144,7 +145,7 @@ pub type Shared = Arc<AppState>;
 
 // ---------- errors ----------
 
-pub struct ApiError(StatusCode, Value);
+pub(crate) struct ApiError(StatusCode, Value);
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
@@ -152,7 +153,7 @@ impl IntoResponse for ApiError {
     }
 }
 
-fn err(status: StatusCode, code: &str, msg: impl Into<String>) -> ApiError {
+pub(crate) fn err(status: StatusCode, code: &str, msg: impl Into<String>) -> ApiError {
     ApiError(status, json!({"error": code, "message": msg.into()}))
 }
 
@@ -283,13 +284,15 @@ pub struct FilterReq {
 #[derive(Deserialize)]
 pub struct QueryReq {
     source: String,
-    /// features | count_by | count | intersects_features
+    /// features | count_by | count | intersects_features | near | join_count_by
     kind: String,
     /// viewport [xmin, ymin, xmax, ymax] in `crs`
     bbox: [f64; 4],
     crs: String,
     filter: Option<FilterReq>,
     group_by: Option<String>,
+    #[serde(rename = "with")]
+    with_req: Option<WithReq>,
     limit: Option<u64>,
     /// Engine preference ("duckdb" | "duckdb-wasm"); honored only if feasible.
     engine: Option<String>,
@@ -302,6 +305,15 @@ pub struct QueryReq {
     /// Measurement aid: operator memory limit (MB) for the browser engine for this request only (replaces the
     /// risk model's memory rejection, like `--browser-max-mb`). Used to run the browser engine past the planner's guard.
     browser_limit_mb: Option<u64>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WithReq {
+    source: String,
+    filter: Option<FilterReq>,
+    distance_m: Option<f64>,
+    group_by: Option<String>,
 }
 
 #[derive(Deserialize, Default, Clone)]
@@ -340,7 +352,38 @@ fn json_to_literal(v: &Value) -> Result<Literal, ApiError> {
     })
 }
 
-fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Result<Plan, ApiError> {
+fn apply_filter(mut node: Node, filter: Option<&FilterReq>) -> Result<Node, ApiError> {
+    let Some(f) = filter else {
+        return Ok(node);
+    };
+    if f.op == "in" {
+        if f.values.is_empty() {
+            return Err(err(StatusCode::BAD_REQUEST, "bad_request", "filter op 'in' needs a non-empty values list"));
+        }
+        let values = f.values.iter().map(json_to_literal).collect::<Result<Vec<_>, _>>()?;
+        node = Node::Filter { input: Box::new(node), predicate: Expr::In { column: f.column.clone(), values } };
+    } else {
+        let op = match f.op.as_str() {
+            "eq" => CompareOp::Eq,
+            "ne" => CompareOp::Ne,
+            "lt" => CompareOp::Lt,
+            "le" => CompareOp::Le,
+            "gt" => CompareOp::Gt,
+            "ge" => CompareOp::Ge,
+            _ => return Err(err(StatusCode::BAD_REQUEST, "bad_request", "unknown filter op")),
+        };
+        node = Node::Filter {
+            input: Box::new(node),
+            predicate: Expr::Compare { column: f.column.clone(), op, value: json_to_literal(&f.value)? },
+        };
+    }
+    Ok(node)
+}
+
+fn build_ir(rt: &Runtime, uri: &str, with_uri: Option<&str>, ctx: &ExecutionContext, q: &QueryReq) -> Result<Plan, ApiError> {
+    if matches!(q.kind.as_str(), "near" | "near_count" | "join_count_by") {
+        return templates::build(rt, uri, with_uri, ctx, q);
+    }
     let bad = |m: &str| err(StatusCode::BAD_REQUEST, "bad_request", m.to_string());
     let src = rt.open_source(uri, ctx)?;
     let (geom_col, crs_src) = match &src {
@@ -373,29 +416,7 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
         "features" | "count_by" | "count" => Node::BboxFilter { input: Box::new(src.clone()), geometry_column: geom_col.clone(), bbox: bb },
         _ => return Err(bad("unknown kind")),
     };
-    if let Some(f) = &q.filter {
-        if f.op == "in" {
-            if f.values.is_empty() {
-                return Err(bad("filter op 'in' needs a non-empty values list"));
-            }
-            let values = f.values.iter().map(json_to_literal).collect::<Result<Vec<_>, _>>()?;
-            node = Node::Filter { input: Box::new(node), predicate: Expr::In { column: f.column.clone(), values } };
-        } else {
-        let op = match f.op.as_str() {
-            "eq" => CompareOp::Eq,
-            "ne" => CompareOp::Ne,
-            "lt" => CompareOp::Lt,
-            "le" => CompareOp::Le,
-            "gt" => CompareOp::Gt,
-            "ge" => CompareOp::Ge,
-            _ => return Err(bad("unknown filter op")),
-        };
-        node = Node::Filter {
-            input: Box::new(node),
-            predicate: Expr::Compare { column: f.column.clone(), op, value: json_to_literal(&f.value)? },
-        };
-        }
-    }
+    node = apply_filter(node, q.filter.as_ref())?;
     let limit = q.limit.unwrap_or(20_000).min(MAX_FEATURES);
     node = match q.kind.as_str() {
         "count" => Node::Aggregate {
@@ -431,7 +452,7 @@ fn build_ir(rt: &Runtime, uri: &str, ctx: &ExecutionContext, q: &QueryReq) -> Re
     Ok(Plan::new(node))
 }
 
-fn node_schema(n: &Node) -> Result<SpatialSchema, ApiError> {
+pub(crate) fn node_schema(n: &Node) -> Result<SpatialSchema, ApiError> {
     n.output_schema().map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, "schema", e.to_string()))
 }
 
@@ -497,7 +518,7 @@ fn to_response(plan: &Plan, run: geo_runtime::RunOutput, total_ms: f64) -> Value
     let lineage: Vec<Value> = plan.lineage().into_iter().map(|(id, k)| json!({"id": &id[..12], "op": k.name()})).collect();
     let engine_ms = run.result.metrics.elapsed_ms.value.unwrap_or(0.0);
     let (dcount, dhash) = result_digest(batches);
-    json!({
+    let mut response = json!({
         "placement": "server",
         "result_digest": {"count": dcount, "sha256": dhash},
         "plan_id": plan.plan_id(),
@@ -514,7 +535,19 @@ fn to_response(plan: &Plan, run: geo_runtime::RunOutput, total_ms: f64) -> Value
             "plan_and_overhead_ms": {"value": (total_ms - engine_ms).max(0.0), "source": "derived"},
             "boundary_conversion_ms": {"value": t0.elapsed().as_secs_f64() * 1000.0, "source": "engine_observed"},
         },
-    })
+    });
+    // a metre distance on a lon/lat source is executed as an explicit ANGULAR distance: say so (units are never implicit)
+    if let Some(distance) = plan.nodes.values().find_map(|node| match node {
+        geo_ir::PlanNode::Buffer { distance, .. } if distance.unit() == DistanceUnit::Degree => Some(distance.value()),
+        _ => None,
+    }) {
+        response["approximation"] = json!({
+            "distance_m": distance * 111_320.0,
+            "distance_degrees": distance,
+            "note": "1 degree = 111320 m north-south; east-west distances are shorter by cos(latitude): about 1.9 % at 10.8 N"
+        });
+    }
+    response
 }
 
 /// Cancels the running query if the request future is dropped (client
@@ -673,6 +706,21 @@ async fn plan_only(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiEr
 }
 
 async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Opts), ApiError> {
+    let with_uri = match q.kind.as_str() {
+        "near" | "near_count" | "join_count_by" => {
+            let with = q
+                .with_req
+                .as_ref()
+                .ok_or_else(|| err(StatusCode::BAD_REQUEST, "bad_request", "with is required for this kind"))?;
+            Some(authorized_source(st, &with.source)?.uri().to_string())
+        }
+        _ => {
+            if q.with_req.is_some() {
+                return Err(err(StatusCode::BAD_REQUEST, "bad_request", "with is only valid for near and join_count_by"));
+            }
+            None
+        }
+    };
     let a = authorized_source(st, &q.source)?;
     let st2 = st.clone();
     let uri = a.uri().to_string();
@@ -680,7 +728,7 @@ async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Opts), ApiE
     let engine = q.engine.clone();
     let mut plan = tokio::task::spawn_blocking(move || {
         let ctx = st2.ctx();
-        build_ir(&st2.rt, &uri, &ctx, &q)
+        build_ir(&st2.rt, &uri, with_uri.as_deref(), &ctx, &q)
     })
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;
@@ -688,13 +736,25 @@ async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Opts), ApiE
     Ok((plan, o))
 }
 
-async fn query(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
-    let (plan, o) = build_query_plan(&st, q).await?;
+fn query_req(payload: Result<Json<QueryReq>, axum::extract::rejection::JsonRejection>) -> Result<QueryReq, ApiError> {
+    payload
+        .map(|Json(q)| q)
+        .map_err(|e| err(StatusCode::BAD_REQUEST, "bad_request", e.body_text()))
+}
+
+async fn query(
+    State(st): State<Shared>,
+    payload: Result<Json<QueryReq>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>, ApiError> {
+    let (plan, o) = build_query_plan(&st, query_req(payload)?).await?;
     run_plan(st, plan, o).await
 }
 
-async fn query_plan(State(st): State<Shared>, Json(q): Json<QueryReq>) -> Result<Json<Value>, ApiError> {
-    let (plan, o) = build_query_plan(&st, q).await?;
+async fn query_plan(
+    State(st): State<Shared>,
+    payload: Result<Json<QueryReq>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>, ApiError> {
+    let (plan, o) = build_query_plan(&st, query_req(payload)?).await?;
     plan_only(st, plan, o).await
 }
 
