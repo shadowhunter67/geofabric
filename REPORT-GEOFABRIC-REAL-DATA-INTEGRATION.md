@@ -180,4 +180,4 @@ Accept the data pack and the demo as a product demo of the current architecture.
 
 ## Commit
 
-(filled in after commit)
+Commit titled "Real data integration: dataset search, Settings sources and licences, …" (its hash is in `git log`); earlier commits of this phase are listed in section 2.
