@@ -65,9 +65,29 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
     await page.close().catch(() => {});
     page = await context.newPage(); // fresh tab per dataset: a crash never poisons the next dataset
     await open();
+    // drift control: a fixed reference measured at the start of every dataset batch (same query, both engines), so the machine state of
+    // this batch can be read off the result (identical cases re-measured hours apart differed by 0.56-1.68x on this host)
+    const refReq = { source: "clustered_10mb_spatial", kind: "count", bbox: [100.5, 8.5, 109.5, 23.5], crs: "EPSG:4326" };
+    const refS: number[] = [], refB: number[] = [];
+    try {
+      for (let i = 0; i < 5; i++) {
+        const r = await post("/api/query", { ...refReq, engine: "duckdb", browser: false });
+        if (r.status === 200) refS.push(r.ms);
+        const o = await page.evaluate(async (rq) => {
+          const t0p = performance.now();
+          const resp = await fetch("/api/query", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...rq, engine: "duckdb-wasm", browser_limit_mb: 220, client: { warm: true } }) });
+          const placed = await resp.json();
+          if (!resp.ok || placed.placement !== "browser") return null;
+          await window.__gf.resolvePlacement(placed);
+          return performance.now() - t0p;
+        }, refReq);
+        if (o !== null) refB.push(o);
+      }
+    } catch { /* the reference is a control, never a reason to stop */ }
+    const reference = { server_ms: refS.length ? median(refS) : null, browser_ms: refB.length > 1 ? median(refB.slice(1)) : null, at: new Date().toISOString() };
     for (const c of list) {
       const req = { source: c.dataset, kind: c.kind, bbox: c.bbox, crs: c.crs, limit: c.limit ?? undefined, group_by: c.group_by ?? undefined, filter: c.filter ?? undefined };
-      const row: Record<string, unknown> = { case: c, dataset };
+      const row: Record<string, unknown> = { case: c, dataset, reference };
       try {
         // browser state
         if (c.browser_state === "cold") await page.evaluate(() => window.__gf.wasm.recycle());
@@ -99,7 +119,7 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
         row.server = { ms: sT, median: sT.length ? median(sT) : null, rows: sRows };
         // 3. browser (only when a tab can hold it)
         const engineInput = planner.browser_access.reduce((a, x) => a + x.fetch_bytes_est, 0); // bytes the browser would pull into the tab
-        const b: Record<string, unknown> = { ms: [], rows: null, file_requests: [], file_bytes: [], plan_ms: [], resolve_ms: [], phases: [] };
+        const b: Record<string, unknown> = { ms: [], outer_ms: [], rows: null, file_requests: [], file_bytes: [], plan_ms: [], resolve_ms: [], phases: [] };
         if (engineInput > BROWSER_SAFE_INPUT) {
           b.skipped = `browser fetch ${(engineInput / 1048576).toFixed(0)} MB > ${BROWSER_SAFE_INPUT / 1048576} MB (tab crash threshold)`;
         } else {
@@ -107,31 +127,41 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
           let bDigest: unknown = null;
           for (let i = 0; i < 3; i++) {
             const st0 = (await page.evaluate(() => fetch("/api/stats").then((r) => r.json()))) as { file_requests: number; file_bytes: number };
-            const t0 = Date.now();
             const warmNow = await page.evaluate(() => window.__gf.wasm.isWarm());
-            const placed = await post("/api/query", { ...req, engine: "duckdb-wasm", browser_limit_mb: SAFE_MB, client: { warm: warmNow } });
-            const planMs = Date.now() - t0;
-            if (placed.status !== 200 || placed.json.placement !== "browser") {
-              b.not_placed = placed.status !== 200
-                ? JSON.stringify(placed.json).slice(0, 200)
-                : ((placed.json.physical?.candidates ?? []) as Cand[]).find((k) => k.engine === "duckdb-wasm")?.rejected_because?.join("; ") ?? "placed on the server";
+            const t0 = Date.now();
+            // TIMING CONTRACT (final planner validation): the browser time is measured INSIDE the page with one clock, from the moment the
+            // placed request leaves to the moment the result exists in the tab: plan request + response (gateway planning included)
+            // + engine start (cold only) + open + first batch + drain + conversion. It excludes the test driver's own round trips
+            // (three CDP calls ~5-15 ms in the older harness) and anything the UI does afterwards (drawing). The planner's browser
+            // model predicts exactly this quantity (crates/geo-planner/src/browser_model.rs, docs/claude/pre-postgis-gate.md).
+            try {
+            const out = await page.evaluate(async ([rq, safeMb, warmFlag]) => {
+              const t0p = performance.now();
+              const resp = await fetch("/api/query", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...(rq as object), engine: "duckdb-wasm", browser_limit_mb: safeMb, client: { warm: warmFlag } }) });
+              const placed = await resp.json();
+              const t1p = performance.now();
+              if (!resp.ok || placed.placement !== "browser") {
+                const k = ((placed.physical?.candidates ?? []) as { engine: string; rejected_because?: string[] }[]).find((x) => x.engine === "duckdb-wasm");
+                return { placed: false as const, status: resp.status, body: resp.ok ? null : JSON.stringify(placed).slice(0, 200), why: k?.rejected_because?.join("; ") ?? "placed on the server", plan_ms: t1p - t0p };
+              }
+              const x = await window.__gf.resolvePlacement(placed);
+              const t2p = performance.now();
+              return { placed: true as const, plan_ms: t1p - t0p, resolve_ms: t2p - t1p, total: t2p - t0p, rows_total: x.rows_total, digest: x.result_digest, phases: x.phases ?? null };
+            }, [req, SAFE_MB, warmNow] as const);
+            if (!out.placed) {
+              b.not_placed = out.status !== 200 ? (out.body ?? "") : out.why;
               break;
             }
-            try {
-              // only a summary leaves the page: returning the whole result (tens of thousands of features) to the test process made the
-              // measured time include its serialisation (1.5 s for 17,000 features), a cost the product never pays
-              const res = await page.evaluate(async (r) => {
-                const x = await window.__gf.resolvePlacement(r);
-                return { rows_total: x.rows_total, result_digest: x.result_digest, phases: x.phases ?? null };
-              }, placed.json);
-              times.push(Date.now() - t0);
-              (b.plan_ms as number[]).push(planMs);
-              (b.resolve_ms as number[]).push(Date.now() - t0 - planMs);
+              const res = out;
+              times.push(Math.round(out.total * 10) / 10);
+              (b.outer_ms as number[]).push(Date.now() - t0); // the older definition (includes the test driver's round trips), kept for comparison
+              (b.plan_ms as number[]).push(Math.round(out.plan_ms * 10) / 10);
+              (b.resolve_ms as number[]).push(Math.round(out.resolve_ms * 10) / 10);
               (b.phases as unknown[]).push(res.phases ?? null);
               const st1 = (await page.evaluate(() => fetch("/api/stats").then((r) => r.json()))) as { file_requests: number; file_bytes: number };
               (b.file_requests as number[] | undefined)?.push(st1.file_requests - st0.file_requests);
               (b.file_bytes as number[] | undefined)?.push(st1.file_bytes - st0.file_bytes);
-              b.rows = res.rows_total; bDigest = res.result_digest;
+              b.rows = res.rows_total; bDigest = res.digest;
             } catch (e) {
               b.error = String(e).slice(0, 300);
               if (String(e).includes("crashed")) {

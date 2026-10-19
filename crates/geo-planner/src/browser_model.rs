@@ -1,8 +1,14 @@
-//! Browser cost model (planner hardening III). Fitted ONLY on the calibration set (`benchmarks/results/browser-model-fit.json`,
+//! Browser cost model (planner hardening III, refitted for the final validation under the in-page timing contract).
+//! Fitted ONLY on the calibration set (`benchmarks/results/browser-model-fit-v2.json` from `ccal-*`,
 //! `benchmarks/fit_browser_model.py`), then frozen. Held-out evidence is a separate run; these constants are never refitted on it.
 //!
 //! The time is a sum of parts the engine itself measures: plan round trip, engine start (cold), opening the sources, the sequential
 //! range requests and their bytes, decode + compute, and materialising the result (rows, geometry bytes, attribute bytes).
+//!
+//! TIMING CONTRACT. The predicted quantity is the time measured with ONE clock inside the page from the moment the placed request
+//! leaves to the moment the result exists in the tab: plan request and response (gateway planning included) + engine start (cold
+//! only) + open + first batch + drain + conversion. It excludes the test driver's own round trips and everything after the result
+//! (drawing). The harness (`web/e2e/heldout.spec.ts`) and this model use this one definition.
 //! A throttled link costs a request `rtt_factor * rtt + turn_overhead` (the emulated link adds ~25 ms per request beyond the RTT).
 
 use crate::network::NetworkProfile;
@@ -42,12 +48,30 @@ pub struct BrowserModel {
 impl Default for BrowserModel {
     fn default() -> Self {
         BrowserModel {
-            plan_ms: 7.045, rtt_factor: 1.179, turn_overhead_ms: 24.815, init_cpu_ms: 388.27, asset_transfer_factor: 0.9458,
-            asset_rtt_factor: 1.348, asset_overhead_ms: 15.457, cold_first_query_ms: 164.86, full_open_ms: 8.289, full_open_rtt_factor: 1.418,
-            full_transfer_factor: 1.0173, full_open_overhead_ms: 15.55, full_first_ms: 4.229, full_first_ms_per_kept_mb: 0.5373,
-            full_first_ms_per_result_geom_mb: 6.053, range_first_ms: 5.929, range_request_cpu_ms: 2.770, range_request_rtt_factor: 0.9674,
-            range_request_overhead_ms: 25.686, range_transfer_factor: 1.005, result_ms: 0.7854, result_ms_per_krow: 3.2236,
-            result_ms_per_geom_mb: 5.994, result_ms_per_attr_mb: 18.638,
+            plan_ms: 3.356,
+            rtt_factor: 1.143,
+            turn_overhead_ms: 19.094,
+            init_cpu_ms: 416.317,
+            asset_transfer_factor: 0.953,
+            asset_rtt_factor: 0.0,
+            asset_overhead_ms: 115.871,
+            cold_first_query_ms: 198.562,
+            full_open_ms: 7.603,
+            full_open_rtt_factor: 0.0,
+            full_transfer_factor: 1.084,
+            full_open_overhead_ms: 39.696,
+            full_first_ms: 4.755,
+            full_first_ms_per_kept_mb: 0.66,
+            full_first_ms_per_result_geom_mb: 6.753,
+            range_first_ms: 7.053,
+            range_request_cpu_ms: 1.905,
+            range_request_rtt_factor: 0.931,
+            range_request_overhead_ms: 25.984,
+            range_transfer_factor: 1.041,
+            result_ms: 0.788,
+            result_ms_per_krow: 4.241,
+            result_ms_per_geom_mb: 4.917,
+            result_ms_per_attr_mb: 18.847,
         }
     }
 }

@@ -27,6 +27,8 @@ SIZES = {
     "10mb": dict(rows=130_000, row_group=5_000),
     "30mb": dict(rows=390_000, row_group=10_000),  # added for the held-out planner evaluation (a size the cost model never saw)
     "100mb": dict(rows=1_300_000, row_group=20_000),
+    "300mb": dict(rows=3_900_000, row_group=50_000),  # final planner validation: sizes between 128 MiB and 1 GB
+    "500mb": dict(rows=6_500_000, row_group=65_000),
     "1gb": dict(rows=13_000_000, row_group=100_000),
 }
 GENERATOR_VERSION = "1"
@@ -169,10 +171,13 @@ def main():
     ap.add_argument("--out", default="data")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--suffix", default="", help="appended to the file names, e.g. _s2 for a second, independent draw of the same generator")
+    ap.add_argument("--only", nargs="*", help="only these dist_ordering combinations, e.g. clustered_spatial uniform_shuffled (large sizes: saves disk and time)")
     a = ap.parse_args()
     out = pathlib.Path(a.out)
     for dist in ("clustered", "uniform"):
         for ordering in ("spatial", "shuffled"):
+            if a.only and f"{dist}_{ordering}" not in a.only:
+                continue
             m = generate(dist, ordering, a.size, a.seed, out, a.suffix)
             print(f"{m['name']}: {m['file_size_bytes']/1e6:.1f} MB, rows={m['row_count']}, rg={m['row_groups']}")
 

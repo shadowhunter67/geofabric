@@ -60,10 +60,12 @@ def main():
                 "kept_rg": len(sc["prune"]["kept"]), "total_rg": sc["prune"]["total_row_groups"], "kept_bytes": sc["prune"]["kept_bytes"],
                 "covering_bytes": sc["covering_bytes_total"], "read_class": sc["read_class"], "total_rows": sc["total_rows"],
                 "geom_row_bytes": sc.get("geometry_row_bytes"), "attr_row_bytes": sc.get("attribute_row_bytes"),
+                "sel_geom_bytes": sc.get("selected_geometry_bytes"), "raw_selected_rows": sc.get("raw_selected_rows"),
                 "est_rows": plan["result_rows_estimate"], "est_cardinality": plan["assessment"]["estimate"]["cardinality"],
                 "rows": b.get("rows"), "meas_requests": med([b["file_requests"][i] for i in idx]), "meas_bytes": med([b["file_bytes"][i] for i in idx]),
                 "total_ms": med([ms[i] for i in idx]), "plan_ms": med([b["plan_ms"][i] for i in idx]),
                 "init_ms": pm("init_ms"), "open_ms": pm("open_ms"), "first_ms": pm("first_ms"), "drain_ms": pm("drain_ms"), "boundary_ms": pm("boundary_ms"),
+                "planner_server_pred_ms": next((k["score_ms"] for k in plan["candidates"] if k["engine"] == "duckdb" and k["feasible"]), None),
                 "planner_pred_ms": next((k["score_ms"] for k in plan["candidates"] if k["engine"] == "duckdb-wasm" and k["feasible"]), None),
                 "server_ms": (r.get("server") or {}).get("median"),
             })

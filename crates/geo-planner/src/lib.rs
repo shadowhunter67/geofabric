@@ -87,6 +87,12 @@ pub struct CostModel {
     pub server_fixed_ms: f64,
     pub server_ms_per_input_mb: f64,
     pub server_us_per_result_row: f64,
+    /// Server result materialisation (GeoJSON conversion + serialisation), fitted on the calibration set (final validation): per MB of geometry / attributes returned.
+    pub server_ms_per_geom_mb: f64,
+    pub server_ms_per_attr_mb: f64,
+    /// Bytes on the wire per byte of WKB geometry / of attributes (JSON text).
+    pub server_json_geom_factor: f64,
+    pub server_json_attr_factor: f64,
     /// Fitted browser time model (calibration set only, frozen): see `browser_model.rs`. Replaces the older scalar terms below for pricing.
     pub browser: BrowserModel,
     pub browser_fixed_ms: f64,
@@ -139,7 +145,11 @@ impl Default for CostModel {
         CostModel {
             server_fixed_ms: 83.0,
             server_ms_per_input_mb: 0.199,
-            server_us_per_result_row: 17.8,
+            server_us_per_result_row: 0.0,
+            server_ms_per_geom_mb: 155.0,
+            server_ms_per_attr_mb: 234.0,
+            server_json_geom_factor: 3.0,
+            server_json_attr_factor: 3.0,
             browser: BrowserModel::default(),
             browser_fixed_ms: 19.0,
             browser_ms_per_covering_mb: 5.38,
@@ -289,7 +299,23 @@ pub struct BrowserAccess {
     pub row_bytes: f64,
 }
 
+/// Geometry and attribute bytes of the result rows (both engines): exact geometry bytes when the source has a row index, else the
+/// mean row size; an aggregate returns no geometry at all.
+fn result_payload(scans: &[SourceScan], rows: f64, aggregate: bool) -> (f64, f64) {
+    if aggregate {
+        return (0.0, rows * 16.0);
+    }
+    scans.first().map_or((0.0, 0.0), |s| {
+        let geom = match s.selected_geometry_bytes {
+            Some(b) if s.raw_selected_rows >= 1.0 => b * (rows / s.raw_selected_rows).min(1.0),
+            _ => rows * s.geometry_row_bytes,
+        };
+        (geom, rows * s.attribute_row_bytes)
+    })
+}
+
 /// Largest file the browser time model was calibrated on (bytes).
+const MB_F: f64 = 1048576.0;
 const BROWSER_MODEL_CALIBRATED_MAX_BYTES: u64 = 128 << 20;
 
 fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &CostModel) -> Vec<BrowserAccess> {
@@ -473,6 +499,9 @@ struct PlanFacts<'a> {
     input_bytes: u64,
     access: &'a [BrowserAccess],
     result_bytes: u64,
+    /// Geometry / attribute bytes of the result (see `result_payload`).
+    result_geom_bytes: f64,
+    result_attr_bytes: f64,
     has_bbox_filter: bool,
     source_keys: &'a [String],
     read_classes: &'a [ReadClass],
@@ -553,7 +582,10 @@ impl Planner {
         // R2b estimator v2: result rows with calibration, interval and quality
         let est = estimate_rows(plan, &scans, &cfg.cost, &inputs.calibration, inputs.histograms.as_deref());
         let result_rows = est.rows;
-        let result_bytes = result_rows.saturating_mul(cfg.cost.avg_result_row_bytes);
+        let shape = plan_shape(plan);
+        let (result_geom_bytes, result_attr_bytes) = result_payload(&scans, result_rows as f64, shape.ungrouped || shape.group_by.is_some());
+        // what travels from the server: attributes as JSON plus the geometry as GeoJSON text (about three times its WKB size; measured on buildings 641 B/row, synthetic 330 B/row)
+        let result_bytes = ((result_attr_bytes * cfg.cost.server_json_attr_factor + result_geom_bytes * cfg.cost.server_json_geom_factor) as u64).max(result_rows.saturating_mul(cfg.cost.avg_result_row_bytes.min(100)));
         log.push(dec(
             "estimate",
             "result rows",
@@ -582,6 +614,8 @@ impl Planner {
             input_bytes,
             access: &access,
             result_bytes,
+            result_geom_bytes,
+            result_attr_bytes,
             has_bbox_filter: plan.required_ops().contains(&OpKind::BboxFilter),
             source_keys: &source_keys,
             read_classes: &read_classes,
@@ -1049,7 +1083,7 @@ impl Planner {
                     CostBreakdown {
                         fixed_ms: c.server_fixed_ms,
                         scan_ms: mb(input_bytes) * c.server_ms_per_input_mb,
-                        result_ms: result_rows as f64 * c.server_us_per_result_row / 1000.0,
+                        result_ms: result_rows as f64 * c.server_us_per_result_row / 1000.0 + f.result_geom_bytes / MB_F * c.server_ms_per_geom_mb + f.result_attr_bytes / MB_F * c.server_ms_per_attr_mb,
                         transfer_ms: latency + net.upload_ms(c.request_bytes) + net.download_ms(result_bytes),
                         latency_ms: latency,
                         cold_start_ms: 0.0,
@@ -1062,15 +1096,7 @@ impl Planner {
                     let full: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Full).collect();
                     let range: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Range).collect();
                     let fetched: u64 = f.access.iter().map(|a| a.fetch_bytes_est).sum();
-                    // result payload: exact geometry bytes when the source has a row index, else the mean row size
-                    let (geom_bytes, attr_bytes) = scans.first().map_or((0.0, 0.0), |s| {
-                        let rows = result_rows as f64;
-                        let geom = match s.selected_geometry_bytes {
-                            Some(b) if s.raw_selected_rows >= 1.0 => b * (rows / s.raw_selected_rows).min(1.0),
-                            _ => rows * s.geometry_row_bytes,
-                        };
-                        (geom, rows * s.attribute_row_bytes)
-                    });
+                    let (geom_bytes, attr_bytes) = (f.result_geom_bytes, f.result_attr_bytes);
                     let inp = browser_model::BrowserInputs {
                         cold,
                         has_full: !full.is_empty(),
