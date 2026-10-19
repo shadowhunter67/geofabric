@@ -9,10 +9,10 @@
   "name": "count_by_sorted",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_29d9e4fd9af94bb9a609": {
-        "input": "n_7fdf585df43d85e955a0",
+      "n_04112afe058bfd6bb6e1": {
+        "input": "n_f92b66644c7d4540bc92",
         "keys": [
           {
             "column": "n",
@@ -25,35 +25,7 @@
         ],
         "op": "sort"
       },
-      "n_6bbcfac81059b8f07f56": {
-        "bbox": {
-          "crs": {
-            "epsg": 4326
-          },
-          "max_x": 105.5,
-          "max_y": 13.25,
-          "min_x": 104.0,
-          "min_y": 12.0
-        },
-        "geometry_column": "geometry",
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "bbox_filter"
-      },
-      "n_7fdf585df43d85e955a0": {
-        "aggregates": [
-          {
-            "alias": "n",
-            "column": null,
-            "func": "count"
-          }
-        ],
-        "group_by": [
-          "category"
-        ],
-        "input": "n_6bbcfac81059b8f07f56",
-        "op": "aggregate"
-      },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -91,13 +63,41 @@
         },
         "uri": "a.parquet"
       },
-      "n_db3b4d27ba5180e4d75b": {
-        "input": "n_29d9e4fd9af94bb9a609",
+      "n_d073daaba39d8c59ef4f": {
+        "input": "n_04112afe058bfd6bb6e1",
         "n": 50,
         "op": "limit"
+      },
+      "n_f4b8ea907395112be7d1": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "bbox_filter"
+      },
+      "n_f92b66644c7d4540bc92": {
+        "aggregates": [
+          {
+            "alias": "n",
+            "column": null,
+            "func": "count"
+          }
+        ],
+        "group_by": [
+          "category"
+        ],
+        "input": "n_f4b8ea907395112be7d1",
+        "op": "aggregate"
       }
     },
-    "root": "n_db3b4d27ba5180e4d75b"
+    "root": "n_d073daaba39d8c59ef4f"
   },
   "sources": {
     "a.parquet": {

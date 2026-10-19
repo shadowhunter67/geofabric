@@ -9,38 +9,19 @@
   "name": "features_limit",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_3804a36f9da9488c2784": {
+      "n_6b0d156d61b7c6589ac4": {
         "columns": [
           "id",
           "category",
           "geometry",
           "bbox"
         ],
-        "input": "n_6bbcfac81059b8f07f56",
+        "input": "n_f4b8ea907395112be7d1",
         "op": "project"
       },
-      "n_3be8577ec3966bddb362": {
-        "input": "n_3804a36f9da9488c2784",
-        "n": 2000,
-        "op": "limit"
-      },
-      "n_6bbcfac81059b8f07f56": {
-        "bbox": {
-          "crs": {
-            "epsg": 4326
-          },
-          "max_x": 105.5,
-          "max_y": 13.25,
-          "min_x": 104.0,
-          "min_y": 12.0
-        },
-        "geometry_column": "geometry",
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "bbox_filter"
-      },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -77,9 +58,28 @@
           "total_bytes": null
         },
         "uri": "a.parquet"
+      },
+      "n_bd16f7fc4acb4e3304a7": {
+        "input": "n_6b0d156d61b7c6589ac4",
+        "n": 2000,
+        "op": "limit"
+      },
+      "n_f4b8ea907395112be7d1": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "bbox_filter"
       }
     },
-    "root": "n_3be8577ec3966bddb362"
+    "root": "n_bd16f7fc4acb4e3304a7"
   },
   "sources": {
     "a.parquet": {

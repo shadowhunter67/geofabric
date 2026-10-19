@@ -11,7 +11,7 @@ mod schema;
 mod validate;
 
 pub use expr::{AggFunc, AggExpr, CompareOp, Expr, Literal, SortKey};
-pub use graph::{migrate_v0_1, GraphBuilder, GraphError, NodeId, Plan, PlanNode, TreePlanV01, IR_VERSION, IR_VERSION_TREE};
+pub use graph::{migrate_v0_1, GraphBuilder, GraphError, NodeId, Plan, PlanNode, TreePlanV01, IR_VERSION, IR_VERSION_PREVIOUS, IR_VERSION_TREE};
 pub use node::{GeometryLiteral, Hints, JoinType, Node, OpKind, SourceFormat, SourceStats, SpatialPredicate};
 pub use validate::{validate, Issue, Severity, ValidationReport};
 

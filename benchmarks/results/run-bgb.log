@@ -1,0 +1,33 @@
+=== LOCAL: bgb-LOCAL.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+g000 LOCAL clustered_1gb_spatial features f=0.002 warm: planner=duckdb server=187 browser=407
+g001 LOCAL clustered_1gb_spatial features f=0.0005 warm: planner=duckdb server=111 browser=200
+g002 LOCAL clustered_1gb_spatial count f=0.002 warm: planner=duckdb server=96 browser=260
+g003 LOCAL clustered_1gb_spatial count_by f=0.01 warm: planner=duckdb server=127 browser=307
+g008 LOCAL clustered_1gb_spatial features f=0.002 warm: planner=duckdb server=106 browser=286
+g009 LOCAL clustered_1gb_spatial features f=0.0005 warm: planner=duckdb server=117 browser=318
+g010 LOCAL clustered_1gb_spatial count f=0.002 warm: planner=duckdb server=109 browser=249
+g011 LOCAL clustered_1gb_spatial count_by f=0.01 warm: planner=duckdb server=111 browser=355
+g016 LOCAL clustered_1gb_spatial features f=0.002 cold: planner=duckdb server=107 browser=796
+g017 LOCAL clustered_1gb_spatial features f=0.0005 cold: planner=duckdb server=101 browser=885
+g018 LOCAL clustered_1gb_spatial count f=0.002 cold: planner=duckdb server=97 browser=736
+g019 LOCAL clustered_1gb_spatial count_by f=0.01 cold: planner=duckdb server=103 browser=1022
+g004 LOCAL uniform_1gb_shuffled features f=0.002 warm: planner=duckdb-wasm server=649 browser=1353
+g005 LOCAL uniform_1gb_shuffled features f=0.0005 warm: planner=duckdb-wasm server=409 browser=804
+g006 LOCAL uniform_1gb_shuffled count f=0.002 warm: planner=duckdb server=572 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+g007 LOCAL uniform_1gb_shuffled count_by f=0.01 warm: planner=duckdb server=574 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+g012 LOCAL uniform_1gb_shuffled features f=0.002 warm: planner=duckdb-wasm server=610 browser=1159
+g013 LOCAL uniform_1gb_shuffled features f=0.0005 warm: planner=duckdb-wasm server=393 browser=843
+g014 LOCAL uniform_1gb_shuffled count f=0.002 warm: planner=duckdb server=564 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+g015 LOCAL uniform_1gb_shuffled count_by f=0.01 warm: planner=duckdb server=588 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+g020 LOCAL uniform_1gb_shuffled features f=0.002 cold: planner=duckdb server=599 browser=2141
+g021 LOCAL uniform_1gb_shuffled features f=0.0005 cold: planner=duckdb server=389 browser=1573
+g022 LOCAL uniform_1gb_shuffled count f=0.002 cold: planner=duckdb server=564 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+g023 LOCAL uniform_1gb_shuffled count_by f=0.01 cold: planner=duckdb server=574 browser=browser fetch 980 MB > 220 MB (tab crash threshold)
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.1m)
+
+  1 skipped
+  1 passed (1.1m)

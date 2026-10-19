@@ -41,6 +41,10 @@ function expr(e: Expr): string {
       return `${qIdent(e.column)} IN (${e.values.map(lit).join(", ")})`;
     case "is_null":
       return `${qIdent(e.column)} IS NULL`;
+    case "hash_bucket":
+      // md5 is identical on every DuckDB build, so the thinned sample equals the server's (twin of the Rust lowering)
+      if (!(e.modulus >= 1) || !(e.remainder >= 0 && e.remainder < e.modulus)) throw new EngineError("invalid", "hash_bucket needs modulus >= 1 and remainder < modulus");
+      return `(md5_number_lower(CAST(${qIdent(e.column)} AS VARCHAR)) % ${e.modulus}) = ${e.remainder}`;
     case "and":
     case "or":
       if (e.exprs.length === 0) throw new EngineError("invalid", "empty AND/OR");

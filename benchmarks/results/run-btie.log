@@ -1,0 +1,44 @@
+=== FAST_LAN: btie-FAST_LAN.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c056 FAST_LAN clustered_30mb_spatial_s5 count_by f=0.04464 warm: planner=duckdb server=98 browser=361
+c067 FAST_LAN overture_places_hcm count_by f=0.02109 warm: planner=duckdb server=95 browser=375
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (19.1s)
+
+  1 skipped
+  1 passed (20.5s)
+=== GOOD_BROADBAND: btie-GOOD_BROADBAND.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c093 GOOD_BROADBAND uniform_30mb_spatial_s5 count_by f=0.00094 warm: planner=duckdb server=100 browser=1406
+c094 GOOD_BROADBAND clustered_30mb_shuffled_s5 count_by f=0.06832 warm: planner=duckdb server=112 browser=1444
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (14.9s)
+
+  1 skipped
+  1 passed (15.6s)
+=== MOBILE: btie-MOBILE.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c105 MOBILE uniform_30mb_shuffled_s5 count_by f=0.00041 warm: planner=duckdb server=112 browser=8559
+c113 MOBILE uniform_100mb_shuffled_s5 count_by f=0.07142 cold: planner=duckdb server=127 browser=50373
+c121 MOBILE uniform_100mb_shuffled_s5 count_by f=0.00472 cold: planner=duckdb server=119 browser=50354
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (4.9m)
+
+  1 skipped
+  1 passed (4.9m)
+=== HIGH_LATENCY: btie-HIGH_LATENCY.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c143 HIGH_LATENCY overture_places_hcm count_by f=0.00096 cold: planner=duckdb server=185 browser=28245
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.1m)
+
+  1 skipped
+  1 passed (1.1m)

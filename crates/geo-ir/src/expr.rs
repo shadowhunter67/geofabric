@@ -28,6 +28,10 @@ pub enum Expr {
     Compare { column: String, op: CompareOp, value: Literal },
     In { column: String, values: Vec<Literal> },
     IsNull { column: String },
+    /// Deterministic spatially-uniform thinning for RENDERING: `hash(column) % modulus = remainder`. Keeps about 1/modulus of the
+    /// rows, the same rows for the same data (no randomness), and the sample at modulus 2m contains the sample at m (nested).
+    /// It is a display device, never part of an analysis (ADR-012).
+    HashBucket { column: String, modulus: u32, remainder: u32 },
     And { exprs: Vec<Expr> },
     Or { exprs: Vec<Expr> },
     Not { expr: Box<Expr> },
@@ -36,7 +40,7 @@ pub enum Expr {
 impl Expr {
     pub fn columns(&self, out: &mut Vec<String>) {
         match self {
-            Expr::Compare { column, .. } | Expr::In { column, .. } | Expr::IsNull { column } => {
+            Expr::Compare { column, .. } | Expr::In { column, .. } | Expr::IsNull { column } | Expr::HashBucket { column, .. } => {
                 out.push(column.clone())
             }
             Expr::And { exprs } | Expr::Or { exprs } => exprs.iter().for_each(|e| e.columns(out)),

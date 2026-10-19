@@ -119,6 +119,7 @@ export function createPlacement(deps: PlacementDeps) {
       rows: objects.slice(0, 1000), rows_total: res.rows.length,
       geojson: features ? { type: "FeatureCollection", features: features.filter((f) => f.geometry) as GeoJSON.Feature[] } : null,
       metrics, result_digest: digest,
+      phases: res.phases ? { ...res.phases, boundary_ms: t2 - t1 } : undefined,
       timing: {
         total_ms: m(t2 - t0, "engine_observed"),
         plan_and_overhead_ms: m(Math.max(0, t1 - t0 - (res.metrics.elapsed_ms.value ?? 0)), "derived"),

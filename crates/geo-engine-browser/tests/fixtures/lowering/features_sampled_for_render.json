@@ -1,0 +1,104 @@
+{
+  "expected": {
+    "files": [
+      "a.parquet"
+    ],
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE \"bbox\".\"xmin\" <= 105.5 AND \"bbox\".\"xmax\" >= 104.0 AND \"bbox\".\"ymin\" <= 13.25 AND \"bbox\".\"ymax\" >= 12.0),\n\"n2\" AS NOT MATERIALIZED (SELECT * FROM \"n1\" WHERE (md5_number_lower(CAST(\"id\" AS VARCHAR)) % 4) = 0),\n\"n3\" AS NOT MATERIALIZED (SELECT \"id\", \"category\", \"geometry\", \"bbox\" FROM \"n2\"),\n\"n4\" AS NOT MATERIALIZED (SELECT * FROM \"n3\" LIMIT 20000)\nSELECT * FROM \"n4\" LIMIT 100001"
+  },
+  "max_rows": 100000,
+  "name": "features_sampled_for_render",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.3",
+    "nodes": {
+      "n_643c571adb4f331d1b49": {
+        "columns": [
+          "id",
+          "category",
+          "geometry",
+          "bbox"
+        ],
+        "input": "n_77f902b0bd93eacc481b",
+        "op": "project"
+      },
+      "n_72eeb6493c510d0a1849": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      },
+      "n_77f902b0bd93eacc481b": {
+        "input": "n_f4b8ea907395112be7d1",
+        "op": "filter",
+        "predicate": {
+          "column": "id",
+          "kind": "hash_bucket",
+          "modulus": 4,
+          "remainder": 0
+        }
+      },
+      "n_b1b14c71e518c589ecb9": {
+        "input": "n_643c571adb4f331d1b49",
+        "n": 20000,
+        "op": "limit"
+      },
+      "n_f4b8ea907395112be7d1": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "bbox_filter"
+      }
+    },
+    "root": "n_b1b14c71e518c589ecb9"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

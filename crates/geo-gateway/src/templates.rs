@@ -1,11 +1,14 @@
-use crate::{apply_filter, err, ApiError, QueryReq};
+use crate::{apply_filter, apply_sample, err, ApiError, QueryReq};
 use geo_executor::ExecutionContext;
 use geo_ir::*;
 use geo_runtime::Runtime;
 use geo_types::*;
 use axum::http::StatusCode;
 
-const METERS_PER_DEGREE: f64 = 111_320.0;
+/// Smallest metres per degree of latitude on the WGS 84 ellipsoid (at the equator): the conservative direction for a degree margin.
+const METERS_PER_DEGREE_LAT_MIN: f64 = 110_574.0;
+/// Metres per degree of longitude on the equator (the maximum); it shrinks with cos(latitude).
+const METERS_PER_DEGREE_LON_EQUATOR: f64 = 111_320.0;
 
 fn bad(message: impl Into<String>) -> ApiError {
     err(StatusCode::BAD_REQUEST, "bad_request", message)
@@ -66,87 +69,82 @@ pub(crate) fn build(
     match q.kind.as_str() {
         "near" | "near_count" => {
             if !lon_lat(&left_crs) {
-                return Err(bad("near only supports OGC:CRS84 or EPSG:4326 sources"));
+                return Err(bad("near measures real metres: it needs a longitude/latitude source (OGC:CRS84 or EPSG:4326)"));
             }
             let distance_m = with.distance_m.ok_or_else(|| bad("with.distance_m is required for near"))?;
             if !distance_m.is_finite() || !(0.0 < distance_m && distance_m <= 5_000.0) {
                 return Err(bad("with.distance_m must be greater than 0 and at most 5000"));
             }
-            let distance_degrees = distance_m / METERS_PER_DEGREE;
+            let distance = Distance::new(distance_m, DistanceUnit::Meter).map_err(|e| bad(e.to_string()))?;
+
+            // Right-hand candidates: the viewport grown by the distance, IN DEGREES. This is only a pruning prefilter (a
+            // superset); the decision "within 200 m" is taken in the metric CRS below. The margins are the conservative
+            // (larger) degree equivalents of the distance, so no true neighbour is pruned.
+            let lat_max = bbox.max_y().abs().max(bbox.min_y().abs()).min(89.0) + distance_m / METERS_PER_DEGREE_LAT_MIN;
+            let dlat = distance_m / METERS_PER_DEGREE_LAT_MIN * 1.02;
+            let dlon = distance_m / (METERS_PER_DEGREE_LON_EQUATOR * lat_max.to_radians().cos().max(0.01)) * 1.02;
             let expanded = BoundingBox::new(
-                bbox.min_x() - distance_degrees,
-                bbox.min_y() - distance_degrees,
-                bbox.max_x() + distance_degrees,
-                bbox.max_y() + distance_degrees,
+                (bbox.min_x() - dlon).max(-180.0),
+                (bbox.min_y() - dlat).max(-90.0),
+                (bbox.max_x() + dlon).min(180.0),
+                (bbox.max_y() + dlat).min(90.0),
                 left_crs.clone(),
             )
             .map_err(|e| bad(e.to_string()))?;
-            let distance = Distance::new(distance_degrees, DistanceUnit::Degree).map_err(|e| bad(e.to_string()))?;
+            // The metric CRS comes from the area the plan touches: refused (not guessed) when no single zone is accurate enough.
+            let metric = local_metric_crs(&expanded).map_err(|e| {
+                err(StatusCode::UNPROCESSABLE_ENTITY, "metric_crs_unavailable", format!("cannot measure {distance_m} m here: {e}"))
+            })?;
 
             let left = apply_filter(
-                Node::BboxFilter {
-                    input: Box::new(left),
-                    geometry_column: left_geometry.clone(),
-                    bbox,
-                },
+                Node::BboxFilter { input: Box::new(left), geometry_column: left_geometry.clone(), bbox },
                 q.filter.as_ref(),
             )?;
+            let left = apply_sample(left, q)?;
             let left_columns = left_schema
                 .fields
                 .iter()
                 .filter(|field| field.name != "bbox")
                 .map(|field| field.name.clone())
                 .collect::<Vec<_>>();
-            let left = Node::Project { input: Box::new(left), columns: left_columns.clone() };
-
+            // the original geometry stays (the result is drawn in lon/lat); a metric COPY of it is used for the predicate
+            let metric_column = "geometry_metric".to_string();
+            let left = Node::Transform {
+                input: Box::new(left),
+                geometry_column: left_geometry.clone(),
+                input_crs: left_crs.clone(),
+                output_crs: metric.clone(),
+                output_column: metric_column.clone(),
+            };
             let right = apply_filter(
-                Node::BboxFilter {
-                    input: Box::new(right),
-                    geometry_column: right_geometry.clone(),
-                    bbox: expanded,
-                },
+                Node::BboxFilter { input: Box::new(right), geometry_column: right_geometry.clone(), bbox: expanded },
                 with.filter.as_ref(),
             )?;
-            let right = Node::Buffer {
+            let right = Node::Transform {
                 input: Box::new(Node::Project { input: Box::new(right), columns: vec![right_geometry.clone()] }),
                 geometry_column: right_geometry.clone(),
-                distance,
-                input_crs: right_crs.clone(),
-                output_crs: right_crs,
-                error_tolerance: None,
+                input_crs: right_crs,
+                output_crs: metric,
                 output_column: right_geometry.clone(),
             };
-            let joined = Node::SpatialJoin {
+            let semi = Node::SpatialSemiJoin {
                 left: Box::new(left),
                 right: Box::new(right),
-                left_column: left_geometry,
+                left_column: metric_column,
                 right_column: right_geometry,
-                predicate: SpatialPredicate::Intersects,
-                join_type: JoinType::Inner,
-                right_prefix: "r_".into(),
+                predicate: SpatialPredicate::WithinDistance { distance },
             };
             if q.kind == "near_count" {
-                // distinct left features near the right ones. The IR cannot group by a geometry column (and Aggregate drops
-                // geometry), so group by `id`, then count the groups: a feature near several roads is counted once.
-                if !left_columns.iter().any(|c| c == "id") {
-                    return Err(bad("near_count needs an id column in the source"));
-                }
-                let per_feature = Node::Aggregate {
-                    input: Box::new(Node::Project { input: Box::new(joined), columns: vec!["id".into()] }),
-                    group_by: vec!["id".into()],
-                    aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n_near".into() }],
-                };
+                // each building once: the semi join cannot multiply rows, so the count is the number of buildings
                 return Ok(Plan::new(Node::Aggregate {
-                    input: Box::new(per_feature),
+                    input: Box::new(semi),
                     group_by: vec![],
                     aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
                 }));
             }
-            // `near`: one row per (feature, matching road) pair, left columns only: a feature near several roads appears once
-            // per road (identical geometry). `near_count` gives the distinct number.
             let limit = q.limit.unwrap_or(20_000).min(crate::MAX_FEATURES);
             Ok(Plan::new(Node::Limit {
-                input: Box::new(Node::Project { input: Box::new(joined), columns: left_columns }),
+                input: Box::new(Node::Project { input: Box::new(semi), columns: left_columns }),
                 n: limit,
             }))
         }
@@ -195,7 +193,7 @@ pub(crate) fn build(
                         group_by: vec![format!("r_{group_by}")],
                         aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
                     }),
-                    keys: vec![SortKey { column: "count".into(), descending: true }],
+                    keys: vec![SortKey { column: "count".into(), descending: true }, SortKey { column: format!("r_{group_by}"), descending: false }],
                 }),
                 n: 200,
             }))

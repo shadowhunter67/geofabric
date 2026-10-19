@@ -1,4 +1,4 @@
-//! PlanGraph (IR 0.2): the logical plan as a DAG.
+//! PlanGraph (IR 0.3): the logical plan as a DAG.
 //!
 //! * Nodes live in a map keyed by [`NodeId`] and reference their inputs by id,
 //!   so a sub-plan (e.g. a source used twice) is represented **once**.
@@ -6,7 +6,7 @@
 //!   sub-plans collapse into one node). Hand-written ids are allowed; they are
 //!   opaque. [`Plan::plan_id`] never depends on id spelling (it hashes content).
 //! * Structural validation: missing references, cycles, unreachable nodes.
-//! * Serialization is stable (ordered maps) and versioned (`ir_version = "0.2"`).
+//! * Serialization is stable (ordered maps) and versioned (`ir_version = "0.3"`; 0.2 plans are read unchanged).
 //!   IR 0.1 (nested tree) is accepted by [`Plan::from_json`] and migrated
 //!   deterministically ([`migrate_v0_1`]).
 
@@ -20,7 +20,10 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
-pub const IR_VERSION: &str = "0.2";
+/// IR 0.3 adds `transform`, `spatial_semi_join`, the `within_distance` predicate and the `hash_bucket` expression. Every 0.2 plan is
+/// a valid 0.3 plan (additive change): [`Plan::from_json`] accepts 0.2 and reads it unchanged.
+pub const IR_VERSION: &str = "0.3";
+pub const IR_VERSION_PREVIOUS: &str = "0.2";
 pub const IR_VERSION_TREE: &str = "0.1";
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -65,6 +68,7 @@ pub enum PlanNode {
         error_tolerance: Option<Distance>,
         output_column: String,
     },
+    Transform { input: NodeId, geometry_column: String, input_crs: Crs, output_crs: Crs, output_column: String },
     SpatialJoin {
         left: NodeId,
         right: NodeId,
@@ -74,6 +78,7 @@ pub enum PlanNode {
         join_type: JoinType,
         right_prefix: String,
     },
+    SpatialSemiJoin { left: NodeId, right: NodeId, left_column: String, right_column: String, predicate: SpatialPredicate },
     Aggregate { input: NodeId, group_by: Vec<String>, aggregates: Vec<AggExpr> },
     Project { input: NodeId, columns: Vec<String> },
     Limit { input: NodeId, n: u64 },
@@ -88,7 +93,9 @@ impl PlanNode {
             PlanNode::BboxFilter { .. } => OpKind::BboxFilter,
             PlanNode::Intersects { .. } => OpKind::Intersects,
             PlanNode::Buffer { .. } => OpKind::Buffer,
+            PlanNode::Transform { .. } => OpKind::Transform,
             PlanNode::SpatialJoin { .. } => OpKind::SpatialJoin,
+            PlanNode::SpatialSemiJoin { .. } => OpKind::SpatialSemiJoin,
             PlanNode::Aggregate { .. } => OpKind::Aggregate,
             PlanNode::Project { .. } => OpKind::Project,
             PlanNode::Limit { .. } => OpKind::Limit,
@@ -100,11 +107,12 @@ impl PlanNode {
     pub fn inputs(&self) -> Vec<&NodeId> {
         match self {
             PlanNode::Source { .. } => vec![],
-            PlanNode::SpatialJoin { left, right, .. } => vec![left, right],
+            PlanNode::SpatialJoin { left, right, .. } | PlanNode::SpatialSemiJoin { left, right, .. } => vec![left, right],
             PlanNode::Filter { input, .. }
             | PlanNode::BboxFilter { input, .. }
             | PlanNode::Intersects { input, .. }
             | PlanNode::Buffer { input, .. }
+            | PlanNode::Transform { input, .. }
             | PlanNode::Aggregate { input, .. }
             | PlanNode::Project { input, .. }
             | PlanNode::Limit { input, .. }
@@ -117,7 +125,7 @@ impl PlanNode {
         let mut n = self.clone();
         match &mut n {
             PlanNode::Source { .. } => {}
-            PlanNode::SpatialJoin { left, right, .. } => {
+            PlanNode::SpatialJoin { left, right, .. } | PlanNode::SpatialSemiJoin { left, right, .. } => {
                 *left = ids[0].clone();
                 *right = ids[1].clone();
             }
@@ -125,6 +133,7 @@ impl PlanNode {
             | PlanNode::BboxFilter { input, .. }
             | PlanNode::Intersects { input, .. }
             | PlanNode::Buffer { input, .. }
+            | PlanNode::Transform { input, .. }
             | PlanNode::Aggregate { input, .. }
             | PlanNode::Project { input, .. }
             | PlanNode::Limit { input, .. }
@@ -226,6 +235,18 @@ impl Plan {
                     error_tolerance: *error_tolerance,
                     output_column: output_column.clone(),
                 },
+                Node::Transform { input, geometry_column, input_crs, output_crs, output_column } => PlanNode::Transform {
+                    input: go(input, b),
+                    geometry_column: geometry_column.clone(),
+                    input_crs: input_crs.clone(),
+                    output_crs: output_crs.clone(),
+                    output_column: output_column.clone(),
+                },
+                Node::SpatialSemiJoin { left, right, left_column, right_column, predicate } => {
+                    let l = go(left, b);
+                    let r = go(right, b);
+                    PlanNode::SpatialSemiJoin { left: l, right: r, left_column: left_column.clone(), right_column: right_column.clone(), predicate: *predicate }
+                }
                 Node::SpatialJoin { left, right, left_column, right_column, predicate, join_type, right_prefix } => {
                     let l = go(left, b);
                     let r = go(right, b);
@@ -278,6 +299,20 @@ impl Plan {
                     output_crs: output_crs.clone(),
                     error_tolerance: *error_tolerance,
                     output_column: output_column.clone(),
+                },
+                PlanNode::Transform { input, geometry_column, input_crs, output_crs, output_column } => Node::Transform {
+                    input: b(input),
+                    geometry_column: geometry_column.clone(),
+                    input_crs: input_crs.clone(),
+                    output_crs: output_crs.clone(),
+                    output_column: output_column.clone(),
+                },
+                PlanNode::SpatialSemiJoin { left, right, left_column, right_column, predicate } => Node::SpatialSemiJoin {
+                    left: b(left),
+                    right: b(right),
+                    left_column: left_column.clone(),
+                    right_column: right_column.clone(),
+                    predicate: *predicate,
                 },
                 PlanNode::SpatialJoin { left, right, left_column, right_column, predicate, join_type, right_prefix } => Node::SpatialJoin {
                     left: b(left),
@@ -432,10 +467,16 @@ impl Plan {
         let v: serde_json::Value = serde_json::from_str(s).map_err(|e| IrError::Parse(e.to_string()))?;
         match v.get("ir_version").and_then(|x| x.as_str()) {
             Some(IR_VERSION) => serde_json::from_value(v).map_err(|e| IrError::Parse(e.to_string())),
+            // 0.2 -> 0.3 is purely additive: the plan is read unchanged and stamped with the current version
+            Some(IR_VERSION_PREVIOUS) => {
+                let mut p: Plan = serde_json::from_value(v).map_err(|e| IrError::Parse(e.to_string()))?;
+                p.ir_version = IR_VERSION.to_string();
+                Ok(p)
+            }
             Some(IR_VERSION_TREE) => migrate_v0_1(s),
             Some(other) => Err(IrError::UnsupportedVersion {
                 found: other.to_string(),
-                supported: format!("{IR_VERSION}, {IR_VERSION_TREE} (migrated)"),
+                supported: format!("{IR_VERSION}, {IR_VERSION_PREVIOUS} (read unchanged), {IR_VERSION_TREE} (migrated)"),
             }),
             None => Err(IrError::Parse("missing ir_version".into())),
         }

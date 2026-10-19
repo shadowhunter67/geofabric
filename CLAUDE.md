@@ -71,3 +71,14 @@ Do not change the global Node installation, the nvm default, or any shared toolc
 ## Cài đặt thêm (ghi theo rule #7)
 
 - 2026-10-16: `npm install geotiff@3.0.5 --save-exact` trong `web/` (đọc COG trong trình duyệt, range request; chỉ để hiển thị DEM). Dữ liệu tải về nằm ở `data/local/` (không commit), gói Overture buildings ở `benchmarks/data/`.
+- 2026-10-19: `pyproj` + `shapely` vào `benchmarks/.venv` (oracle độc lập `benchmarks/oracle_near.py`); WebKit dùng bản có sẵn `ms-playwright/webkit-2336` qua `WK_EXE` (không tải thêm); Firefox CHƯA cài (cần ~90 MB, hỏi user). Dữ liệu synthetic `_s5` (seed 20261019) sinh vào `benchmarks/data/` cho held-out mới — KHÔNG dùng lại làm calibration.
+
+## Pre-PostGIS gate (2026-10-19) — bẫy mới
+
+Chi tiết: `docs/claude/pre-postgis-gate.md`, báo cáo `REPORT-GEOFABRIC-PRE-POSTGIS-GATE.md`.
+- Model browser = tổng thành phần (`crates/geo-planner/src/browser_model.rs`), ĐÃ ĐÓNG BĂNG (fit chỉ trên `bcal-*`). Held-out seed 20261019: median 1.19×, P90 2.28×, nhưng LOCAL/FAST_LAN thiên lệch ~1.7× và chưa có máy vật lý thứ hai → ADR-010 vẫn Proposed. Đo lại = seed mới + data draw mới, đừng refit trên held-out.
+- R5c: nguồn > 128 MiB không bao giờ tự chọn browser (đo 1 GB: browser chậm 1.5–3× server dù model dự đoán thắng).
+- Histogram sidecar v3 có `row_index` (nguồn ≤ 100k hàng): cardinality + bytes geometry chính xác cho polygon lớn (admin). Đổi histogram thì bump `HIST_VERSION`.
+- `count_by` luôn `ORDER BY count DESC, <group key> ASC`; thiếu tie-break thì 2 engine cắt top-50 khác nhau → digest lệch.
+- Đo thời gian Playwright PHẢI có `GATEWAY_BIN=target\release\geo-gateway.exe` (mặc định là bản debug chậm 2–3×). Harness không trả cả result qua `page.evaluate` (làm phồng thời gian browser).
+- Khoảng cách mét = UTM zone của vùng truy vấn (ADR-011), từ chối khi sai số > 0.5%; không bao giờ đổi độ→mét.

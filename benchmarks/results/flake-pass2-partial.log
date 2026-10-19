@@ -1,0 +1,20 @@
+[1/14] 2026-10-19T10:01:34 tests=45 failed=0 pid=39192 247s
+[2/14] 2026-10-19T10:05:41 tests=45 failed=1 pid=22160 202s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[3/14] 2026-10-19T10:09:03 tests=45 failed=0 pid=17372 227s
+[4/14] 2026-10-19T10:12:51 tests=45 failed=0 pid=53548 252s
+[5/14] 2026-10-19T10:17:03 tests=45 failed=1 pid=17124 242s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[6/14] 2026-10-19T10:21:05 tests=45 failed=0 pid=43376 192s
+[7/14] 2026-10-19T10:24:18 tests=45 failed=0 pid=48704 192s
+[8/14] 2026-10-19T10:27:30 tests=45 failed=0 pid=11084 187s
+[9/14] 2026-10-19T10:30:37 tests=45 failed=1 pid=11512 232s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[10/14] 2026-10-19T10:34:30 tests=45 failed=1 pid=50784 227s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[11/14] 2026-10-19T10:38:17 tests=45 failed=1 pid=23840 308s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[12/14] 2026-10-19T10:43:24 tests=45 failed=1 pid=34928 227s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 
+[13/14] 2026-10-19T10:47:12 tests=45 failed=1 pid=8992 242s
+   FAIL engines.spec.ts UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected) Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed  Locator: 

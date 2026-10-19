@@ -9,6 +9,7 @@ export type Expr =
   | { kind: "compare"; column: string; op: "eq" | "ne" | "lt" | "le" | "gt" | "ge"; value: Literal }
   | { kind: "in"; column: string; values: Literal[] }
   | { kind: "is_null"; column: string }
+  | { kind: "hash_bucket"; column: string; modulus: number; remainder: number }
   | { kind: "and"; exprs: Expr[] }
   | { kind: "or"; exprs: Expr[] }
   | { kind: "not"; expr: Expr };
@@ -87,7 +88,19 @@ export interface ExecutionResult {
   rows: unknown[][];
   metrics: ExecutionMetrics;
   sql: string;
+  /** Wall-clock phases of this execution (ms), for cost-model calibration: where the time went (ADR-010). */
+  phases?: ExecutionPhases;
 }
+
+/**
+ * Browser cost decomposition measured by the engine itself.
+ *   init       instantiate DuckDB-Wasm (0 when warm)
+ *   open       register the sources: whole-file download + registration (full mode) or URL registration (range mode)
+ *   first      conn.send until the first Arrow batch: planning, range requests, Parquet decode and compute
+ *   drain      the remaining batches and the JS row materialisation
+ * `boundary` (WKB -> GeoJSON, digest) is added by the placement layer.
+ */
+export interface ExecutionPhases { init_ms: number; open_ms: number; first_ms: number; drain_ms: number; rows: number }
 
 export interface Capabilities {
   id: string;

@@ -5,7 +5,7 @@
 //! restricted to a safe character set. No user string is concatenated raw.
 
 use geo_executor::{EngineError, ExecutionContext};
-use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, NodeId, Plan, PlanNode};
+use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, NodeId, Plan, PlanNode, SpatialPredicate};
 use geo_source_geoparquet::{wkt_envelope, GeoParquetSource};
 use geo_types::{AuthorizedSource, Crs, SpatialSchema};
 use std::path::Path;
@@ -57,6 +57,13 @@ fn expr(e: &Expr) -> Result<String, EngineError> {
             format!("{} IN ({})", q_ident(column), v?.join(", "))
         }
         Expr::IsNull { column } => format!("{} IS NULL", q_ident(column)),
+        // md5 is the same on every DuckDB build (unlike hash()), so a thinned sample is identical on the server and in the browser
+        Expr::HashBucket { column, modulus, remainder } => {
+            if *modulus == 0 || remainder >= modulus {
+                return Err(EngineError::InvalidPlan("hash_bucket needs modulus >= 1 and remainder < modulus".into()));
+            }
+            format!("(md5_number_lower(CAST({} AS VARCHAR)) % {modulus}) = {remainder}", q_ident(column))
+        }
         Expr::And { exprs } | Expr::Or { exprs } => {
             if exprs.is_empty() {
                 return Err(EngineError::InvalidPlan("empty AND/OR".into()));
@@ -67,6 +74,15 @@ fn expr(e: &Expr) -> Result<String, EngineError> {
         }
         Expr::Not { expr: inner } => format!("NOT ({})", expr(inner)?),
     })
+}
+
+/// PROJ name of a CRS for ST_Transform. Only known CRSs: an undefined or unknown CRS is never guessed.
+fn proj_name(c: &Crs) -> Result<String, EngineError> {
+    match c {
+        Crs::OgcCrs84 => Ok("OGC:CRS84".into()),
+        Crs::Epsg(code) => Ok(format!("EPSG:{code}")),
+        other => Err(EngineError::InvalidPlan(format!("cannot transform {other}: CRS is not known"))),
+    }
 }
 
 fn safe_wkt(w: &str) -> Result<(), EngineError> {
@@ -276,6 +292,48 @@ impl Translator<'_> {
                 let name = self.push(sql);
                 let schema = self.schema_of(id)?;
                 Ok(Out { name, covering: None, schema })
+            }
+            PlanNode::Transform { input, geometry_column, input_crs, output_crs, output_column } => {
+                self.need_spatial("transform")?;
+                let i = self.node(input)?;
+                let g = q_ident(geometry_column);
+                let t = format!(
+                    "ST_Transform({g}, {}, {}, always_xy := true)",
+                    q_str(&proj_name(input_crs)?),
+                    q_str(&proj_name(output_crs)?)
+                );
+                let sql = if output_column == geometry_column {
+                    format!("SELECT * REPLACE ({t} AS {g}) FROM {}", q_ident(&i.name))
+                } else {
+                    format!("SELECT *, {t} AS {} FROM {}", q_ident(output_column), q_ident(&i.name))
+                };
+                let name = self.push(sql);
+                Ok(Out { name, covering: None, schema: self.schema_of(id)? })
+            }
+            PlanNode::SpatialSemiJoin { left, right, left_column, right_column, predicate } => {
+                self.need_spatial("spatial semi join")?;
+                let l = self.node(left)?;
+                let r = self.node(right)?;
+                let (lc, rc) = (q_ident(left_column), q_ident(right_column));
+                let pred = match predicate {
+                    SpatialPredicate::Intersects => format!("ST_Intersects(l.{lc}, r.{rc})"),
+                    SpatialPredicate::WithinDistance { distance } => {
+                        // metres in the plane of a local metric CRS (the validator guarantees both); never degrees
+                        if distance.unit().is_angular() {
+                            return Err(EngineError::InvalidPlan("within_distance with an angular distance".into()));
+                        }
+                        let d = distance.to_meters().map_err(|e| EngineError::InvalidPlan(e.to_string()))?;
+                        format!("ST_DWithin(l.{lc}, r.{rc}, {})", num(d)?)
+                    }
+                };
+                // EXISTS: each left row at most once, and no pair table is materialised (a join + DISTINCT would build one)
+                let sql = format!(
+                    "SELECT l.* FROM {} AS l WHERE EXISTS (SELECT 1 FROM {} AS r WHERE {pred})",
+                    q_ident(&l.name),
+                    q_ident(&r.name)
+                );
+                let name = self.push(sql);
+                Ok(Out { name, covering: None, schema: self.schema_of(id)? })
             }
             PlanNode::SpatialJoin { left, right, left_column, right_column, join_type, right_prefix, .. } => {
                 self.need_spatial("spatial join")?;

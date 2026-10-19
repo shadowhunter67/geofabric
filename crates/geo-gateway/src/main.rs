@@ -95,6 +95,11 @@ async fn main() {
         eprintln!("planner calibration is frozen (--no-learn)");
     }
     let mut app_state = AppState::new_with_dirs(rt, data_dirs, config.clone()).with_catalog_paths(manifests_dir, repo_root);
+    let devicecheck = arg(&args, "--devicecheck-dir", "");
+    if !devicecheck.is_empty() {
+        eprintln!("device-check reports are saved to {devicecheck} (POST /api/devicecheck)");
+        app_state.devicecheck_dir = Some(std::path::PathBuf::from(devicecheck));
+    }
     let sim = arg(&args, "--simulate-network", "");
     if !sim.is_empty() {
         let profile = geo_planner::NetworkProfile::by_name(&sim).unwrap_or_else(|| panic!("unknown network profile '{sim}'"));

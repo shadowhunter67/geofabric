@@ -1,0 +1,70 @@
+{
+  "expected": {
+    "error_kind": "unsupported"
+  },
+  "max_rows": 10,
+  "name": "semi_join_is_unsupported_in_the_browser",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.3",
+    "nodes": {
+      "n_72eeb6493c510d0a1849": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      },
+      "n_bfd41086cf2684728bf7": {
+        "left": "n_72eeb6493c510d0a1849",
+        "left_column": "geometry",
+        "op": "spatial_semi_join",
+        "predicate": "intersects",
+        "right": "n_72eeb6493c510d0a1849",
+        "right_column": "geometry"
+      }
+    },
+    "root": "n_bfd41086cf2684728bf7"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

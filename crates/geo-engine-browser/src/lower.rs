@@ -74,6 +74,13 @@ fn expr(e: &Expr) -> Result<String, EngineError> {
             format!("{} IN ({})", q_ident(column), v?.join(", "))
         }
         Expr::IsNull { column } => format!("{} IS NULL", q_ident(column)),
+        // md5 is the same on every DuckDB build (unlike hash()), so a thinned sample is identical on the server and in the browser
+        Expr::HashBucket { column, modulus, remainder } => {
+            if *modulus == 0 || remainder >= modulus {
+                return Err(EngineError::InvalidPlan("hash_bucket needs modulus >= 1 and remainder < modulus".into()));
+            }
+            format!("(md5_number_lower(CAST({} AS VARCHAR)) % {modulus}) = {remainder}", q_ident(column))
+        }
         Expr::And { exprs } | Expr::Or { exprs } => {
             if exprs.is_empty() {
                 return Err(EngineError::InvalidPlan("empty AND/OR".into()));

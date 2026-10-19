@@ -4,6 +4,8 @@
 //! units, and quantities cannot be built without a unit.
 
 mod access;
+mod metric;
+pub use metric::{central_meridian, local_metric_crs, scale_error, utm_epsg, utm_zone, utm_zone_of_epsg, MetricCrsError, MAX_SCALE_ERROR};
 pub use access::{AccessDenied, AuthorizedSource, RootedAccessGuard, SourceAccessGuard};
 
 use serde::{Deserialize, Serialize};
@@ -59,6 +61,12 @@ impl Crs {
         }
     }
 
+    /// A projected CRS whose scale error is small enough over a zone for metric distances (UTM zones, WGS 84). Web Mercator
+    /// (EPSG:3857) has metre units but its scale error grows with latitude: it is NOT a metric CRS for distances.
+    pub fn is_local_metric(&self) -> bool {
+        matches!(self, Crs::Epsg(c) if utm_zone_of_epsg(*c).is_some())
+    }
+
     /// `Some(true)` geographic (angular units), `Some(false)` projected
     /// (linear units), `None` when we do not know. v0 uses a tiny built-in
     /// table; real lookup belongs to a PROJ-backed layer later.
@@ -67,7 +75,8 @@ impl Crs {
             Crs::OgcCrs84 => Some(true),
             Crs::Epsg(c) => match c {
                 4326 | 4269 | 4258 | 4490 => Some(true),
-                3857 | 3405 | 32648 | 32649 => Some(false),
+                3857 | 3405 => Some(false),
+                c if utm_zone_of_epsg(*c).is_some() => Some(false),
                 _ => None,
             },
             _ => None,

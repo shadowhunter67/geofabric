@@ -26,6 +26,7 @@
 //! health, known incompatibilities, calibration, network — and returns an [`Assessment`] with a
 //! confidence score and reasons, the browser risk score and the planned fallback.
 
+mod browser_model;
 mod confidence;
 mod estimator;
 mod failure;
@@ -33,6 +34,7 @@ mod network;
 mod probe;
 mod state;
 
+pub use browser_model::{BrowserInputs, BrowserModel, BrowserParts};
 pub use confidence::{Confidence, ConfidenceFactor};
 pub use estimator::{
     bucket_of, error_factor, estimate as estimate_rows, layout_class, plan_shape, summarize_errors, PlanShape, Calibration, CoveringQuality, Correction, ErrorSummary,
@@ -85,6 +87,8 @@ pub struct CostModel {
     pub server_fixed_ms: f64,
     pub server_ms_per_input_mb: f64,
     pub server_us_per_result_row: f64,
+    /// Fitted browser time model (calibration set only, frozen): see `browser_model.rs`. Replaces the older scalar terms below for pricing.
+    pub browser: BrowserModel,
     pub browser_fixed_ms: f64,
     pub browser_ms_per_covering_mb: f64,
     pub browser_ms_per_input_mb: f64,
@@ -136,6 +140,7 @@ impl Default for CostModel {
             server_fixed_ms: 83.0,
             server_ms_per_input_mb: 0.199,
             server_us_per_result_row: 17.8,
+            browser: BrowserModel::default(),
             browser_fixed_ms: 19.0,
             browser_ms_per_covering_mb: 5.38,
             browser_ms_per_input_mb: 0.58,
@@ -284,6 +289,9 @@ pub struct BrowserAccess {
     pub row_bytes: f64,
 }
 
+/// Largest file the browser time model was calibrated on (bytes).
+const BROWSER_MODEL_CALIBRATED_MAX_BYTES: u64 = 128 << 20;
+
 fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &CostModel) -> Vec<BrowserAccess> {
     let shape = plan_shape(plan);
     let aggregate = shape.ungrouped || shape.group_by.is_some();
@@ -302,30 +310,43 @@ fn browser_access(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, c: &Cost
             let file = s.total_bytes as f64;
             // share of a row group's bytes a scan pulls: plain-WKB files are read whole, typed-geometry files by column
             let cov_share = s.covering_bytes_total as f64 / file.max(1.0);
-            let (share, share_upper) = match s.read_class {
+            let (_share, share_upper) = match s.read_class {
                 geo_source_geoparquet::ReadClass::PlainWkb => (1.0, c.browser_fetch_upper_scale),
                 geo_source_geoparquet::ReadClass::DuckDbTyped => ((cov_share * c.browser_typed_share_scale).min(1.0), (cov_share * c.browser_typed_share_upper_scale).min(1.0)),
             };
             let full_scan = |sh: f64, over: f64| (kept_bytes * sh + file * over).min(file * 1.02); // footer + page headers: a little above the sum of row-group bytes
             let (requests, bytes, upper) = if aggregate {
-                (c.browser_range_requests_per_rg_aggregate * kept, full_scan(share, c.browser_fetch_overhead_share), full_scan(share_upper, c.browser_fetch_upper_overhead_share))
+                let typed = s.read_class == geo_source_geoparquet::ReadClass::DuckDbTyped;
+                let (rq, by) = if typed {
+                    (4.712 * kept, 1.209 * s.covering_bytes_total as f64 * kept / s.prune.total_row_groups.max(1) as f64)
+                } else {
+                    (3.405 + 2.874 * kept, 1.155 * kept_bytes)
+                };
+                (rq, by.min(file * 1.02), full_scan(share_upper, c.browser_fetch_upper_overhead_share))
             } else {
                 // a LIMIT stops the scan early: only the row groups needed to produce `limit` rows are touched. The
                 // expected number comes from the expected cardinality, the pessimistic one from its LOWER bound.
                 let needed = |card: f64| shape.limit.map_or(card, |l| (l as f64).min(card));
                 let touched = |card: f64| (kept * needed(card) / card.max(1.0)).ceil().clamp(1.0, kept);
-                let t_exp = touched(est.selected_after_correction.max(1.0));
                 let t_up = touched((est.cardinality_low as f64).max(1.0));
                 let by_rg = |t: f64| kept_bytes * t / kept;
                 let row_cap = shape.limit.map_or(f64::MAX, |l| c.browser_features_upper_factor * l as f64 * row_bytes + c.browser_features_upper_floor_bytes as f64);
+                let card = est.selected_after_correction;
+                let bound = shape.limit.is_some_and(|l| card >= l as f64);
+                // fitted on the calibration set: a LIMIT-bound scan stops early (~14 requests, ~6.4 MB); a free scan reads every kept group
+                let (rq_exp, by_exp) = if bound {
+                    (14.0, (6.43 * 1048576.0_f64).min(kept_bytes.max(0.1 * 1048576.0) * 1.2))
+                } else {
+                    (4.132 + 4.209 * kept, 1.759 * kept_bytes)
+                };
                 (
-                    c.browser_range_requests_per_rg_features * t_exp,
-                    by_rg(t_exp),
+                    rq_exp,
+                    by_exp.min(file * 1.02),
                     by_rg(t_up).min(row_cap).min(file * 1.02), // features read every projected column: no column-share cap
                 )
             };
             BrowserAccess {
-                uri: s.uri.clone(), strategy: AccessStrategy::Range, file_bytes: s.total_bytes, requests_est: requests + 4.0,
+                uri: s.uri.clone(), strategy: AccessStrategy::Range, file_bytes: s.total_bytes, requests_est: requests,
                 fetch_bytes_est: bytes as u64, fetch_bytes_upper: (upper.max(bytes)) as u64, row_bytes,
             }
         })
@@ -638,7 +659,20 @@ impl Planner {
                 let (bc, sc) = (b.confidence.as_ref().map_or(0.0, |c| c.score), s.confidence.as_ref().map_or(0.0, |c| c.score));
                 let gap = if ss > 0.0 { (ss - bs) / ss } else { 1.0 };
                 let safety = b.risk.as_ref().map(|r| r.safety);
-                if safety == Some(BrowserSafety::Unknown) || b.probe_status == "missing" {
+                let largest = access.iter().map(|a| a.file_bytes).max().unwrap_or(0);
+                if largest > BROWSER_MODEL_CALIBRATED_MAX_BYTES {
+                    // measured (benchmarks/results/bgb-LOCAL.json): on 1 GB files the browser took 1.5-3x the server's time, the model (calibrated
+                    // to ~100 MB) said it would win. Beyond the calibrated range the browser is never picked on a predicted advantage.
+                    policy.push(format!(
+                        "R5c outside the calibrated range: the browser time model was fitted on files up to {} MB and this source is {} MB; {} is {:.0}% cheaper on paper only; {} chosen. Pass an explicit engine hint to use the browser",
+                        BROWSER_MODEL_CALIBRATED_MAX_BYTES >> 20,
+                        largest >> 20,
+                        b.engine,
+                        gap * 100.0,
+                        s.engine
+                    ));
+                    chosen = si;
+                } else if safety == Some(BrowserSafety::Unknown) || b.probe_status == "missing" {
                     policy.push(format!(
                         "R5b unprobed runtime: {} is {:.0}% cheaper on paper, but its runtime has not been probed (static description only); {} chosen. Probe the runtime or pass an explicit engine hint to use it",
                         b.engine,
@@ -1024,37 +1058,40 @@ impl Planner {
                     }
                 }
                 EngineKind::Browser => {
-                    let cold = if inputs.browser_warm == Some(false) { c.browser_cold_start_ms } else { 0.0 };
+                    let cold = inputs.browser_warm == Some(false);
                     let full: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Full).collect();
                     let range: Vec<&BrowserAccess> = f.access.iter().filter(|a| a.strategy == AccessStrategy::Range).collect();
-                    let requests: f64 = f.access.iter().map(|a| a.requests_est).sum();
                     let fetched: u64 = f.access.iter().map(|a| a.fetch_bytes_est).sum();
-                    // network: the plan request, then the file requests strictly one after another (DuckDB-Wasm issues
-                    // them synchronously; measured), then the bytes
-                    let latency = net.turn_ms() * (1.0 + requests);
-                    let mut scan_ms = 0.0;
-                    let mut fixed = c.browser_fixed_ms;
-                    if !full.is_empty() {
-                        // whole-file mode: the original fit (it was measured while DuckDB-Wasm downloaded whole files)
-                        let cov: u64 = scans.iter().filter(|s| full.iter().any(|a| a.uri == s.uri)).map(|s| s.covering_bytes_total).sum();
-                        let kept: u64 = scans.iter().filter(|s| full.iter().any(|a| a.uri == s.uri)).map(|s| s.prune.kept_bytes).sum();
-                        scan_ms += mb(cov) * c.browser_ms_per_covering_mb + mb(kept) * c.browser_ms_per_input_mb;
-                    }
-                    let mut row_us = c.browser_us_per_result_row;
-                    if !range.is_empty() {
-                        fixed = c.browser_range_fixed_ms;
-                        let rq: f64 = range.iter().map(|a| a.requests_est).sum();
-                        let rb: u64 = range.iter().map(|a| a.fetch_bytes_est).sum();
-                        scan_ms += c.browser_range_ms_per_request * rq + c.browser_range_ms_per_mb * mb(rb);
-                        row_us = c.browser_range_us_per_row;
-                    }
+                    // result payload: exact geometry bytes when the source has a row index, else the mean row size
+                    let (geom_bytes, attr_bytes) = scans.first().map_or((0.0, 0.0), |s| {
+                        let rows = result_rows as f64;
+                        let geom = match s.selected_geometry_bytes {
+                            Some(b) if s.raw_selected_rows >= 1.0 => b * (rows / s.raw_selected_rows).min(1.0),
+                            _ => rows * s.geometry_row_bytes,
+                        };
+                        (geom, rows * s.attribute_row_bytes)
+                    });
+                    let inp = browser_model::BrowserInputs {
+                        cold,
+                        has_full: !full.is_empty(),
+                        has_range: !range.is_empty(),
+                        full_file_bytes: full.iter().map(|a| a.file_bytes as f64).sum(),
+                        full_kept_bytes: scans.iter().filter(|s| full.iter().any(|a| a.uri == s.uri)).map(|s| s.prune.kept_bytes as f64).sum(),
+                        range_requests: range.iter().map(|a| a.requests_est).sum(),
+                        range_bytes: range.iter().map(|a| a.fetch_bytes_est as f64).sum(),
+                        result_rows: result_rows as f64,
+                        result_geom_bytes: geom_bytes,
+                        result_attr_bytes: attr_bytes,
+                    };
+                    let parts = c.browser.estimate(net, &inp);
+                    let turns = 1.0 + inp.range_requests + if inp.has_full { 1.0 } else { 0.0 };
                     CostBreakdown {
-                        fixed_ms: fixed + cold,
-                        scan_ms,
-                        result_ms: result_rows as f64 * row_us / 1000.0,
-                        transfer_ms: latency + net.download_ms(fetched),
-                        latency_ms: latency,
-                        cold_start_ms: cold,
+                        fixed_ms: (parts.plan_turn_ms + parts.cold_ms - parts.network_fixed_ms).max(0.0),
+                        scan_ms: (parts.open_ms + parts.first_ms - parts.network_scan_ms).max(0.0),
+                        result_ms: parts.result_ms,
+                        transfer_ms: parts.network_ms(),
+                        latency_ms: net.turn_ms() * turns,
+                        cold_start_ms: parts.cold_ms,
                         scan_bytes: fetched,
                         transfer_bytes: fetched,
                     }
@@ -1106,11 +1143,14 @@ impl Planner {
                 HealthState::Unhealthy => 0.2,
             };
             let net_v = 1.0 - net.uncertainty() * transfer_share;
+            // the browser time model was fitted on files up to ~100 MB (plus a few 1 GB shuffled runs): a bigger file is an extrapolation
+            let largest = f.access.iter().map(|a| a.file_bytes).max().unwrap_or(0);
+            let extrapolated = browser && largest > BROWSER_MODEL_CALIBRATED_MAX_BYTES;
             let fam_v = match f.familiarity {
                 0 => 0.6,
                 1 | 2 => 0.8,
                 _ => 1.0,
-            };
+            } * if extrapolated { 0.5 } else { 1.0 };
             let ops_v = if !browser || (ops_certain && e.probe.is_some()) { 1.0 } else { 0.7 };
             combine(vec![
                 factor("estimate_quality", est.quality.score(), W_ESTIMATE, format!("result-size estimate quality {:?}", est.quality)),
@@ -1133,7 +1173,7 @@ impl Planner {
                     W_NETWORK,
                     format!("{} ({:?}), network is {:.0}% of the estimated time", net.name, net.origin, transfer_share * 100.0),
                 ),
-                factor("dataset_familiarity", fam_v, W_FAMILIARITY, format!("{} earlier observation(s) on this source", f.familiarity)),
+                factor("dataset_familiarity", fam_v, W_FAMILIARITY, format!("{} earlier observation(s) on this source{}", f.familiarity, if extrapolated { "; file larger than the browser model was calibrated on (extrapolation)" } else { "" })),
                 factor(
                     "operation_support",
                     ops_v,

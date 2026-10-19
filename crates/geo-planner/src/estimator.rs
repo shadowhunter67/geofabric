@@ -593,7 +593,7 @@ mod tests {
         SourceScan {
             node: "n".into(), uri: "x.parquet".into(), crs: geo_types::Crs::Epsg(4326), total_rows: 1000, total_bytes: 1000, constraints_applied: 1, constraints_skipped: vec![],
             source_path: String::new(), has_histogram: false, uniform_selected_rows: 10.0, access_paths: 1, has_covering: true, covering_inferred: false, covering: None, covering_bytes_total: 0, selected_rows_estimate: 10, raw_selected_rows: 10.0,
-            read_class: ReadClass::PlainWkb, null_fraction: Some(0.0), spatial_coherence: None, density_skew: None,
+            read_class: ReadClass::PlainWkb, geometry_row_bytes: 100.0, attribute_row_bytes: 50.0, selected_geometry_bytes: None, null_fraction: Some(0.0), spatial_coherence: None, density_skew: None,
             prune: PruneReport { method: PruneMethod::CoveringStats, total_row_groups: 10, kept: vec![0], skipped: 9, total_rows: 1000, kept_rows: 100, total_bytes: 1000, kept_bytes: 100 },
         }
     }

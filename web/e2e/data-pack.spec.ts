@@ -186,10 +186,12 @@ test.describe("demo workflows (Explorer, Vietnamese; every query goes through th
     expect(await layerCount(page, "res-fill")).toBeGreaterThan(20);
   });
 
-  test("B: buildings within 200 m of main roads (Buffer + SpatialJoin on the server, approximation disclosed)", async ({ page }) => {
+  test("B: buildings within 200 m of main roads (metric Transform + SpatialSemiJoin on the server, each building once)", async ({ page }) => {
     const s = await run(page, "b");
-    expect(s).toMatch(/\d[\d.]* tòa nhà nằm trong khoảng 200 m/);
-    expect(s).toContain("sai số");
+    expect(s).toMatch(/\d[\d.]* tòa nhà nằm trong bán kính 200 m/);
+    expect(s).toContain("mỗi tòa nhà chỉ tính một lần");
+    expect(s).toContain("EPSG:32648");
+    expect(s).not.toMatch(/độ nên|xấp xỉ|bằng độ/);
     await page.getByTestId("tab-execution").click();
     await expect(page.getByTestId("exec-summary")).toBeVisible();
     // the plan ran on the server: the join cannot go to the browser

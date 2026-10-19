@@ -145,7 +145,7 @@ impl EngineDescriptor for DuckDbEngine {
         .collect();
         let mut notes = vec!["bbox_filter without a bbox covering column needs the spatial extension".to_string()];
         if self.spatial {
-            ops.extend([OpKind::Intersects, OpKind::Buffer, OpKind::SpatialJoin]);
+            ops.extend([OpKind::Intersects, OpKind::Buffer, OpKind::Transform, OpKind::SpatialJoin, OpKind::SpatialSemiJoin]);
         } else {
             notes.push(format!(
                 "spatial extension unavailable ({}): intersects/buffer/spatial_join disabled",

@@ -1,0 +1,439 @@
+{
+ "started": "2026-10-19T02:42:22.058Z",
+ "device": {
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "platform": "Win32",
+  "deviceMemoryGB": 32,
+  "cores": 28,
+  "screen": "1400x900",
+  "languages": [
+   "en-US",
+   "en"
+  ]
+ },
+ "link": {
+  "rtt_ms_median": 0.800000011920929,
+  "down_mbps_estimate": 4725.976322158302
+ },
+ "probe": {
+  "engine": "duckdb-wasm",
+  "session": "mvenf69l-cixq20a3",
+  "engine_version": "1.33.1-dev57.0",
+  "runtime_version": "v1.5.4",
+  "captured_at_ms": 1792377742056,
+  "duration_ms": 42.89999997615814,
+  "checks": [
+   {
+    "name": "worker",
+    "ok": true,
+    "required": true,
+    "detail": "Worker available",
+    "ms": 0.09999996423721313
+   },
+   {
+    "name": "init",
+    "ok": true,
+    "required": true,
+    "detail": "DuckDB v1.5.4",
+    "ms": 1.300000011920929
+   },
+   {
+    "name": "arrow",
+    "ok": true,
+    "required": true,
+    "detail": "Arrow table 1x2",
+    "ms": 0.6000000238418579
+   },
+   {
+    "name": "extension_load",
+    "ok": true,
+    "required": false,
+    "detail": "parquet=absent, spatial=absent",
+    "ms": 0.699999988079071
+   },
+   {
+    "name": "parquet",
+    "ok": true,
+    "required": true,
+    "detail": "compiled plan read 64 rows over HTTP range requests",
+    "ms": 2.300000011920929
+   },
+   {
+    "name": "http_range",
+    "ok": true,
+    "required": false,
+    "detail": "range-request reads work",
+    "ms": 4.699999988079071
+   },
+   {
+    "name": "geometry_wkb",
+    "ok": true,
+    "required": true,
+    "detail": "decoded Polygon from streamed WKB bytes",
+    "ms": 3.100000023841858
+   },
+   {
+    "name": "covering",
+    "ok": true,
+    "required": true,
+    "detail": "bbox covering columns filterable",
+    "ms": 3.5
+   },
+   {
+    "name": "read_class:plain_wkb",
+    "ok": true,
+    "required": false,
+    "detail": "reads plain WKB files (Polygon)",
+    "ms": 3.5
+   },
+   {
+    "name": "read_class:duckdb_typed",
+    "ok": true,
+    "required": false,
+    "detail": "reads DuckDB>=1.5 typed-geometry files (Polygon)",
+    "ms": 2.699999988079071
+   },
+   {
+    "name": "op:source",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 2.800000011920929
+   },
+   {
+    "name": "op:filter",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 2.5
+   },
+   {
+    "name": "op:bbox_filter",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 2.199999988079071
+   },
+   {
+    "name": "op:aggregate",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 3.400000035762787
+   },
+   {
+    "name": "op:project",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 3.599999964237213
+   },
+   {
+    "name": "op:limit",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 2.5
+   },
+   {
+    "name": "op:sort",
+    "ok": true,
+    "required": false,
+    "detail": "ran",
+    "ms": 3.300000011920929
+   }
+  ],
+  "memory_class": "high",
+  "device_memory_gb": 32,
+  "js_heap_limit_mb": 4192,
+  "supported_ops": [
+   "source",
+   "filter",
+   "bbox_filter",
+   "aggregate",
+   "project",
+   "limit",
+   "sort"
+  ],
+  "device": {
+   "browser_family": "edge",
+   "browser_major": 155,
+   "platform": "windows",
+   "hardware_concurrency": 28,
+   "wasm_simd": true,
+   "wasm_threads": false
+  }
+ },
+ "results": [
+  {
+   "id": "small-local-count",
+   "why": "small query on a small file (whole-file mode)",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9502002165056764,
+    "server_ms": 83.23568211674498,
+    "browser_ms": 620.4250017173977,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    77.5,
+    84.80000001192093
+   ],
+   "browser_phases": {
+    "init_ms": 0,
+    "open_ms": 17.69999998807907,
+    "first_ms": 7.399999976158142,
+    "drain_ms": 0,
+    "rows": 1,
+    "boundary_ms": 0
+   },
+   "browser_ms": [
+    587.5,
+    28.5
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 1,
+    "browser": 1
+   }
+  },
+  {
+   "id": "medium-features",
+   "why": "medium result on a 30 MB file",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.7556664186550787,
+    "server_ms": 111.16713614907074,
+    "browser_ms": 649.5829637912152,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    123.80000001192093,
+    109.39999997615814
+   ],
+   "browser_phases": {
+    "init_ms": 0,
+    "open_ms": 25.30000001192093,
+    "first_ms": 10.899999976158142,
+    "drain_ms": 0.7000000476837158,
+    "rows": 1500,
+    "boundary_ms": 6.600000023841858
+   },
+   "browser_ms": [
+    57.10000002384186,
+    48.09999996423721
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 1500,
+    "browser": 1500
+   }
+  },
+  {
+   "id": "range-features-small",
+   "why": "range-request mode, tiny window on a 100 MB file",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.7556664186550787,
+    "server_ms": 86.11263914208222,
+    "browser_ms": 658.2721902422913,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    92.20000004768372,
+    88.39999997615814
+   ],
+   "browser_phases": {
+    "init_ms": 0,
+    "open_ms": 0.19999998807907104,
+    "first_ms": 58.69999998807907,
+    "drain_ms": 0,
+    "rows": 119,
+    "boundary_ms": 0.6000000238418579
+   },
+   "browser_ms": [
+    69.60000002384186,
+    64.09999996423721
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 119,
+    "browser": 119
+   }
+  },
+  {
+   "id": "range-heavy-count-by",
+   "why": "range-request mode, many row groups touched (latency amplification)",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.7556664186550787,
+    "server_ms": 102.33740093750762,
+    "browser_ms": 1233.871310291928,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    103,
+    103.60000002384186
+   ],
+   "browser_phases": {
+    "init_ms": 416.9000000357628,
+    "open_ms": 0.8999999761581421,
+    "first_ms": 660,
+    "drain_ms": 0,
+    "rows": 8,
+    "boundary_ms": 0
+   },
+   "browser_ms": [
+    487.0999999642372,
+    1081.6000000238419
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 8,
+    "browser": 8
+   }
+  },
+  {
+   "id": "large-result",
+   "why": "large result (40,000 rows) from a 30 MB file",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.47021835507780535,
+    "server_ms": 811.4729891621093,
+    "browser_ms": 834.6947381195324,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    654.8000000119209,
+    632.1999999880791
+   ],
+   "browser_phases": {
+    "init_ms": 0,
+    "open_ms": 26.30000001192093,
+    "first_ms": 21.19999998807907,
+    "drain_ms": 14,
+    "rows": 40000,
+    "boundary_ms": 172.5
+   },
+   "browser_ms": [
+    328.30000001192093,
+    238.30000001192093
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 40000,
+    "browser": 40000
+   }
+  },
+  {
+   "id": "geometry-roads",
+   "why": "real line geometry, attribute columns",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9502002165056764,
+    "server_ms": 125.39643085446167,
+    "browser_ms": 657.8989213291032,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    128.5999999642372,
+    129.5
+   ],
+   "browser_phases": {
+    "init_ms": 443.80000001192093,
+    "open_ms": 0.699999988079071,
+    "first_ms": 229.0999999642372,
+    "drain_ms": 4.100000023841858,
+    "rows": 2000,
+    "boundary_ms": 10.300000011920929
+   },
+   "browser_ms": [
+    78.90000003576279,
+    692
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 2000,
+    "browser": 2000
+   }
+  },
+  {
+   "id": "places-count-by",
+   "why": "real points, aggregate",
+   "status": "ok",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.7556664186550787,
+    "server_ms": 89.6220054251175,
+    "browser_ms": 656.2186424332369,
+    "browser_safety": "safe",
+    "browser_feasible": true
+   },
+   "server_ms": [
+    103.60000002384186,
+    79.80000001192093
+   ],
+   "browser_phases": {
+    "init_ms": 0,
+    "open_ms": 42.10000002384186,
+    "first_ms": 33.59999996423721,
+    "drain_ms": 0.10000002384185791,
+    "rows": 50,
+    "boundary_ms": 0.10000002384185791
+   },
+   "browser_ms": [
+    79.69999998807907,
+    79.69999998807907
+   ],
+   "digests_match": true,
+   "rows": {
+    "server": 50,
+    "browser": 50
+   }
+  },
+  {
+   "id": "unsafe-candidate",
+   "why": "1.45 GB file, huge result: the planner must keep it on the server",
+   "status": "skipped",
+   "planner": {
+    "engine": "duckdb",
+    "placement": "server",
+    "confidence": 0.9299409893200876,
+    "server_ms": 2131.729084154747,
+    "browser_ms": 1122.677810302092,
+    "browser_safety": "risky",
+    "browser_feasible": true
+   },
+   "browser_refused_correctly": false,
+   "server_ms": [
+    2735.2999999523163,
+    2822.100000023842
+   ],
+   "note": "browser must not be used for this case",
+   "rows": {
+    "server": 100000,
+    "browser": null
+   }
+  }
+ ],
+ "done": true
+}

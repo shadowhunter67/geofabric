@@ -103,6 +103,45 @@ fn cases() -> Vec<Case> {
             covering: None,
             max_rows: 10,
         },
+        Case {
+            name: "features_sampled_for_render",
+            plan: Plan::new(Node::Limit {
+                input: Box::new(Node::Project {
+                    input: Box::new(Node::Filter {
+                        input: Box::new(bbox(src("a.parquet"))),
+                        predicate: Expr::HashBucket { column: "id".into(), modulus: 4, remainder: 0 },
+                    }),
+                    columns: vec!["id".into(), "category".into(), "geometry".into(), "bbox".into()],
+                }),
+                n: 20000,
+            }),
+            covering: COV,
+            max_rows: 100_000,
+        },
+        Case {
+            name: "transform_is_unsupported_in_the_browser",
+            plan: Plan::new(Node::Transform {
+                input: Box::new(src("a.parquet")),
+                geometry_column: "geometry".into(),
+                input_crs: Crs::Epsg(4326),
+                output_crs: Crs::Epsg(32648),
+                output_column: "geometry_metric".into(),
+            }),
+            covering: COV,
+            max_rows: 10,
+        },
+        Case {
+            name: "semi_join_is_unsupported_in_the_browser",
+            plan: Plan::new(Node::SpatialSemiJoin {
+                left: Box::new(src("a.parquet")),
+                right: Box::new(src("a.parquet")),
+                left_column: "geometry".into(),
+                right_column: "geometry".into(),
+                predicate: SpatialPredicate::Intersects,
+            }),
+            covering: COV,
+            max_rows: 10,
+        },
         Case { name: "bbox_without_covering_is_unsupported", plan: Plan::new(bbox(src("a.parquet"))), covering: None, max_rows: 10 },
         Case {
             name: "intersects_is_unsupported",

@@ -1,0 +1,5 @@
+[1/14] 2026-10-19T09:43:52 tests=45 failed=1 pid=37792 202s
+   FAIL map.spec.ts clicking a polygon selects exactly that feature and opens the inspector Error: it is the feature that was clicked  [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m
+[2/14] 2026-10-19T09:47:14 tests=45 failed=1 pid=30864 232s
+   FAIL map.spec.ts clicking a polygon selects exactly that feature and opens the inspector Error: one highlighted geometry  [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // O
+[3/14] 2026-10-19T09:51:07 tests=45 failed=0 pid=27792 227s

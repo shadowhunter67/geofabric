@@ -26,7 +26,7 @@ export const DEM = "copernicus_dem_hcm";
 
 /** Road classes that count as "main roads" in the demo (a residential street is not). */
 export const MAIN_ROAD_CLASSES = ["motorway", "trunk", "primary"];
-/** Distance of demo B, in metres. The gateway turns it into an explicit angular distance and says so in the response. */
+/** Distance of demo B, in real metres: the gateway measures it in a local UTM zone (ADR-011), never in degrees. */
 export const NEAR_DISTANCE_M = 200;
 /** Schools and hospitals: the real `category` values of the Overture places in the pack (see the data quality notes). */
 export const SCHOOL_CATEGORIES = ["elementary_school", "middle_school", "high_school", "preschool", "college_university"];

@@ -1,4 +1,4 @@
-//! PlanGraph (IR 0.2): DAG structure, validation, migration from 0.1 (tree).
+//! PlanGraph (IR 0.3): DAG structure, validation, migration from 0.1 (tree); 0.2 plans are read unchanged.
 
 use geo_ir::*;
 use geo_types::*;
@@ -170,12 +170,12 @@ fn serialization_roundtrip_is_stable_and_versioned() {
     let root = count(j, &mut b);
     let plan = b.finish(root);
     let json = plan.to_json();
-    assert!(json.contains("\"ir_version\": \"0.2\""));
+    assert!(json.contains("\"ir_version\": \"0.3\""));
     let back = Plan::from_json(&json).unwrap();
     assert_eq!(back, plan);
     assert_eq!(back.to_json(), json, "stable serialization");
     // unknown versions are rejected
-    let bad = json.replace("\"0.2\"", "\"0.9\"");
+    let bad = json.replace("\"0.3\"", "\"0.9\"");
     assert!(matches!(Plan::from_json(&bad), Err(IrError::UnsupportedVersion { .. })));
 }
 
@@ -221,11 +221,11 @@ fn fixtures() -> Vec<(String, String)> {
 }
 
 #[test]
-fn old_fixtures_still_load_and_migrate_to_0_2() {
+fn old_fixtures_still_load_and_migrate_to_the_current_version() {
     for (name, json) in fixtures() {
         assert!(json.contains("\"ir_version\": \"0.1\""), "{name} is a genuine 0.1 file");
         let plan = Plan::from_json(&json).unwrap_or_else(|e| panic!("{name}: {e}"));
-        assert_eq!(plan.ir_version, "0.2", "{name}");
+        assert_eq!(plan.ir_version, IR_VERSION, "{name}");
         plan.check_structure().unwrap_or_else(|e| panic!("{name}: {e}"));
     }
 }

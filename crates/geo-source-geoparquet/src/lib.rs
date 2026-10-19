@@ -78,6 +78,9 @@ pub struct RowGroupInfo {
     pub bbox: Option<[f64; 4]>,
     /// Compressed bytes per root column.
     pub column_bytes: BTreeMap<String, u64>,
+    /// UNcompressed bytes per root column: what a reader materialises (geometry WKB size, attribute size). Browser result cost
+    /// follows these, not the compressed sizes (a polygon boundary compresses 10x, converting it to GeoJSON does not).
+    pub uncompressed_column_bytes: BTreeMap<String, u64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -231,10 +234,12 @@ impl GeoParquetSource {
         for i in 0..md.num_row_groups() {
             let rg = md.row_group(i);
             let mut column_bytes: BTreeMap<String, u64> = BTreeMap::new();
+            let mut uncompressed_column_bytes: BTreeMap<String, u64> = BTreeMap::new();
             let mut stats: BTreeMap<String, (f64, f64)> = BTreeMap::new();
             for c in rg.columns() {
                 let path = c.column_path().string();
                 let root = path.split('.').next().unwrap_or("").to_string();
+                *uncompressed_column_bytes.entry(root.clone()).or_default() += c.uncompressed_size().max(0) as u64;
                 *column_bytes.entry(root).or_default() += c.compressed_size().max(0) as u64;
                 if let Some(Statistics::Double(s)) = c.statistics() {
                     if let (Some(lo), Some(hi)) = (s.min_opt(), s.max_opt()) {
@@ -255,6 +260,7 @@ impl GeoParquetSource {
                 compressed_bytes: rg.compressed_size().max(0) as u64,
                 bbox,
                 column_bytes,
+                uncompressed_column_bytes,
             });
         }
         let mut geometry_nulls: Option<u64> = Some(0);

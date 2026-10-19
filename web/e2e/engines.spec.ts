@@ -105,29 +105,33 @@ test("UI: choosing the browser engine runs the query locally and shows the plann
   expect(await page.locator(".tabbody table tbody tr").count()).toBeGreaterThan(0);
 });
 
-test("UI: auto mode shows the server engine, the browser alternative and the reason", async ({ page }) => {
+test("UI: auto mode shows the selected engine, the other one as the alternative, and the reason", async ({ page }) => {
   await tab(page, "execution").click();
   const panel = page.getByTestId("planner-panel");
-  await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
-  await expect(panel).toContainText("Server");
-  await expect(panel.getByTestId("engine-alternative")).toHaveAttribute("data-engine", "duckdb-wasm");
+  // which engine wins is the planner's call (on a small file and a local link the browser is measured faster); both must be shown
+  const selected = await panel.getByTestId("engine-selected").getAttribute("data-engine");
+  expect(["duckdb", "duckdb-wasm"]).toContain(selected);
+  await expect(panel.getByTestId("engine-alternative")).toHaveAttribute("data-engine", selected === "duckdb" ? "duckdb-wasm" : "duckdb");
   await expect(panel).toContainText("Estimated input");
 });
 
 test("UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected)", async ({ page }) => {
   // inject a failure into the browser engine (the real-world triggers are exercised by the crossover run: unsupported
   // Parquet geometry types, tab crashes); this test covers the fallback mechanics and the honesty of the UI
+  // the runtime probe also runs queries in the browser engine: let it finish first, or the injected failure is taken for an unfit runtime
+  // and the planner (rightly) never tries the browser (flake investigation 2026-10-19: 25 % of runs)
+  await page.waitForFunction(() => (window as unknown as { __gf: { state: { probe: unknown } } }).__gf.state.probe !== null, null, { timeout: 120_000 });
   await page.evaluate(() => {
     (window as unknown as { __gf: { wasm: { execute: () => Promise<never> } } }).__gf.wasm.execute = () => Promise.reject(new Error("injected browser failure"));
   });
   await tab(page, "query").click();
   await page.getByTestId("q-where").selectOption("duckdb-wasm");
   await page.getByTestId("q-run").click();
-  await expect(page.getByTestId("status")).toContainText("duckdb", { timeout: 30_000 });
   await tab(page, "execution").click();
   const panel = page.getByTestId("planner-panel");
+  // wait for the fallback itself: the status line already says "duckdb" before this run when the planner's default is the browser
+  await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure", { timeout: 30_000 });
   await expect(panel.getByTestId("engine-selected")).toHaveAttribute("data-engine", "duckdb");
-  await expect(panel.getByTestId("engine-fallback")).toContainText("injected browser failure");
   await expect(panel.getByTestId("engine-fallback")).toContainText("re-run once on the server");
 });
 

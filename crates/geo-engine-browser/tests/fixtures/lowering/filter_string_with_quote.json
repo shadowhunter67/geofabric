@@ -9,21 +9,9 @@
   "name": "filter_string_with_quote",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_b51c655519a244ad5e04": {
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "filter",
-        "predicate": {
-          "column": "category",
-          "kind": "compare",
-          "op": "eq",
-          "value": {
-            "str": "it's \"x\""
-          }
-        }
-      },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -60,9 +48,21 @@
           "total_bytes": null
         },
         "uri": "a.parquet"
+      },
+      "n_781299484c5633fcc43c": {
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "filter",
+        "predicate": {
+          "column": "category",
+          "kind": "compare",
+          "op": "eq",
+          "value": {
+            "str": "it's \"x\""
+          }
+        }
       }
     },
-    "root": "n_b51c655519a244ad5e04"
+    "root": "n_781299484c5633fcc43c"
   },
   "sources": {
     "a.parquet": {

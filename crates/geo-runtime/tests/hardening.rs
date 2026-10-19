@@ -235,9 +235,11 @@ fn cold_browser_instance_is_priced_in() {
     cold_in.browser_warm = Some(false);
     let cold = pick(&plan, &cold_in);
     let (w, c) = (cand(&warm, "duckdb-wasm"), cand(&cold, "duckdb-wasm"));
-    assert!(c.score_ms.unwrap() - w.score_ms.unwrap() > 1000.0);
-    assert_eq!(c.cost.as_ref().unwrap().cold_start_ms, 1400.0);
-    assert_eq!(cold.engine.0, "duckdb", "1.4 s of instantiation outweighs a 20 ms advantage");
+    // fitted on the calibration set (browser_model.rs): engine start ~390 ms + first-query warm-up ~165 ms + the wasm over a local link
+    let cs = c.cost.as_ref().unwrap().cold_start_ms;
+    assert!(c.score_ms.unwrap() - w.score_ms.unwrap() > 500.0);
+    assert!((500.0..800.0).contains(&cs), "cold start {cs}");
+    assert_eq!(cold.engine.0, "duckdb", "0.6 s of instantiation outweighs a 20 ms advantage");
 }
 
 #[test]

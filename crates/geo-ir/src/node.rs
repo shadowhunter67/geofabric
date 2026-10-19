@@ -27,10 +27,13 @@ pub struct GeometryLiteral {
     pub crs: Crs,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SpatialPredicate {
     Intersects,
+    /// Metric distance predicate: the two geometries are at most `distance` apart, measured in the PLANE of their (shared)
+    /// CRS. Valid only when that CRS is a local metric projection (UTM) and the distance is linear: degrees are never metres.
+    WithinDistance { distance: Distance },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,7 +51,9 @@ pub enum OpKind {
     BboxFilter,
     Intersects,
     Buffer,
+    Transform,
     SpatialJoin,
+    SpatialSemiJoin,
     Aggregate,
     Project,
     Limit,
@@ -63,7 +68,9 @@ impl OpKind {
             OpKind::BboxFilter => "bbox_filter",
             OpKind::Intersects => "intersects",
             OpKind::Buffer => "buffer",
+            OpKind::Transform => "transform",
             OpKind::SpatialJoin => "spatial_join",
+            OpKind::SpatialSemiJoin => "spatial_semi_join",
             OpKind::Aggregate => "aggregate",
             OpKind::Project => "project",
             OpKind::Limit => "limit",
@@ -100,6 +107,23 @@ pub enum Node {
         error_tolerance: Option<Distance>,
         output_column: String,
     },
+    /// Explicit CRS change of a geometry column (never implicit). `output_column` may equal `geometry_column` (replace) or be a
+    /// new column (the original stays, e.g. to draw the result in the original CRS after a metric predicate).
+    Transform {
+        input: Box<Node>,
+        geometry_column: String,
+        input_crs: Crs,
+        output_crs: Crs,
+        output_column: String,
+    },
+    /// Each LEFT row once if at least one RIGHT row satisfies `predicate` (EXISTS semantics). Output schema = left schema.
+    SpatialSemiJoin {
+        left: Box<Node>,
+        right: Box<Node>,
+        left_column: String,
+        right_column: String,
+        predicate: SpatialPredicate,
+    },
     SpatialJoin {
         left: Box<Node>,
         right: Box<Node>,
@@ -125,7 +149,9 @@ impl Node {
             Node::BboxFilter { .. } => OpKind::BboxFilter,
             Node::Intersects { .. } => OpKind::Intersects,
             Node::Buffer { .. } => OpKind::Buffer,
+            Node::Transform { .. } => OpKind::Transform,
             Node::SpatialJoin { .. } => OpKind::SpatialJoin,
+            Node::SpatialSemiJoin { .. } => OpKind::SpatialSemiJoin,
             Node::Aggregate { .. } => OpKind::Aggregate,
             Node::Project { .. } => OpKind::Project,
             Node::Limit { .. } => OpKind::Limit,
@@ -136,11 +162,12 @@ impl Node {
     pub fn inputs(&self) -> Vec<&Node> {
         match self {
             Node::Source { .. } => vec![],
-            Node::SpatialJoin { left, right, .. } => vec![left, right],
+            Node::SpatialJoin { left, right, .. } | Node::SpatialSemiJoin { left, right, .. } => vec![left, right],
             Node::Filter { input, .. }
             | Node::BboxFilter { input, .. }
             | Node::Intersects { input, .. }
             | Node::Buffer { input, .. }
+            | Node::Transform { input, .. }
             | Node::Aggregate { input, .. }
             | Node::Project { input, .. }
             | Node::Limit { input, .. }

@@ -1,0 +1,320 @@
+=== LOCAL: bcal-LOCAL.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c000 LOCAL clustered_10mb_spatial_s2 features f=0.09844 warm: planner=duckdb server=399 browser=144
+c006 LOCAL clustered_10mb_spatial_s2 count f=0.00782 warm: planner=duckdb-wasm server=83 browser=49
+c009 LOCAL clustered_10mb_spatial_s2 features f=0.00056 cold: planner=duckdb server=86 browser=599
+c012 LOCAL clustered_10mb_spatial_s2 features f=0.20621 cold: planner=duckdb server=198 browser=736
+c018 LOCAL clustered_10mb_spatial_s2 count f=0.21669 cold: planner=duckdb server=79 browser=617
+c021 LOCAL clustered_10mb_spatial_s2 count_by f=0.0003 warm: planner=duckdb-wasm server=79 browser=35
+c024 LOCAL clustered_10mb_spatial_s2 features f=0.04104 warm: planner=duckdb server=102 browser=74
+c030 LOCAL clustered_10mb_spatial_s2 features f=0.04077 warm: planner=duckdb server=106 browser=66
+c033 LOCAL clustered_10mb_spatial_s2 count f=0.00025 warm: planner=duckdb-wasm server=78 browser=43
+c036 LOCAL clustered_10mb_spatial_s2 count_by f=0.00057 warm: planner=duckdb-wasm server=72 browser=32
+c042 LOCAL clustered_10mb_spatial_s2 features f=0.15139 warm: planner=duckdb server=193 browser=76
+c001 LOCAL clustered_1gb_shuffled features f=0.11696 cold: planner=duckdb server=116 browser=608
+c002 LOCAL clustered_100mb_spatial_s3 features f=0.00119 warm: planner=duckdb-wasm server=84 browser=32
+c005 LOCAL clustered_100mb_spatial_s3 features f=0.11438 cold: planner=duckdb server=94 browser=648
+c014 LOCAL clustered_100mb_spatial_s3 count_by f=0.00739 warm: planner=duckdb server=79 browser=120
+c017 LOCAL clustered_100mb_spatial_s3 features f=0.27471 warm: planner=duckdb server=119 browser=285
+c020 LOCAL clustered_100mb_spatial_s3 count_by f=0.22159 cold: planner=duckdb server=95 browser=932
+c026 LOCAL clustered_100mb_spatial_s3 features f=0.00072 cold: planner=duckdb server=80 browser=588
+c029 LOCAL clustered_100mb_spatial_s3 features f=0.58464 cold: planner=duckdb server=87 browser=664
+c032 LOCAL clustered_100mb_spatial_s3 features f=0.00024 warm: planner=duckdb server=85 browser=85
+c038 LOCAL clustered_100mb_spatial_s3 count f=0.00043 warm: planner=duckdb server=79 browser=37
+c041 LOCAL clustered_100mb_spatial_s3 count f=0.00467 warm: planner=duckdb server=85 browser=144
+c003 LOCAL overture_transport_hcm count f=0.0005 warm: planner=duckdb server=133 browser=64
+c019 LOCAL overture_transport_hcm count_by f=0.02265 warm: planner=duckdb server=145 browser=134
+c035 LOCAL overture_transport_hcm features f=0.00033 warm: planner=duckdb server=157 browser=99
+c004 LOCAL uniform_30mb_spatial_s2 features f=0.48827 cold: planner=duckdb server=161 browser=739
+c010 LOCAL uniform_30mb_spatial_s2 features f=0.0076 warm: planner=duckdb server=123 browser=93
+c016 LOCAL uniform_30mb_spatial_s2 count_by f=0.00415 warm: planner=duckdb server=81 browser=61
+c022 LOCAL uniform_30mb_spatial_s2 features f=0.30714 cold: planner=duckdb server=115 browser=692
+c025 LOCAL uniform_30mb_spatial_s2 count f=0.07127 cold: planner=duckdb server=87 browser=649
+c028 LOCAL uniform_30mb_spatial_s2 count f=0.23219 warm: planner=duckdb server=100 browser=85
+c034 LOCAL uniform_30mb_spatial_s2 count f=0.1199 warm: planner=duckdb server=85 browser=65
+c037 LOCAL uniform_30mb_spatial_s2 count f=0.02375 warm: planner=duckdb server=93 browser=56
+c040 LOCAL uniform_30mb_spatial_s2 count_by f=0.00086 warm: planner=duckdb server=89 browser=51
+c007 LOCAL overture_places_hcm features f=0.00042 cold: planner=duckdb server=91 browser=597
+c023 LOCAL overture_places_hcm features f=0.00839 warm: planner=duckdb server=157 browser=113
+c039 LOCAL overture_places_hcm features f=0.03866 warm: planner=duckdb server=388 browser=230
+c008 LOCAL uniform_1gb_shuffled count f=0.00482 warm: planner=duckdb server=578 browser=browser fetch 980 MB > 300 MB (tab crash threshold)
+c013 LOCAL uniform_1gb_shuffled count f=0.01042 cold: planner=duckdb server=342 browser=browser fetch 980 MB > 300 MB (tab crash threshold)
+c011 LOCAL overture_admin_hcm features f=0.00096 warm: planner=duckdb-wasm server=403 browser=463
+c027 LOCAL overture_admin_hcm count_by f=0.00123 cold: planner=duckdb server=126 browser=942
+c043 LOCAL overture_admin_hcm features f=0.00059 cold: planner=duckdb server=730 browser=1407
+c015 LOCAL overture_landuse_hcm count f=0.00169 warm: planner=duckdb-wasm server=146 browser=39
+c031 LOCAL overture_landuse_hcm count f=0.00475 warm: planner=duckdb-wasm server=148 browser=34
+  x  2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.8m)
+
+
+  1) e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ─────────
+
+    Error: cross-engine mismatches
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "c016",
+    + ]
+
+      169 |     return b?.digest_match === false || b?.rows_match === false;
+      170 |   });
+    > 171 |   expect(bad.map((r) => (r.case as Case).id), "cross-engine mismatches").toEqual([]);
+          |                                                                          ^
+      172 | });
+      173 |
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:171:74
+
+    Error Context: test-results\heldout-held-out-planner-d-41e48-easured-server-browser-time\error-context.md
+
+  1 failed
+    e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ──────────
+  1 skipped
+=== FAST_LAN: bcal-FAST_LAN.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c044 FAST_LAN uniform_30mb_spatial_s3 features f=0.01305 cold: planner=duckdb server=146 browser=1174
+c050 FAST_LAN uniform_30mb_spatial_s3 count f=0.16717 cold: planner=duckdb server=97 browser=1465
+c053 FAST_LAN uniform_30mb_spatial_s3 features f=0.16698 warm: planner=duckdb server=868 browser=569
+c056 FAST_LAN uniform_30mb_spatial_s3 count f=0.02945 warm: planner=duckdb server=93 browser=365
+c062 FAST_LAN uniform_30mb_spatial_s3 features f=0.0002 warm: planner=duckdb server=112 browser=375
+c065 FAST_LAN uniform_30mb_spatial_s3 features f=0.00021 warm: planner=duckdb server=98 browser=381
+c068 FAST_LAN uniform_30mb_spatial_s3 features f=0.31473 warm: planner=duckdb server=112 browser=373
+c045 FAST_LAN clustered_100mb_spatial_s2 features f=0.00055 warm: planner=duckdb server=117 browser=493
+c048 FAST_LAN clustered_100mb_spatial_s2 count f=0.09184 warm: planner=duckdb server=105 browser=1579
+c054 FAST_LAN clustered_100mb_spatial_s2 features f=0.003 warm: planner=duckdb server=93 browser=483
+c060 FAST_LAN clustered_100mb_spatial_s2 features f=0.00036 warm: planner=duckdb server=101 browser=491
+c066 FAST_LAN clustered_100mb_spatial_s2 count_by f=0.45734 warm: planner=duckdb server=107 browser=4777
+c069 FAST_LAN clustered_100mb_spatial_s2 features f=0.04054 cold: planner=duckdb server=93 browser=1260
+c046 FAST_LAN clustered_10mb_spatial_s3 features f=0.00045 warm: planner=duckdb server=87 browser=166
+c049 FAST_LAN clustered_10mb_spatial_s3 count_by f=0.00867 warm: planner=duckdb server=90 browser=162
+c052 FAST_LAN clustered_10mb_spatial_s3 count_by f=0.00129 warm: planner=duckdb server=90 browser=171
+c058 FAST_LAN clustered_10mb_spatial_s3 count f=0.0003 warm: planner=duckdb server=98 browser=182
+c061 FAST_LAN clustered_10mb_spatial_s3 count_by f=0.00142 warm: planner=duckdb server=98 browser=176
+c064 FAST_LAN clustered_10mb_spatial_s3 count f=0.0004 warm: planner=duckdb server=91 browser=177
+c070 FAST_LAN clustered_10mb_spatial_s3 features f=0.04908 warm: planner=duckdb server=107 browser=211
+c047 FAST_LAN overture_transport_hcm count f=0.00038 warm: planner=duckdb server=92 browser=583
+c063 FAST_LAN overture_transport_hcm features f=0.00028 warm: planner=duckdb server=102 browser=1134
+c051 FAST_LAN overture_places_hcm count f=0.00056 warm: planner=duckdb server=137 browser=377
+c067 FAST_LAN overture_places_hcm count_by f=0.02372 warm: planner=duckdb server=90 browser=389
+c055 FAST_LAN overture_admin_hcm features f=0.00235 warm: planner=duckdb-wasm server=483 browser=358
+c071 FAST_LAN overture_admin_hcm features f=0.02987 warm: planner=duckdb-wasm server=470 browser=420
+c057 FAST_LAN clustered_1gb_shuffled count_by f=0.00095 warm: planner=duckdb server=106 browser=2059
+c059 FAST_LAN overture_landuse_hcm features f=0.05023 warm: planner=duckdb server=113 browser=120
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (2.0m)
+
+  1 skipped
+  1 passed (2.0m)
+=== GOOD_BROADBAND: bcal-GOOD_BROADBAND.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c072 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.00028 warm: planner=duckdb server=97 browser=547
+c078 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.02399 warm: planner=duckdb server=104 browser=562
+c084 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.06396 warm: planner=duckdb server=148 browser=554
+c090 GOOD_BROADBAND clustered_10mb_spatial_s2 count f=0.00149 warm: planner=duckdb server=105 browser=576
+c093 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.00491 warm: planner=duckdb server=91 browser=557
+c096 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.49007 warm: planner=duckdb server=1245 browser=760
+c102 GOOD_BROADBAND clustered_10mb_spatial_s2 features f=0.00023 cold: planner=duckdb server=91 browser=2575
+c073 GOOD_BROADBAND uniform_30mb_spatial_s2 features f=0.00366 warm: planner=duckdb server=145 browser=1447
+c076 GOOD_BROADBAND uniform_30mb_spatial_s2 features f=0.11696 cold: planner=duckdb server=132 browser=3425
+c082 GOOD_BROADBAND uniform_30mb_spatial_s2 features f=0.00027 cold: planner=duckdb server=109 browser=3439
+c085 GOOD_BROADBAND uniform_30mb_spatial_s2 count_by f=0.01913 warm: planner=duckdb server=100 browser=1441
+c088 GOOD_BROADBAND uniform_30mb_spatial_s2 count f=0.12863 warm: planner=duckdb server=118 browser=1432
+c094 GOOD_BROADBAND uniform_30mb_spatial_s2 features f=0.00103 warm: planner=duckdb server=92 browser=1450
+c097 GOOD_BROADBAND uniform_30mb_spatial_s2 features f=0.00289 warm: planner=duckdb server=114 browser=1438
+c100 GOOD_BROADBAND uniform_30mb_spatial_s2 count_by f=0.06519 warm: planner=duckdb server=102 browser=1430
+c074 GOOD_BROADBAND clustered_100mb_spatial_s3 features f=0.00048 warm: planner=duckdb server=99 browser=273
+c077 GOOD_BROADBAND clustered_100mb_spatial_s3 features f=0.00462 warm: planner=duckdb server=103 browser=912
+c080 GOOD_BROADBAND clustered_100mb_spatial_s3 count f=0.00294 cold: planner=duckdb server=99 browser=3207
+c086 GOOD_BROADBAND clustered_100mb_spatial_s3 features f=0.37722 warm: planner=duckdb server=146 browser=1542
+c089 GOOD_BROADBAND clustered_100mb_spatial_s3 count f=0.00029 cold: planner=duckdb server=95 browser=2244
+c092 GOOD_BROADBAND clustered_100mb_spatial_s3 count_by f=0.02749 warm: planner=duckdb server=102 browser=1964
+c098 GOOD_BROADBAND clustered_100mb_spatial_s3 count f=0.00214 cold: planner=duckdb server=106 browser=4059
+c101 GOOD_BROADBAND clustered_100mb_spatial_s3 count_by f=0.21899 warm: planner=duckdb server=105 browser=3587
+c075 GOOD_BROADBAND overture_transport_hcm features f=0.1367 cold: planner=duckdb server=186 browser=3008
+c091 GOOD_BROADBAND overture_transport_hcm features f=0.00919 warm: planner=duckdb server=206 browser=843
+c079 GOOD_BROADBAND overture_places_hcm features f=0.01761 warm: planner=duckdb server=714 browser=1573
+c095 GOOD_BROADBAND overture_places_hcm features f=0.02183 warm: planner=duckdb server=186 browser=1444
+c081 GOOD_BROADBAND clustered_1gb_shuffled count f=0.34218 warm: planner=duckdb server=361 browser=browser fetch 978 MB > 300 MB (tab crash threshold)
+c083 GOOD_BROADBAND overture_admin_hcm features f=0.10069 cold: planner=duckdb server=905 browser=2625
+c099 GOOD_BROADBAND overture_admin_hcm features f=0.00035 warm: planner=duckdb server=692 browser=527
+c087 GOOD_BROADBAND overture_landuse_hcm count_by f=0.38596 warm: planner=duckdb server=89 browser=280
+c103 GOOD_BROADBAND overture_landuse_hcm features f=0.0009 warm: planner=duckdb server=139 browser=307
+  x  2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (3.3m)
+
+
+  1) e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ─────────
+
+    Error: cross-engine mismatches
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 6
+
+    - Array []
+    + Array [
+    +   "c085",
+    +   "c100",
+    +   "c092",
+    +   "c101",
+    + ]
+
+      169 |     return b?.digest_match === false || b?.rows_match === false;
+      170 |   });
+    > 171 |   expect(bad.map((r) => (r.case as Case).id), "cross-engine mismatches").toEqual([]);
+          |                                                                          ^
+      172 | });
+      173 |
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:171:74
+
+    Error Context: test-results\heldout-held-out-planner-d-41e48-easured-server-browser-time\error-context.md
+
+  1 failed
+    e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ──────────
+  1 skipped
+=== MOBILE: bcal-MOBILE.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c104 MOBILE uniform_30mb_spatial_s2 count f=0.17028 warm: planner=duckdb server=106 browser=8414
+c110 MOBILE uniform_30mb_spatial_s2 features f=0.01227 cold: planner=duckdb server=155 browser=18797
+c113 MOBILE uniform_30mb_spatial_s2 features f=0.12371 warm: planner=duckdb server=147 browser=8405
+c116 MOBILE uniform_30mb_spatial_s2 count_by f=0.00068 cold: planner=duckdb server=91 browser=18770
+c122 MOBILE uniform_30mb_spatial_s2 count_by f=0.00053 cold: planner=duckdb server=106 browser=18742
+c125 MOBILE uniform_30mb_spatial_s2 count_by f=0.00097 warm: planner=duckdb server=108 browser=8415
+c128 MOBILE uniform_30mb_spatial_s2 features f=0.00967 cold: planner=duckdb server=264 browser=18770
+c134 MOBILE uniform_30mb_spatial_s2 features f=0.0087 warm: planner=duckdb server=270 browser=8423
+c105 MOBILE clustered_100mb_spatial_s3 features f=0.00074 cold: planner=duckdb server=147 browser=21770
+c108 MOBILE clustered_100mb_spatial_s3 count_by f=0.00048 warm: planner=duckdb server=107 browser=2880
+c114 MOBILE clustered_100mb_spatial_s3 features f=0.00085 cold: planner=duckdb server=285 browser=13979
+c117 MOBILE clustered_100mb_spatial_s3 features f=0.00452 warm: planner=duckdb server=143 browser=4435
+c120 MOBILE clustered_100mb_spatial_s3 count f=0.00712 warm: planner=duckdb server=107 browser=1712
+c126 MOBILE clustered_100mb_spatial_s3 count_by f=0.00044 warm: planner=duckdb server=108 browser=2883
+c129 MOBILE clustered_100mb_spatial_s3 count f=0.16489 warm: planner=duckdb server=107 browser=13403
+c132 MOBILE clustered_100mb_spatial_s3 count f=0.186 cold: planner=duckdb server=115 browser=32479
+c106 MOBILE clustered_10mb_spatial_s2 features f=0.01563 cold: planner=duckdb server=110 browser=13295
+c109 MOBILE clustered_10mb_spatial_s2 features f=0.00106 warm: planner=duckdb server=104 browser=2941
+c112 MOBILE clustered_10mb_spatial_s2 features f=0.0128 warm: planner=duckdb server=91 browser=2937
+c118 MOBILE clustered_10mb_spatial_s2 features f=0.00683 warm: planner=duckdb server=91 browser=2938
+c121 MOBILE clustered_10mb_spatial_s2 features f=0.0592 warm: planner=duckdb server=265 browser=2946
+c124 MOBILE clustered_10mb_spatial_s2 features f=0.40985 warm: planner=duckdb server=275 browser=2955
+c130 MOBILE clustered_10mb_spatial_s2 count f=0.01709 warm: planner=duckdb server=106 browser=2940
+c133 MOBILE clustered_10mb_spatial_s2 features f=0.09448 cold: planner=duckdb server=265 browser=13331
+c107 MOBILE overture_transport_hcm count f=0.00929 warm: planner=duckdb server=108 browser=2194
+c123 MOBILE overture_transport_hcm features f=0.00671 warm: planner=duckdb server=176 browser=7881
+c111 MOBILE overture_places_hcm count f=0.01206 cold: planner=duckdb server=107 browser=18853
+c127 MOBILE overture_places_hcm features f=0.06803 warm: planner=duckdb server=175 browser=8515
+c115 MOBILE overture_admin_hcm count f=0.07651 warm: planner=duckdb server=91 browser=1117
+c131 MOBILE overture_admin_hcm count_by f=0.03817 warm: planner=duckdb server=92 browser=1114
+c119 MOBILE overture_landuse_hcm features f=0.02924 cold: planner=duckdb server=194 browser=11550
+c135 MOBILE overture_landuse_hcm count_by f=0.00052 cold: planner=duckdb server=107 browser=11523
+  x  2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (12.2m)
+
+
+  1) e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ─────────
+
+    Error: cross-engine mismatches
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "c122",
+    + ]
+
+      169 |     return b?.digest_match === false || b?.rows_match === false;
+      170 |   });
+    > 171 |   expect(bad.map((r) => (r.case as Case).id), "cross-engine mismatches").toEqual([]);
+          |                                                                          ^
+      172 | });
+      173 |
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:171:74
+
+    Error Context: test-results\heldout-held-out-planner-d-41e48-easured-server-browser-time\error-context.md
+
+  Slow test file: e2e\heldout.spec.ts (12.2m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ──────────
+  1 skipped
+=== HIGH_LATENCY: bcal-HIGH_LATENCY.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+c136 HIGH_LATENCY clustered_100mb_spatial_s3 count_by f=0.25645 cold: planner=duckdb server=185 browser=68714
+c142 HIGH_LATENCY clustered_100mb_spatial_s3 count f=0.00056 warm: planner=duckdb server=181 browser=767
+c148 HIGH_LATENCY clustered_100mb_spatial_s3 features f=0.0013 warm: planner=duckdb server=187 browser=945
+c154 HIGH_LATENCY clustered_100mb_spatial_s3 features f=0.50862 warm: planner=duckdb server=408 browser=4752
+c157 HIGH_LATENCY clustered_100mb_spatial_s3 features f=0.03561 cold: planner=duckdb server=233 browser=19370
+c160 HIGH_LATENCY clustered_100mb_spatial_s3 count f=0.00078 cold: planner=duckdb server=187 browser=23581
+c137 HIGH_LATENCY clustered_10mb_spatial_s2 features f=0.00167 warm: planner=duckdb server=184 browser=4398
+c146 HIGH_LATENCY clustered_10mb_spatial_s2 count_by f=0.03006 warm: planner=duckdb server=182 browser=4419
+c149 HIGH_LATENCY clustered_10mb_spatial_s2 features f=0.00021 warm: planner=duckdb server=190 browser=4422
+c152 HIGH_LATENCY clustered_10mb_spatial_s2 features f=0.01597 warm: planner=duckdb server=232 browser=4413
+c158 HIGH_LATENCY clustered_10mb_spatial_s2 count f=0.00237 warm: planner=duckdb server=184 browser=4423
+c161 HIGH_LATENCY clustered_10mb_spatial_s2 features f=0.00025 cold: planner=duckdb server=188 browser=19649
+c138 HIGH_LATENCY uniform_30mb_spatial_s2 features f=0.08543 warm: planner=duckdb server=5093 browser=12797
+c141 HIGH_LATENCY uniform_30mb_spatial_s2 features f=0.00277 warm: planner=duckdb server=359 browser=12598
+c144 HIGH_LATENCY uniform_30mb_spatial_s2 features f=0.29631 warm: planner=duckdb server=235 browser=12576
+c150 HIGH_LATENCY uniform_30mb_spatial_s2 features f=0.00104 warm: planner=duckdb server=228 browser=12586
+c153 HIGH_LATENCY uniform_30mb_spatial_s2 count_by f=0.0002 cold: planner=duckdb server=185 browser=27855
+c156 HIGH_LATENCY uniform_30mb_spatial_s2 features f=0.01812 cold: planner=duckdb server=414 browser=27874
+c162 HIGH_LATENCY uniform_30mb_spatial_s2 count f=0.12091 cold: planner=duckdb server=187 browser=27835
+c139 HIGH_LATENCY overture_transport_hcm count_by f=0.00087 cold: planner=duckdb server=183 browser=22020
+c155 HIGH_LATENCY overture_transport_hcm features f=0.3679 warm: planner=duckdb server=647 browser=3652
+c140 HIGH_LATENCY uniform_1gb_shuffled count f=0.03266 warm: planner=duckdb server=344 browser=browser fetch 980 MB > 300 MB (tab crash threshold)
+c143 HIGH_LATENCY overture_places_hcm features f=0.00494 cold: planner=duckdb server=267 browser=27981
+c159 HIGH_LATENCY overture_places_hcm count_by f=0.12931 warm: planner=duckdb server=189 browser=12723
+c145 HIGH_LATENCY clustered_1gb_shuffled features f=0.01447 cold: planner=duckdb server=373 browser=browser fetch 958 MB > 300 MB (tab crash threshold)
+c147 HIGH_LATENCY overture_admin_hcm count f=0.0762 warm: planner=duckdb server=190 browser=1717
+c163 HIGH_LATENCY overture_admin_hcm features f=0.00077 cold: planner=duckdb server=2871 browser=17266
+c151 HIGH_LATENCY overture_landuse_hcm features f=0.00045 warm: planner=duckdb server=194 browser=1795
+  x  2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (15.9m)
+
+
+  1) e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ─────────
+
+    Error: cross-engine mismatches
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "c146",
+    + ]
+
+      169 |     return b?.digest_match === false || b?.rows_match === false;
+      170 |   });
+    > 171 |   expect(bad.map((r) => (r.case as Case).id), "cross-engine mismatches").toEqual([]);
+          |                                                                          ^
+      172 | });
+      173 |
+        at E:\Lập trình\lập trình\6-du-an-khac\geofabric\web\e2e\heldout.spec.ts:171:74
+
+    Error Context: test-results\heldout-held-out-planner-d-41e48-easured-server-browser-time\error-context.md
+
+  Slow test file: e2e\heldout.spec.ts (15.9m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time ──────────
+  1 skipped

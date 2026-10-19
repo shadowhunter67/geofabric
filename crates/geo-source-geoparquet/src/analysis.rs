@@ -59,6 +59,12 @@ pub struct SourceScan {
     pub spatial_coherence: Option<f64>,
     /// Row-group-level density spread: max/median of rows per unit bbox area (>1 = skewed, estimates less reliable).
     pub density_skew: Option<f64>,
+    /// Uncompressed bytes per row of the geometry column (WKB size: 21 for a point, tens of KB for an administrative boundary).
+    pub geometry_row_bytes: f64,
+    /// Exact (row index of a small source): geometry bytes of the rows in the window; `None` when only the mean is known.
+    pub selected_geometry_bytes: Option<f64>,
+    /// Uncompressed bytes per row of the other columns a feature result carries (not geometry, not the covering struct).
+    pub attribute_row_bytes: f64,
     pub prune: PruneReport,
 }
 
@@ -172,6 +178,7 @@ pub fn analyze_plan_with(plan: &Plan, guard: &dyn SourceAccessGuard, histograms:
         }
         let uniform_selected = selected_rows;
         let mut has_histogram = false;
+        let mut selected_geometry_bytes: Option<f64> = None;
         if let Some(h) = histograms.and_then(|s| s.get(src.path())).filter(|h| h.matches(&src)) {
             // the histogram knows where the rows really are: per access path, the window is the intersection of its constraints
             let mut best = 0.0f64;
@@ -193,6 +200,31 @@ pub fn analyze_plan_with(plan: &Plan, guard: &dyn SourceAccessGuard, histograms:
             }
             selected_rows = best;
             has_histogram = true;
+            // a small source: exact counts and exact geometry payload per access path (rows whose bbox intersects the window)
+            if let Some(ix) = &h.row_index {
+                let (mut n_best, mut b_best) = (0u64, 0.0f64);
+                for set in path_sets {
+                    let mut w: Option<[f64; 4]> = None;
+                    for c in set.iter().filter(|c| c.column == info.geometry_column) {
+                        let b = [c.bbox.min_x(), c.bbox.min_y(), c.bbox.max_x(), c.bbox.max_y()];
+                        w = Some(match w {
+                            None => b,
+                            Some(a) => [a[0].max(b[0]), a[1].max(b[1]), a[2].min(b[2]), a[3].min(b[3])],
+                        });
+                    }
+                    let (n, b) = match w {
+                        Some(w) if w[0] > w[2] || w[1] > w[3] => (0, 0.0),
+                        Some(w) => ix.window(w),
+                        None => (ix.xmin.len() as u64, ix.geometry_bytes.iter().map(|x| *x as f64).sum()),
+                    };
+                    if n >= n_best {
+                        n_best = n;
+                        b_best = b;
+                    }
+                }
+                selected_rows = n_best as f64;
+                selected_geometry_bytes = Some(b_best);
+            }
         }
         let kept: Vec<usize> = kept.into_iter().collect();
         let total_bytes: u64 = info.row_groups.iter().map(|r| r.compressed_bytes).sum();
@@ -220,6 +252,11 @@ pub fn analyze_plan_with(plan: &Plan, guard: &dyn SourceAccessGuard, histograms:
             null_fraction: info.geometry_null_fraction,
             spatial_coherence: coherence(info),
             density_skew: density_skew(info),
+            geometry_row_bytes: uncompressed_row_bytes(info, |c| c == info.geometry_column),
+            selected_geometry_bytes,
+            attribute_row_bytes: uncompressed_row_bytes(info, |c| {
+                c != info.geometry_column && info.covering.as_ref().map_or(true, |cv| c != cv.xmin.split('.').next().unwrap_or(""))
+            }),
             covering_bytes_total: info.covering.as_ref().map_or(0, |c| {
                 let top = c.xmin.split('.').next().unwrap_or("");
                 info.row_groups.iter().map(|r| r.column_bytes.get(top).copied().unwrap_or(0)).sum()
@@ -268,14 +305,32 @@ fn collect(
         PlanNode::Filter { input, .. } | PlanNode::Sort { input, .. } | PlanNode::Project { input, .. } => {
             collect(plan, input, constraints, out, seen)
         }
-        PlanNode::Limit { input, .. } | PlanNode::Aggregate { input, .. } | PlanNode::Buffer { input, .. } => {
-            collect(plan, input, &[], out, seen)
-        }
-        PlanNode::SpatialJoin { left, right, .. } => {
+        // constraints above a CRS change or a buffer are in other coordinates: they cannot be pushed into the source
+        PlanNode::Limit { input, .. }
+        | PlanNode::Aggregate { input, .. }
+        | PlanNode::Buffer { input, .. }
+        | PlanNode::Transform { input, .. } => collect(plan, input, &[], out, seen),
+        PlanNode::SpatialJoin { left, right, .. } | PlanNode::SpatialSemiJoin { left, right, .. } => {
             collect(plan, left, &[], out, seen);
             collect(plan, right, &[], out, seen);
         }
     }
+}
+
+/// Average uncompressed bytes per row over the columns selected by `pick`, from the row-group metadata.
+fn uncompressed_row_bytes(info: &crate::SourceInfo, pick: impl Fn(&str) -> bool) -> f64 {
+    let rows: u64 = info.row_groups.iter().map(|r| r.rows).sum();
+    if rows == 0 {
+        return 0.0;
+    }
+    let bytes: u64 = info
+        .row_groups
+        .iter()
+        .flat_map(|r| r.uncompressed_column_bytes.iter())
+        .filter(|(c, _)| pick(c))
+        .map(|(_, b)| *b)
+        .sum();
+    bytes as f64 / rows as f64
 }
 
 fn rg_area(b: &[f64; 4]) -> f64 {

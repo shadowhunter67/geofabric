@@ -20,7 +20,9 @@ use std::sync::{Arc, Mutex};
 
 pub const DEFAULT_GRID: usize = 128;
 /// Bump when the sidecar format or what it contains changes: older sidecars are rebuilt.
-pub const HIST_VERSION: u32 = 2;
+pub const HIST_VERSION: u32 = 3;
+/// Sources with at most this many rows also get an exact [`RowIndex`].
+pub const ROW_INDEX_MAX_ROWS: u64 = 100_000;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpatialHistogram {
@@ -42,6 +44,35 @@ pub struct SpatialHistogram {
     /// Value statistics of up to [`MAX_STAT_COLUMNS`] cheap scalar columns (predicate selectivity).
     #[serde(default)]
     pub columns: BTreeMap<String, ColumnStats>,
+    /// Exact per-row boxes and geometry sizes of a SMALL source (<= [`ROW_INDEX_MAX_ROWS`] rows). A centre histogram cannot
+    /// see an object much larger than the window (a province boundary contains the whole viewport: its centre is elsewhere), and
+    /// the mean geometry size says nothing about those heavy rows. With the index the window count and the geometry payload are exact.
+    #[serde(default)]
+    pub row_index: Option<RowIndex>,
+}
+
+/// One entry per row: bbox and the WKB length of its geometry.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RowIndex {
+    pub xmin: Vec<f64>,
+    pub ymin: Vec<f64>,
+    pub xmax: Vec<f64>,
+    pub ymax: Vec<f64>,
+    pub geometry_bytes: Vec<u32>,
+}
+
+impl RowIndex {
+    /// Rows whose bbox intersects `window` (the semantics of the bbox filter) and the total geometry bytes of those rows.
+    pub fn window(&self, w: [f64; 4]) -> (u64, f64) {
+        let (mut n, mut bytes) = (0u64, 0.0f64);
+        for i in 0..self.xmin.len() {
+            if self.xmin[i] <= w[2] && self.xmax[i] >= w[0] && self.ymin[i] <= w[3] && self.ymax[i] >= w[1] {
+                n += 1;
+                bytes += self.geometry_bytes[i] as f64;
+            }
+        }
+        (n, bytes)
+    }
 }
 
 /// Columns profiled per source (the cheapest ones by compressed size).
@@ -95,10 +126,12 @@ impl SpatialHistogram {
             }
         }
         let columns = Self::profile_columns(src, &top)?;
+        let row_index = if info.row_count <= ROW_INDEX_MAX_ROWS { Self::build_row_index(src, &top, [&xmin_f, &ymin_f, &xmax_f, &ymax_f])? } else { None };
         let md = std::fs::metadata(src.path()).ok();
         Ok(SpatialHistogram {
             version: HIST_VERSION,
             columns,
+            row_index,
             bbox: ext,
             nx,
             ny,
@@ -109,6 +142,38 @@ impl SpatialHistogram {
             modified_ms: md.and_then(|m| m.modified().ok()).and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map_or(0, |d| d.as_millis() as u64),
             build_ms: t0.elapsed().as_millis() as u64,
         })
+    }
+
+    /// Exact boxes + geometry sizes of every row (small sources only). `None` when the geometry column cannot be read as binary.
+    fn build_row_index(src: &GeoParquetSource, top: &str, fields: [&String; 4]) -> Result<Option<RowIndex>, SourceError> {
+        let geom = src.info().geometry_column.clone();
+        let reader = src.read(Some(&[top.to_string(), geom]), None, 65_536)?;
+        let mut idx = RowIndex::default();
+        for batch in reader {
+            let batch = batch.map_err(|e| SourceError::NotGeoParquet(format!("arrow: {e}")))?;
+            let Some(st) = batch.column_by_name(top).and_then(|c| c.as_struct_opt()) else { return Ok(None) };
+            let get = |name: &str| st.column_by_name(name).and_then(|c| c.as_primitive_opt::<Float64Type>().cloned());
+            let (Some(x0), Some(y0), Some(x1), Some(y1)) = (get(fields[0]), get(fields[1]), get(fields[2]), get(fields[3])) else { return Ok(None) };
+            let g = batch.column_by_name(&src.info().geometry_column).ok_or_else(|| SourceError::NotGeoParquet("geometry column missing".into()))?;
+            let len = |i: usize| -> Option<u32> {
+                if let Some(b) = g.as_binary_opt::<i32>() {
+                    return Some(if b.is_null(i) { 0 } else { b.value(i).len() as u32 });
+                }
+                g.as_binary_opt::<i64>().map(|b| if b.is_null(i) { 0 } else { b.value(i).len() as u32 })
+            };
+            for i in 0..batch.num_rows() {
+                if x0.is_null(i) || y0.is_null(i) || x1.is_null(i) || y1.is_null(i) {
+                    continue;
+                }
+                let Some(l) = len(i) else { return Ok(None) };
+                idx.xmin.push(x0.value(i));
+                idx.ymin.push(y0.value(i));
+                idx.xmax.push(x1.value(i));
+                idx.ymax.push(y1.value(i));
+                idx.geometry_bytes.push(l);
+            }
+        }
+        Ok(Some(idx))
     }
 
     /// Value statistics of the cheapest scalar columns (never the geometry or the covering struct).
@@ -237,7 +302,7 @@ mod tests {
 
     fn hist(counts: Vec<u32>, nx: usize, ny: usize) -> SpatialHistogram {
         let counted = counts.iter().map(|c| *c as u64).sum();
-        SpatialHistogram { version: HIST_VERSION, bbox: [0.0, 0.0, nx as f64, ny as f64], nx, ny, counts, counted, total_rows: counted, file_size: 0, modified_ms: 0, build_ms: 0, columns: Default::default() }
+        SpatialHistogram { version: HIST_VERSION, bbox: [0.0, 0.0, nx as f64, ny as f64], nx, ny, counts, counted, total_rows: counted, file_size: 0, modified_ms: 0, build_ms: 0, columns: Default::default(), row_index: None }
     }
 
     #[test]

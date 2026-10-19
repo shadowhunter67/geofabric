@@ -1,0 +1,33 @@
+=== LOCAL: bbuild-LOCAL.json
+
+Running 2 tests using 1 worker
+
+  -  1 e2e\envelope.spec.ts:26:1 › browser envelope
+b000 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=225 browser=243
+b001 LOCAL overture_buildings_vn_south features f=0.0005 warm: planner=duckdb-wasm server=186 browser=323
+b002 LOCAL overture_buildings_vn_south features f=0.01 warm: planner=duckdb-wasm server=719 browser=414
+b003 LOCAL overture_buildings_vn_south count f=0.002 warm: planner=duckdb server=135 browser=259
+b004 LOCAL overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=129 browser=316
+b005 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=263 browser=271
+b006 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=250 browser=244
+b007 LOCAL overture_buildings_vn_south count f=0.03 warm: planner=duckdb server=184 browser=768
+b008 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=340 browser=320
+b009 LOCAL overture_buildings_vn_south features f=0.0005 warm: planner=duckdb-wasm server=237 browser=316
+b010 LOCAL overture_buildings_vn_south features f=0.01 warm: planner=duckdb-wasm server=882 browser=379
+b011 LOCAL overture_buildings_vn_south count f=0.002 warm: planner=duckdb server=130 browser=313
+b012 LOCAL overture_buildings_vn_south count_by f=0.002 warm: planner=duckdb server=134 browser=289
+b013 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=251 browser=186
+b014 LOCAL overture_buildings_vn_south features f=0.002 warm: planner=duckdb-wasm server=196 browser=191
+b015 LOCAL overture_buildings_vn_south count f=0.03 warm: planner=duckdb server=171 browser=695
+b016 LOCAL overture_buildings_vn_south features f=0.002 cold: planner=duckdb server=197 browser=788
+b017 LOCAL overture_buildings_vn_south features f=0.0005 cold: planner=duckdb server=172 browser=775
+b018 LOCAL overture_buildings_vn_south features f=0.01 cold: planner=duckdb server=662 browser=875
+b019 LOCAL overture_buildings_vn_south count f=0.002 cold: planner=duckdb server=124 browser=795
+b020 LOCAL overture_buildings_vn_south count_by f=0.002 cold: planner=duckdb server=139 browser=848
+b021 LOCAL overture_buildings_vn_south features f=0.002 cold: planner=duckdb server=196 browser=736
+b022 LOCAL overture_buildings_vn_south features f=0.002 cold: planner=duckdb server=199 browser=788
+b023 LOCAL overture_buildings_vn_south count f=0.03 cold: planner=duckdb server=276 browser=2165
+  ok 2 e2e\heldout.spec.ts:35:1 › held-out: planner decision vs measured server/browser time (1.6m)
+
+  1 skipped
+  1 passed (1.7m)

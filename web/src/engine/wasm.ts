@@ -103,7 +103,10 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     const est = ctx.estimatedInputBytes ?? 0;
     if (this.cumulativeInput > 0 && this.cumulativeInput + est > this.recycleBudget) await this.recycle();
     this.cumulativeInput += est;
+    const tInit0 = performance.now();
     const db = await this.instance();
+    const initMs = performance.now() - tInit0;
+    const tOpen0 = performance.now();
     const buffered: string[] = [];
     for (const f of files) {
       try {
@@ -123,6 +126,7 @@ export class DuckDbWasmEngine implements ExecutionEngine {
       }
     }
     const conn = await db.connect();
+    const openMs = performance.now() - tOpen0;
     let cancelled: "timeout" | "cancelled" | null = null;
     const cancel = (why: "timeout" | "cancelled") => {
       cancelled = why;
@@ -132,10 +136,14 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     const onAbort = () => cancel("cancelled");
     ctx.signal?.addEventListener("abort", onAbort);
     try {
+      const tFirst0 = performance.now();
       const reader = await conn.send(sql);
       const rows: unknown[][] = [];
       let columns: { name: string; type: string }[] = [];
+      let firstMs = -1;
+      let tDrain0 = 0;
       for await (const batch of reader) {
+        if (firstMs < 0) { firstMs = performance.now() - tFirst0; tDrain0 = performance.now(); }
         if (cancelled) break;
         if (columns.length === 0) columns = batch.schema.fields.map((f) => ({ name: f.name, type: String(f.type) }));
         const vecs = columns.map((_, i) => batch.getChildAt(i)!);
@@ -144,10 +152,13 @@ export class DuckDbWasmEngine implements ExecutionEngine {
       }
       if (cancelled) throw new EngineError(cancelled, cancelled === "timeout" ? `browser query interrupted after ${ctx.timeoutMs} ms` : "browser query cancelled");
       const elapsed = performance.now() - t0;
+      if (firstMs < 0) firstMs = performance.now() - tFirst0; // an empty result has no batch
+      const drainMs = tDrain0 > 0 ? performance.now() - tDrain0 : 0;
       return {
         columns,
         rows,
         sql,
+        phases: { init_ms: initMs, open_ms: openMs, first_ms: firstMs, drain_ms: drainMs, rows: rows.length },
         metrics: {
           elapsed_ms: { value: elapsed, source: "engine_observed" },
           rows_returned: { value: rows.length, source: "engine_observed" },

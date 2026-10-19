@@ -59,7 +59,7 @@ function chain(uri: string, ...ops: ((input: string) => PlanNode)[]): PlanGraph 
   };
   let last = "p0";
   ops.forEach((mk, i) => { const id = `p${i + 1}`; nodes[id] = mk(last); last = id; });
-  return { ir_version: "0.2", nodes, root: last };
+  return { ir_version: "0.3", nodes, root: last };
 }
 const limit = (n: number) => (input: string): PlanNode => ({ op: "limit", input, n });
 const bbox = (input: string): PlanNode => ({ op: "bbox_filter", input, geometry_column: "geometry", bbox: { min_x: 104, min_y: 10, max_x: 106, max_y: 12, crs: "ogc_crs84" } });

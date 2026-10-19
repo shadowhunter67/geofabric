@@ -86,6 +86,8 @@ pub struct AppState {
     /// Spatial histograms: sources still waiting to be built, and per-source notes (built / cached / why not).
     pub hist_pending: std::sync::atomic::AtomicUsize,
     pub hist_notes: std::sync::Mutex<std::collections::BTreeMap<String, String>>,
+    /// Where `/api/devicecheck` saves device-check reports; None = the endpoint does not exist (opt-in: `--devicecheck-dir`).
+    pub devicecheck_dir: Option<PathBuf>,
 }
 
 impl AppState {
@@ -107,6 +109,7 @@ impl AppState {
             file_bytes: Default::default(),
             hist_pending: Default::default(),
             hist_notes: Default::default(),
+            devicecheck_dir: None,
         }
     }
 
@@ -145,7 +148,7 @@ pub type Shared = Arc<AppState>;
 
 // ---------- errors ----------
 
-pub(crate) struct ApiError(StatusCode, Value);
+pub struct ApiError(StatusCode, Value);
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
@@ -284,7 +287,7 @@ pub struct FilterReq {
 #[derive(Deserialize)]
 pub struct QueryReq {
     source: String,
-    /// features | count_by | count | intersects_features | near | join_count_by
+    /// features | count_by | count | intersects_features | near | near_count | join_count_by
     kind: String,
     /// viewport [xmin, ymin, xmax, ymax] in `crs`
     bbox: [f64; 4],
@@ -294,6 +297,10 @@ pub struct QueryReq {
     #[serde(rename = "with")]
     with_req: Option<WithReq>,
     limit: Option<u64>,
+    /// RENDERING only: keep the rows whose `md5(id) mod sample_modulus = 0` (a power of two, at most 2^20): a deterministic,
+    /// spatially uniform thinning that nests (the sample at modulus 2m is contained in the one at m). Valid for the
+    /// row-returning kinds, never for counts or aggregates: analytics always see the full logical result (ADR-012).
+    sample_modulus: Option<u32>,
     /// Engine preference ("duckdb" | "duckdb-wasm"); honored only if feasible.
     engine: Option<String>,
     /// Override `allow_browser` for this request.
@@ -380,6 +387,26 @@ fn apply_filter(mut node: Node, filter: Option<&FilterReq>) -> Result<Node, ApiE
     Ok(node)
 }
 
+/// Add the render-thinning filter when the request asks for it (and refuse it where it would change an analysis).
+pub(crate) fn apply_sample(node: Node, q: &QueryReq) -> Result<Node, ApiError> {
+    let Some(m) = q.sample_modulus else { return Ok(node) };
+    let bad = |msg: &str| err(StatusCode::BAD_REQUEST, "bad_request", msg.to_string());
+    if !matches!(q.kind.as_str(), "features" | "intersects_features" | "near") {
+        return Err(bad("sample_modulus is only valid for row-returning kinds (features, intersects_features, near): counts and aggregates always use the full result"));
+    }
+    if m == 0 || !m.is_power_of_two() || m > (1 << 20) {
+        return Err(bad("sample_modulus must be a power of two between 1 and 1048576"));
+    }
+    if m == 1 {
+        return Ok(node);
+    }
+    let schema = node_schema(&node)?;
+    if !schema.fields.iter().any(|f| f.name == "id" && schema.geometry(&f.name).is_none()) {
+        return Err(bad("sampling needs an `id` column in the source"));
+    }
+    Ok(Node::Filter { input: Box::new(node), predicate: Expr::HashBucket { column: "id".into(), modulus: m, remainder: 0 } })
+}
+
 fn build_ir(rt: &Runtime, uri: &str, with_uri: Option<&str>, ctx: &ExecutionContext, q: &QueryReq) -> Result<Plan, ApiError> {
     if matches!(q.kind.as_str(), "near" | "near_count" | "join_count_by") {
         return templates::build(rt, uri, with_uri, ctx, q);
@@ -417,6 +444,7 @@ fn build_ir(rt: &Runtime, uri: &str, with_uri: Option<&str>, ctx: &ExecutionCont
         _ => return Err(bad("unknown kind")),
     };
     node = apply_filter(node, q.filter.as_ref())?;
+    node = apply_sample(node, q)?;
     let limit = q.limit.unwrap_or(20_000).min(MAX_FEATURES);
     node = match q.kind.as_str() {
         "count" => Node::Aggregate {
@@ -430,10 +458,10 @@ fn build_ir(rt: &Runtime, uri: &str, with_uri: Option<&str>, ctx: &ExecutionCont
                 input: Box::new(Node::Sort {
                     input: Box::new(Node::Aggregate {
                         input: Box::new(node),
-                        group_by: vec![g],
+                        group_by: vec![g.clone()],
                         aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
                     }),
-                    keys: vec![SortKey { column: "count".into(), descending: true }],
+                    keys: vec![SortKey { column: "count".into(), descending: true }, SortKey { column: g.clone(), descending: false }], // the group key breaks ties: two engines must cut the top 50 at the same place
                 }),
                 n: 50,
             }
@@ -536,15 +564,22 @@ fn to_response(plan: &Plan, run: geo_runtime::RunOutput, total_ms: f64) -> Value
             "boundary_conversion_ms": {"value": t0.elapsed().as_secs_f64() * 1000.0, "source": "engine_observed"},
         },
     });
-    // a metre distance on a lon/lat source is executed as an explicit ANGULAR distance: say so (units are never implicit)
-    if let Some(distance) = plan.nodes.values().find_map(|node| match node {
-        geo_ir::PlanNode::Buffer { distance, .. } if distance.unit() == DistanceUnit::Degree => Some(distance.value()),
+    // a metric predicate runs in the plane of a local metric CRS: say which one and how accurate it is (units are never implicit)
+    let metric_predicate = plan.nodes.values().find_map(|node| match node {
+        geo_ir::PlanNode::SpatialSemiJoin { predicate: geo_ir::SpatialPredicate::WithinDistance { distance }, .. }
+        | geo_ir::PlanNode::SpatialJoin { predicate: geo_ir::SpatialPredicate::WithinDistance { distance }, .. } => distance.to_meters().ok(),
         _ => None,
-    }) {
-        response["approximation"] = json!({
-            "distance_m": distance * 111_320.0,
-            "distance_degrees": distance,
-            "note": "1 degree = 111320 m north-south; east-west distances are shorter by cos(latitude): about 1.9 % at 10.8 N"
+    });
+    if let Some(distance_m) = metric_predicate {
+        let crs = plan.nodes.values().find_map(|node| match node {
+            geo_ir::PlanNode::Transform { output_crs, .. } if output_crs.is_local_metric() => Some(output_crs.to_string()),
+            _ => None,
+        });
+        response["metric_semantics"] = json!({
+            "distance_m": distance_m,
+            "crs": crs,
+            "method": "ST_DWithin in the plane of a local UTM zone, chosen from the area of the query",
+            "max_scale_error_pct": geo_types::MAX_SCALE_ERROR * 100.0,
         });
     }
     response
@@ -853,6 +888,24 @@ pub struct ClientReport {
     layout: Option<String>,
 }
 
+/// Save a device-check report (web/src/devicecheck.ts) next to the other measurement evidence. Opt-in, one file per check
+/// (named after its start time, sanitised), bounded by the request body limit. Posted after every case, so a crash leaves a trace.
+async fn device_check(State(st): State<Shared>, Json(report): Json<Value>) -> Result<Json<Value>, ApiError> {
+    let Some(dir) = &st.devicecheck_dir else {
+        return Err(err(StatusCode::NOT_FOUND, "not_enabled", "device-check reports are not enabled (start the gateway with --devicecheck-dir)"));
+    };
+    let started = report.get("started").and_then(|v| v.as_str()).unwrap_or("unknown");
+    let name: String = started.chars().filter(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_')).take(40).collect();
+    if name.is_empty() {
+        return Err(err(StatusCode::BAD_REQUEST, "bad_report", "report has no usable start time"));
+    }
+    std::fs::create_dir_all(dir).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "io", e.to_string()))?;
+    let path = dir.join(format!("device-{name}.json"));
+    let text = serde_json::to_string_pretty(&report).map_err(|e| err(StatusCode::BAD_REQUEST, "bad_report", e.to_string()))?;
+    std::fs::write(&path, text).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "io", e.to_string()))?;
+    Ok(Json(json!({"saved": path.file_name().map(|n| n.to_string_lossy().to_string())})))
+}
+
 /// A client-side engine (the browser) reports how a run went: health, known incompatibilities, telemetry.
 async fn client_report(State(st): State<Shared>, Json(r): Json<ClientReport>) -> Result<Json<Value>, ApiError> {
     if !valid_id(&r.source) || r.engine.len() > 64 {
@@ -1017,6 +1070,7 @@ pub fn api_router(state: Shared) -> Router {
         .route("/api/probe", post(put_probe))
         .route("/api/probe/invalidate", post(invalidate_probe))
         .route("/api/report", post(client_report))
+        .route("/api/devicecheck", post(device_check))
         .route("/api/catalog", get(catalog::catalog))
         .route("/api/rasters/{id}/{name}", get(catalog::raster))
         .route("/api/sources", get(sources))

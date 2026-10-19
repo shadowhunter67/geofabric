@@ -42,7 +42,7 @@ def main():
     for net in nets:
         out = ROOT / "benchmarks" / "results" / f"{os.environ.get('HO_PREFIX', 'heldout')}-{net}.json"
         gw = subprocess.Popen(
-            [str(ROOT / "target" / "release" / "geo-gateway.exe"), "--data", "benchmarks/data", "--web", "web/dist", "--port", str(PORT),
+            [str(ROOT / "target" / "release" / "geo-gateway.exe"), "--data", "data/local", "--data", "benchmarks/data", "--manifests", "data/manifests", "--repo-root", ".", "--web", "web/dist", "--port", str(PORT),
              *(["--network", net] if os.environ.get("HO_CDP") else ["--simulate-network", net]), "--telemetry", "benchmarks/results/" + os.environ.get("HO_CALIBRATION", "calibration-v3.jsonl"), "--no-learn", "--timeout-secs", os.environ.get("HO_TIMEOUT", "90")],
             cwd=ROOT, env=env, stdout=open(ROOT / "benchmarks" / "results" / f"gw-heldout-{net}.log", "w"), stderr=subprocess.STDOUT,
         )

@@ -12,7 +12,7 @@ interface Case {
   group_by: string | null; filter: unknown; deterministic: boolean; network: string; browser_state: "warm" | "cold";
 }
 interface GF {
-  resolvePlacement(r: unknown): Promise<{ rows_total: number; result_digest?: { count: number; sha256: string } }>;
+  resolvePlacement(r: unknown): Promise<{ rows_total: number; result_digest?: { count: number; sha256: string }; phases?: unknown }>;
   wasm: { recycleBudget: number; recycle(): Promise<void>; isWarm(): boolean; instance(): Promise<unknown> };
 }
 declare global { interface Window { __gf: GF } }
@@ -99,7 +99,7 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
         row.server = { ms: sT, median: sT.length ? median(sT) : null, rows: sRows };
         // 3. browser (only when a tab can hold it)
         const engineInput = planner.browser_access.reduce((a, x) => a + x.fetch_bytes_est, 0); // bytes the browser would pull into the tab
-        const b: Record<string, unknown> = { ms: [], rows: null, file_requests: [], file_bytes: [] };
+        const b: Record<string, unknown> = { ms: [], rows: null, file_requests: [], file_bytes: [], plan_ms: [], resolve_ms: [], phases: [] };
         if (engineInput > BROWSER_SAFE_INPUT) {
           b.skipped = `browser fetch ${(engineInput / 1048576).toFixed(0)} MB > ${BROWSER_SAFE_INPUT / 1048576} MB (tab crash threshold)`;
         } else {
@@ -110,6 +110,7 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
             const t0 = Date.now();
             const warmNow = await page.evaluate(() => window.__gf.wasm.isWarm());
             const placed = await post("/api/query", { ...req, engine: "duckdb-wasm", browser_limit_mb: SAFE_MB, client: { warm: warmNow } });
+            const planMs = Date.now() - t0;
             if (placed.status !== 200 || placed.json.placement !== "browser") {
               b.not_placed = placed.status !== 200
                 ? JSON.stringify(placed.json).slice(0, 200)
@@ -117,8 +118,16 @@ test("held-out: planner decision vs measured server/browser time", async ({ cont
               break;
             }
             try {
-              const res = await page.evaluate((r) => window.__gf.resolvePlacement(r), placed.json);
+              // only a summary leaves the page: returning the whole result (tens of thousands of features) to the test process made the
+              // measured time include its serialisation (1.5 s for 17,000 features), a cost the product never pays
+              const res = await page.evaluate(async (r) => {
+                const x = await window.__gf.resolvePlacement(r);
+                return { rows_total: x.rows_total, result_digest: x.result_digest, phases: x.phases ?? null };
+              }, placed.json);
               times.push(Date.now() - t0);
+              (b.plan_ms as number[]).push(planMs);
+              (b.resolve_ms as number[]).push(Date.now() - t0 - planMs);
+              (b.phases as unknown[]).push(res.phases ?? null);
               const st1 = (await page.evaluate(() => fetch("/api/stats").then((r) => r.json()))) as { file_requests: number; file_bytes: number };
               (b.file_requests as number[] | undefined)?.push(st1.file_requests - st0.file_requests);
               (b.file_bytes as number[] | undefined)?.push(st1.file_bytes - st0.file_bytes);

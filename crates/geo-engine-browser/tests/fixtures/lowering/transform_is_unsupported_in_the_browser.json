@@ -1,0 +1,74 @@
+{
+  "expected": {
+    "error_kind": "unsupported"
+  },
+  "max_rows": 10,
+  "name": "transform_is_unsupported_in_the_browser",
+  "plan": {
+    "hints": {},
+    "ir_version": "0.3",
+    "nodes": {
+      "n_0647fb79fa21fbf29874": {
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "input_crs": {
+          "epsg": 4326
+        },
+        "op": "transform",
+        "output_column": "geometry_metric",
+        "output_crs": {
+          "epsg": 32648
+        }
+      },
+      "n_72eeb6493c510d0a1849": {
+        "format": "geo_parquet",
+        "op": "source",
+        "schema": {
+          "fields": [
+            {
+              "data_type": "int64",
+              "name": "id"
+            },
+            {
+              "data_type": "utf8",
+              "name": "category"
+            },
+            {
+              "data_type": {
+                "other": "geometry"
+              },
+              "name": "geometry"
+            }
+          ],
+          "geometry_columns": [
+            {
+              "crs": {
+                "epsg": 4326
+              },
+              "geometry_type": "polygon",
+              "name": "geometry"
+            }
+          ]
+        },
+        "statistics": {
+          "bbox": null,
+          "row_count": null,
+          "row_groups": null,
+          "total_bytes": null
+        },
+        "uri": "a.parquet"
+      }
+    },
+    "root": "n_0647fb79fa21fbf29874"
+  },
+  "sources": {
+    "a.parquet": {
+      "covering": [
+        "bbox.xmin",
+        "bbox.ymin",
+        "bbox.xmax",
+        "bbox.ymax"
+      ]
+    }
+  }
+}

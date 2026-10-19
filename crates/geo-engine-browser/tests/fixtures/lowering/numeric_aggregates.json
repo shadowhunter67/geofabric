@@ -9,43 +9,9 @@
   "name": "numeric_aggregates",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_55a3fd14208b8cfe8d9c": {
-        "aggregates": [
-          {
-            "alias": "s",
-            "column": "id",
-            "func": "sum"
-          },
-          {
-            "alias": "lo",
-            "column": "id",
-            "func": "min"
-          },
-          {
-            "alias": "hi",
-            "column": "id",
-            "func": "max"
-          },
-          {
-            "alias": "mean",
-            "column": "id",
-            "func": "avg"
-          },
-          {
-            "alias": "n",
-            "column": "id",
-            "func": "count"
-          }
-        ],
-        "group_by": [
-          "category"
-        ],
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "aggregate"
-      },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -82,9 +48,43 @@
           "total_bytes": null
         },
         "uri": "a.parquet"
+      },
+      "n_de84ffebcdea81ec5620": {
+        "aggregates": [
+          {
+            "alias": "s",
+            "column": "id",
+            "func": "sum"
+          },
+          {
+            "alias": "lo",
+            "column": "id",
+            "func": "min"
+          },
+          {
+            "alias": "hi",
+            "column": "id",
+            "func": "max"
+          },
+          {
+            "alias": "mean",
+            "column": "id",
+            "func": "avg"
+          },
+          {
+            "alias": "n",
+            "column": "id",
+            "func": "count"
+          }
+        ],
+        "group_by": [
+          "category"
+        ],
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "aggregate"
       }
     },
-    "root": "n_55a3fd14208b8cfe8d9c"
+    "root": "n_de84ffebcdea81ec5620"
   },
   "sources": {
     "a.parquet": {

@@ -6,20 +6,9 @@
   "name": "intersects_is_unsupported",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_5d9d0f760aa18a5f4186": {
-        "geometry_column": "geometry",
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "intersects",
-        "with": {
-          "crs": {
-            "epsg": 4326
-          },
-          "wkt": "POINT(104.5 12.5)"
-        }
-      },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -56,9 +45,20 @@
           "total_bytes": null
         },
         "uri": "a.parquet"
+      },
+      "n_f7769c8e011564948a96": {
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "intersects",
+        "with": {
+          "crs": {
+            "epsg": 4326
+          },
+          "wkt": "POINT(104.5 12.5)"
+        }
       }
     },
-    "root": "n_5d9d0f760aa18a5f4186"
+    "root": "n_f7769c8e011564948a96"
   },
   "sources": {
     "a.parquet": {

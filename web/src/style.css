@@ -206,3 +206,7 @@ button.adv-toggle.open svg { transform: rotate(90deg); }
 .sources-credit ul { margin: 4px 0 6px 18px; padding: 0; }
 .sources-credit li { margin-bottom: 6px; }
 .sources-credit a { color: var(--accent, #4aa3ff); }
+
+.devicecheck { position: fixed; inset: 24px; z-index: 99; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: auto; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+.devicecheck pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
+.dc-title { font-weight: 600; margin-bottom: 8px; }

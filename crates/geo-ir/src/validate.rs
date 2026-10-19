@@ -6,7 +6,9 @@
 //! distances need a geographic CRS; unknown geographic-ness is rejected, never
 //! guessed.
 
+use crate::expr::Expr;
 use crate::graph::{GraphError, NodeId, Plan, PlanNode};
+use crate::node::SpatialPredicate;
 use crate::schema::derive_schema;
 use crate::IrError;
 use geo_types::{Crs, DistanceUnit, SpatialSchema};
@@ -114,6 +116,7 @@ fn check_node(id: &str, n: &PlanNode, ins: &[&SpatialSchema], r: &mut Validation
     match n {
         PlanNode::Source { .. } | PlanNode::Aggregate { .. } | PlanNode::Project { .. } | PlanNode::Limit { .. } => {}
         PlanNode::Filter { predicate, .. } => {
+            check_expr(id, predicate, r);
             let s = ins[0];
             let mut cols = vec![];
             predicate.columns(&mut cols);
@@ -200,20 +203,39 @@ fn check_node(id: &str, n: &PlanNode, ins: &[&SpatialSchema], r: &mut Validation
                 }
             }
         }
-        PlanNode::SpatialJoin { left_column, right_column, .. } => match (ins[0].geometry(left_column), ins[1].geometry(right_column)) {
-            (Some(a), Some(b)) => {
-                let ok1 = require_known(r, id, "left geometry", &a.crs);
-                let ok2 = require_known(r, id, "right geometry", &b.crs);
-                if ok1 && ok2 && a.crs != b.crs {
-                    r.push_err(
-                        "crs_mismatch",
-                        id,
-                        format!("left CRS {} != right CRS {}; explicit transform required", a.crs, b.crs),
-                    );
+        PlanNode::SpatialJoin { left_column, right_column, predicate, .. }
+        | PlanNode::SpatialSemiJoin { left_column, right_column, predicate, .. } => {
+            match (ins[0].geometry(left_column), ins[1].geometry(right_column)) {
+                (Some(a), Some(b)) => {
+                    let ok1 = require_known(r, id, "left geometry", &a.crs);
+                    let ok2 = require_known(r, id, "right geometry", &b.crs);
+                    if ok1 && ok2 && a.crs != b.crs {
+                        r.push_err(
+                            "crs_mismatch",
+                            id,
+                            format!("left CRS {} != right CRS {}; explicit transform required", a.crs, b.crs),
+                        );
+                    } else if ok1 && ok2 {
+                        check_predicate(id, predicate, &a.crs, r);
+                    }
                 }
+                _ => r.push_err("not_geometry", id, "join columns must both be geometry columns".into()),
             }
-            _ => r.push_err("not_geometry", id, "join columns must both be geometry columns".into()),
-        },
+        }
+        PlanNode::Transform { geometry_column, input_crs, output_crs, .. } => {
+            match ins[0].geometry(geometry_column) {
+                None => r.push_err("not_geometry", id, format!("'{geometry_column}' is not a geometry column")),
+                Some(g) if g.crs != *input_crs => {
+                    r.push_err("crs_mismatch", id, format!("declared input_crs {input_crs} != column CRS {}", g.crs))
+                }
+                Some(_) => {}
+            }
+            let a = require_known(r, id, "transform input_crs", input_crs);
+            let b = require_known(r, id, "transform output_crs", output_crs);
+            if a && b && input_crs == output_crs {
+                r.push_warn("transform_identity", id, format!("transform from {input_crs} to itself does nothing"));
+            }
+        }
         PlanNode::Sort { keys, .. } => {
             for k in keys {
                 if ins[0].geometry(&k.column).is_some() {
@@ -221,6 +243,39 @@ fn check_node(id: &str, n: &PlanNode, ins: &[&SpatialSchema], r: &mut Validation
                 }
             }
         }
+    }
+}
+
+/// A metric predicate is only meaningful in a local metric CRS with a linear distance: degrees are never metres (ADR-011).
+fn check_predicate(id: &str, p: &SpatialPredicate, crs: &Crs, r: &mut ValidationReport) {
+    let SpatialPredicate::WithinDistance { distance } = p else { return };
+    if distance.unit().is_angular() {
+        r.push_err(
+            "angular_distance_predicate",
+            id,
+            "within_distance needs a linear distance (meter, kilometer, foot): a degree distance is not a metric distance".into(),
+        );
+    }
+    if !crs.is_local_metric() {
+        r.push_err(
+            "not_metric_crs",
+            id,
+            format!("within_distance in {crs} is not a metric computation: transform both sides to a local metric CRS (UTM) first"),
+        );
+    }
+}
+
+/// Structural checks of an attribute expression (column checks are done by the caller).
+fn check_expr(id: &str, e: &Expr, r: &mut ValidationReport) {
+    match e {
+        Expr::HashBucket { modulus, remainder, .. } => {
+            if *modulus == 0 || remainder >= modulus {
+                r.push_err("bad_hash_bucket", id, format!("hash_bucket needs modulus >= 1 and remainder < modulus (got {remainder} of {modulus})"));
+            }
+        }
+        Expr::And { exprs } | Expr::Or { exprs } => exprs.iter().for_each(|x| check_expr(id, x, r)),
+        Expr::Not { expr } => check_expr(id, expr, r),
+        _ => {}
     }
 }
 

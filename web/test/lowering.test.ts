@@ -11,7 +11,7 @@ const dir = new URL("../../crates/geo-engine-browser/tests/fixtures/lowering/", 
 const fixtures = readdirSync(dir).filter((f) => f.endsWith(".json")).sort();
 
 test("there are golden fixtures to compare against", () => {
-  assert.ok(fixtures.length >= 8, `found ${fixtures.length}`);
+  assert.ok(fixtures.length >= 11, `found ${fixtures.length}`);
 });
 
 for (const f of fixtures) {

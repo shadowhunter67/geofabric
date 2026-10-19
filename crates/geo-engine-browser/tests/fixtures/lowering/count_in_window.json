@@ -9,23 +9,21 @@
   "name": "count_in_window",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_6bbcfac81059b8f07f56": {
-        "bbox": {
-          "crs": {
-            "epsg": 4326
-          },
-          "max_x": 105.5,
-          "max_y": 13.25,
-          "min_x": 104.0,
-          "min_y": 12.0
-        },
-        "geometry_column": "geometry",
-        "input": "n_ce16bba17b3c0e1cd696",
-        "op": "bbox_filter"
+      "n_2af5947a742193dac820": {
+        "aggregates": [
+          {
+            "alias": "n",
+            "column": null,
+            "func": "count"
+          }
+        ],
+        "group_by": [],
+        "input": "n_f4b8ea907395112be7d1",
+        "op": "aggregate"
       },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -63,20 +61,22 @@
         },
         "uri": "a.parquet"
       },
-      "n_f8202c68f69d9d6bb451": {
-        "aggregates": [
-          {
-            "alias": "n",
-            "column": null,
-            "func": "count"
-          }
-        ],
-        "group_by": [],
-        "input": "n_6bbcfac81059b8f07f56",
-        "op": "aggregate"
+      "n_f4b8ea907395112be7d1": {
+        "bbox": {
+          "crs": {
+            "epsg": 4326
+          },
+          "max_x": 105.5,
+          "max_y": 13.25,
+          "min_x": 104.0,
+          "min_y": 12.0
+        },
+        "geometry_column": "geometry",
+        "input": "n_72eeb6493c510d0a1849",
+        "op": "bbox_filter"
       }
     },
-    "root": "n_f8202c68f69d9d6bb451"
+    "root": "n_2af5947a742193dac820"
   },
   "sources": {
     "a.parquet": {

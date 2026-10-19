@@ -116,11 +116,13 @@ fn medium_file_loses_on_score_and_large_file_is_rejected_by_the_memory_guard() {
     if let Some(src) = source("clustered_100mb_spatial") {
         let plan = bbox_plan(src, Crs::Epsg(4326), window(SYN, 0.002, (104.5, 12.5)), 2000, false);
         let p = pick(&plan, &PlannerConfig::default());
-        assert_eq!(p.engine.0, "duckdb");
+        // browser range mode (>32 MB files are never downloaded whole): measured 32-240 ms vs the server's ~85-130 ms in the
+        // calibration set, so the two are comparable here; the planner may pick either, but both must be feasible and priced alike
         let wasm = p.candidates.iter().find(|c| c.engine.0 == "duckdb-wasm").unwrap();
-        assert!(wasm.feasible, "feasible but slower: {}", reason(&p, "duckdb-wasm"));
+        assert!(wasm.feasible, "feasible: {}", reason(&p, "duckdb-wasm"));
         let server = p.candidates.iter().find(|c| c.engine.0 == "duckdb").unwrap();
-        assert!(wasm.score_ms.unwrap() > 2.0 * server.score_ms.unwrap(), "browser {:?} vs server {:?}", wasm.score_ms, server.score_ms);
+        let ratio = wasm.score_ms.unwrap() / server.score_ms.unwrap();
+        assert!((0.3..3.0).contains(&ratio), "browser {:?} vs server {:?}", wasm.score_ms, server.score_ms);
     }
     // 1 GB file, small window: since the browser engine reads with range requests it is *feasible* (it fetches only the
     // touched row groups), but ~200 sequential requests make it far slower than the server: it loses on score
@@ -131,7 +133,10 @@ fn medium_file_loses_on_score_and_large_file_is_rejected_by_the_memory_guard() {
         let wasm = p.candidates.iter().find(|c| c.engine.0 == "duckdb-wasm").unwrap();
         let server = p.candidates.iter().find(|c| c.engine.0 == "duckdb").unwrap();
         assert!(wasm.feasible, "{}", reason(&p, "duckdb-wasm"));
-        assert!(wasm.score_ms.unwrap() > 3.0 * server.score_ms.unwrap(), "browser {:?} vs server {:?}", wasm.score_ms, server.score_ms);
+        // measured on this file class (bgb-LOCAL.json): the browser takes 1.5-3x the server's time; the model, fitted to ~100 MB, does not
+        // see it, so the policy keeps the browser out of automatic selection beyond the calibrated range (R5c)
+        let _ = (wasm, server);
+        assert!(p.assessment.policy.iter().any(|m| m.starts_with("R5c")), "{:?}", p.assessment.policy);
         assert_eq!(p.assessment.browser_access[0].strategy, geo_planner::AccessStrategy::Range);
     }
 }
@@ -141,9 +146,12 @@ fn real_overture_data_goes_to_duckdb() {
     let Some(src) = source("overture_buildings_vn_south") else { return };
     let plan = bbox_plan(src, Crs::OgcCrs84, window([105.0, 8.5, 108.0, 12.0], 0.002, (106.7, 10.8)), 2000, false);
     let p = pick(&plan, &PlannerConfig::default());
-    assert_eq!(p.engine.0, "duckdb");
+    // 1.45 GB, covering only inferred. Measured (benchmarks/results/bbuild-LOCAL.json, 24 runs): browser 186-320 ms warm vs server
+    // 196-340 ms for features, but 259-316 ms vs 130 ms for aggregates and 0.8 s vs 0.2 s cold. The model, calibrated up to 100 MB,
+    // underprices this file (known risk, report "Remaining Risks"): what must hold is that an aggregate or a cold tab is not sent to the browser.
     let wasm = p.candidates.iter().find(|c| c.engine.0 == "duckdb-wasm").unwrap();
-    assert!(!wasm.feasible || wasm.score_ms.unwrap() > p.candidates[0].score_ms.unwrap(), "browser is never the better choice on this file");
+    assert!(wasm.feasible);
+    assert_eq!(p.engine.0, "duckdb", "{:?}", p.assessment.policy);
     // the inferred covering is reported, not hidden
     assert!(p.decisions.iter().any(|d| d.rule == "covering" && d.outcome == Outcome::Warning), "{:?}", p.decisions);
     assert!(p.scans[0].covering_inferred);

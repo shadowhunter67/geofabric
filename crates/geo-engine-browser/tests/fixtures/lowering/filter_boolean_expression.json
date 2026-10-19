@@ -9,10 +9,10 @@
   "name": "filter_boolean_expression",
   "plan": {
     "hints": {},
-    "ir_version": "0.2",
+    "ir_version": "0.3",
     "nodes": {
-      "n_997aff582ad2769463a6": {
-        "input": "n_ce16bba17b3c0e1cd696",
+      "n_4028dc0d7a51b412bd29": {
+        "input": "n_72eeb6493c510d0a1849",
         "op": "filter",
         "predicate": {
           "exprs": [
@@ -71,7 +71,7 @@
           "kind": "and"
         }
       },
-      "n_ce16bba17b3c0e1cd696": {
+      "n_72eeb6493c510d0a1849": {
         "format": "geo_parquet",
         "op": "source",
         "schema": {
@@ -110,7 +110,7 @@
         "uri": "a.parquet"
       }
     },
-    "root": "n_997aff582ad2769463a6"
+    "root": "n_4028dc0d7a51b412bd29"
   },
   "sources": {
     "a.parquet": {

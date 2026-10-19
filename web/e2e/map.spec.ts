@@ -7,7 +7,7 @@ import { openApp } from "./helpers.ts";
 
 type GF = {
   map: { queryRenderedFeatures: (o: unknown) => { properties: Record<string, unknown>; geometry: GeoJSON.Geometry }[]; project: (c: [number, number]) => { x: number; y: number }; getCanvas: () => HTMLCanvasElement; getLayoutProperty: (id: string, p: string) => unknown; getFilter: (id: string) => unknown; areTilesLoaded: () => boolean };
-  state: { limit: number; busy: boolean };
+  state: { limit: number; busy: boolean; representative: boolean };
   run: () => Promise<void>;
   resultInfo: () => Promise<{ features: number; distinct: number; extent: number[] | null; maxFeatureShareOfDataset: number }>;
   layerVisibility: (id: string) => string | null;
@@ -27,7 +27,7 @@ async function settled(page: Page) {
 }
 
 async function runWithLimit(page: Page, limit: number) {
-  await page.evaluate(async (n) => { const g = (window as unknown as { __gf: GF }).__gf; g.state.limit = n; await g.run(); }, limit);
+  await page.evaluate(async (n) => { const g = (window as unknown as { __gf: GF }).__gf; g.state.limit = n; g.state.representative = false; await g.run(); }, limit); // LIMIT n means the first n rows here (the exact-limit mode)
   await expect(page.getByTestId("status")).toContainText(/results|kết quả/);
   await settled(page);
 }
@@ -79,6 +79,11 @@ test.describe("result geometry on the map (Explorer, basemap tiles blocked)", ()
 
   test("clicking a polygon selects exactly that feature and opens the inspector", async ({ page }) => {
     await expect(page.getByTestId("inspector-props")).toHaveCount(0);
+    // the query is answered before the map has cut and drawn all of it: pick the target only from a finished, stable picture
+    // (flake investigation 2026-10-19: 958 / 6,031 / 7,570 polygons rendered at the start of the test; the target came from a partial set)
+    await settled(page);
+    let last = -1;
+    await expect.poll(async () => { const n = await rendered(page, "res-fill"); const stable = n === last; last = n; return stable; }, { timeout: 15_000, intervals: [300] }).toBe(true);
     const target = await page.evaluate(() => {
       const g = (window as unknown as { __gf: GF }).__gf;
       const fs = g.map.queryRenderedFeatures({ layers: ["res-fill"] });

@@ -68,4 +68,6 @@ export interface RunResp {
   columns: { name: string; type: string; geometry: boolean }[]; rows: Record<string, unknown>[]; rows_total: number;
   geojson: GeoJSON.FeatureCollection | null; metrics: Metrics;
   timing: { plan_and_overhead_ms: Metric<number>; total_ms: Metric<number>; boundary_conversion_ms: Metric<number> };
+  /** Browser runs only: measured wall-clock phases (calibration evidence). */
+  phases?: { init_ms: number; open_ms: number; first_ms: number; drain_ms: number; rows: number; boundary_ms: number };
 }

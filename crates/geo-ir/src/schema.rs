@@ -54,6 +54,22 @@ pub(crate) fn derive_schema(node: &PlanNode, ins: &[&SpatialSchema]) -> Result<S
             s.geometry_columns.push(out);
             Ok(s)
         }
+        // semi join: left rows only (the right side filters, it adds no columns)
+        PlanNode::SpatialSemiJoin { .. } => Ok(ins[0].clone()),
+        PlanNode::Transform { geometry_column, output_crs, output_column, .. } => {
+            let mut s = ins[0].clone();
+            let g = s.geometry(geometry_column).ok_or_else(|| IrError::ColumnNotFound(geometry_column.clone()))?.clone();
+            let out = GeometryColumn { name: output_column.clone(), geometry_type: g.geometry_type, crs: output_crs.clone() };
+            if output_column == geometry_column {
+                s.geometry_columns.retain(|c| c.name != *geometry_column);
+            } else if s.fields.iter().any(|f| f.name == *output_column) {
+                return Err(IrError::Schema(format!("transform output column '{output_column}' already exists")));
+            } else {
+                s.fields.push(Field { name: output_column.clone(), data_type: FieldType::Other("geometry".into()) });
+            }
+            s.geometry_columns.push(out);
+            Ok(s)
+        }
         PlanNode::SpatialJoin { right_prefix, .. } => {
             let mut s = ins[0].clone();
             let r = ins[1];

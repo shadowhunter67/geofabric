@@ -7,7 +7,7 @@ import type { Candidate, RunResp } from "../types.ts";
 
 export interface PipelineStep { key: string; title: Key; sub: Key }
 
-const KNOWN = new Set(["source", "bbox_filter", "intersects", "filter", "project", "aggregate", "sort", "limit", "buffer", "spatial_join"]);
+const KNOWN = new Set(["source", "bbox_filter", "intersects", "filter", "project", "aggregate", "sort", "limit", "buffer", "spatial_join", "transform", "spatial_semi_join"]);
 
 /** Steps of the plan from the data source to the root, then where it ran. Follows `input` (and `left` of a join). */
 export function pipelineSteps(ir: PlanGraph | null | undefined, where: "server" | "browser"): PipelineStep[] {

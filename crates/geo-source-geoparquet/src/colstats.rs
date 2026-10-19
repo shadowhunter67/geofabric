@@ -255,6 +255,8 @@ pub fn selectivity(e: &Expr, cols: &BTreeMap<String, ColumnStats>) -> Selectivit
                 Selectivity { value: (DEFAULT_EQ * values.len() as f64).min(1.0), known: false }
             }
         }
+        // a hash bucket keeps 1/modulus of the rows whatever the column holds
+        Expr::HashBucket { modulus, .. } => Selectivity { value: 1.0 / (*modulus).max(1) as f64, known: true },
         Expr::IsNull { column } => match cols.get(column) {
             Some(c) => Selectivity { value: 1.0 - c.non_null_fraction(), known: true },
             None => Selectivity { value: 0.05, known: false },

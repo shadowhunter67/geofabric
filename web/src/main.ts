@@ -21,6 +21,9 @@ import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
 import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, demoRequests, splitPlaces, topGroup } from "./demos.ts";
 import type { DemoSpec } from "./demos.ts";
+import { sampleIfCapped } from "./sampling.ts";
+import { runDeviceCheck } from "./devicecheck.ts";
+import type { Sampling } from "./sampling.ts";
 import type { DemOverlay } from "./raster.ts";
 import type { Assessment, Candidate, Health, Metric, Metrics, Physical, RunResp, SourceMeta } from "./types.ts";
 
@@ -75,12 +78,15 @@ const S = {
   layers: loadLayerStates() as Record<string, LayerState>,
   demo: { id: null as string | null, summary: "" },
   lastLimit: 20000,
+  /** When a row-returning result hits its limit: draw a spatially representative sample (default) or the first rows of the file. */
+  representative: true,
+  sampling: null as Sampling | null,
   contextData: new Map<string, GeoJSON.FeatureCollection>(),
   raster: new Map<string, { loading: boolean; error: string | null; overlay: DemOverlay | null }>(),
-  context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number }>(),
+  context: new Map<string, { features: number; minZoom: number; limitHit: boolean; visible: boolean; loading: boolean; seq: number; sampling?: Sampling | null }>(),
   last: null as RunResp | null,
   lastChosen: false,
-  derived: [] as { label: string; resp: RunResp }[],
+  derived: [] as { label: string; resp: RunResp; sampling: Sampling | null }[],
   logs: [] as string[],
   tab: "query",
   selected: null as GeoJSON.Feature | null,
@@ -380,7 +386,11 @@ function renderLegend() {
     el("i", { style: "background:#4aa3ff" }), t("map.legend.result"),
     ...(showDebug ? ["  ", el("i", { style: "background:#5fbf8a" }), t("map.legend.read_dev"), "  ", el("i", { style: "background:#6b7782" }), t("map.legend.skipped_dev")] : []),
     ...(S.selected ? ["  ", el("i", { style: "background:#ffd34a" }), t("map.legend.selected")] : []),
-    ...(S.last?.geojson && S.last.rows_total >= S.lastLimit ? [el("br"), el("span", { class: "limit-hint", "data-testid": "limit-hint" }, t("map.limit_hint", { n: fmtInt(S.lastLimit) }))] : []));
+    ...(S.sampling
+      ? [el("br"), el("span", { class: "limit-hint", "data-testid": "sample-hint" }, t("map.sample_hint", { shown: fmtInt(S.sampling.shown), total: fmtInt(S.sampling.total) }))]
+      : S.last?.geojson && S.last.rows_total >= S.lastLimit
+        ? [el("br"), el("span", { class: "limit-hint", "data-testid": "limit-hint" }, t("map.limit_hint", { n: fmtInt(S.lastLimit) }))]
+        : []));
 }
 let moveTimer: number | undefined;
 map.on("moveend", () => {
@@ -480,6 +490,35 @@ function currentRequest() {
   };
 }
 
+/** One query through the planner (browser or server), with the single server fallback. */
+async function placedQuery(req: Record<string, unknown>): Promise<RunResp> {
+  return placement.placeWithFallback(
+    await apiRetryBusy<RunResp>("/api/query", req),
+    () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false }),
+  );
+}
+/** The request that returns the FULL logical count of a row-returning request (no limit, no thinning, no engine hint). */
+function countRequestFor(req: Record<string, unknown>): Record<string, unknown> | null {
+  const kind = req.kind === "features" ? "count" : req.kind === "near" ? "near_count" : null;
+  if (!kind) return null;
+  return { ...req, kind, limit: undefined, sample_modulus: undefined, group_by: undefined, engine: undefined };
+}
+/**
+ * Row-returning query for DRAWING. If the answer hits `budget` and representative mode is on, the full count is asked (analytics
+ * never see a sample) and the query is repeated thinned to a spatially uniform subset (ADR-012).
+ */
+async function placedRepresentative(req: Record<string, unknown>, budget: number): Promise<{ result: RunResp; sampling: Sampling | null }> {
+  const first = await placedQuery(req);
+  const countReq = countRequestFor(req);
+  if (!S.representative || !countReq || !first.geojson) return { result: first, sampling: null };
+  return sampleIfCapped(
+    first,
+    budget,
+    async () => Number((await placedQuery(countReq)).rows[0]?.count ?? 0),
+    (m) => placedQuery({ ...req, sample_modulus: m }),
+  );
+}
+
 async function run() {
   if (!S.cur || S.busy) return;
   if (!["EPSG:4326", "OGC:CRS84"].includes(S.cur.crs)) {
@@ -493,10 +532,9 @@ async function run() {
     const req = currentRequest();
     S.lastLimit = req.limit;
     S.lastChosen = S.engine !== "auto";
-    await handle(
-      await placement.placeWithFallback(await apiRetryBusy<RunResp>("/api/query", req), () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false })),
-      `${S.kind} @ ${S.cur.id}`,
-    );
+    const { result, sampling } = await placedRepresentative(req, req.limit);
+    S.sampling = sampling;
+    await handle(result, `${S.kind} @ ${S.cur.id}`);
   } catch (e) {
     log(String(e), true); setStatus("status.error");
     setTab("logs");
@@ -510,7 +548,7 @@ function setRunDisabled(v: boolean) {
 async function handle(r: RunResp, label: string, record = true) {
   S.last = r;
   if (record) {
-    S.derived.unshift({ label, resp: r });
+    S.derived.unshift({ label, resp: r, sampling: S.sampling });
     S.derived = S.derived.slice(0, 8);
   }
   S.selected = null;
@@ -637,7 +675,7 @@ function renderSourceItem(s: SourceMeta): HTMLElement {
 function renderRecent(): HTMLElement {
   return S.derived.length
     ? el("div", { class: "list", role: "list" }, ...S.derived.map((d, i) => el("div", { class: `item${i === 0 ? " sel" : ""}`, role: "listitem" },
-        el("button", { type: "button", class: "pick", onclick: () => void handle(d.resp, d.label, false) },
+        el("button", { type: "button", class: "pick", onclick: () => { S.sampling = d.sampling; void handle(d.resp, d.label, false); } },
           el("span", { class: "name" }, DEV() ? d.label : datasetLabel(d.label.split("@ ")[1] ?? "").title),
           el("span", { class: "meta" }, t("status.results", { n: fmtInt(d.resp.rows_total), time: fmtMs(d.resp.timing.total_ms.value ?? 0) }))))))
     : el("div", { class: "empty" }, t("data.recent_empty"));
@@ -717,7 +755,7 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
       el("label", { class: "check" }, el("input", { type: "checkbox", checked: state.visible, "aria-label": t("catalog.layer_visible", { name: d.title[getLang()] }), onchange: toggle }), t("catalog.visible")),
       el("input", { type: "range", min: "0", max: "100", step: "10", value: String(state.opacity * 100), "aria-label": t("catalog.opacity", { name: d.title[getLang()] }), "aria-valuetext": `${state.opacity * 100}%`, onchange: opacity }),
       el("button", { type: "button", title: t("catalog.zoom_to"), onclick: () => map.fitBounds(d.coverage.bbox, { padding: 40, maxZoom: 14, duration: 0 }) }, t("catalog.zoom_to")),
-      el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : isRaster ? rasterStatus(d) : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
+      el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : isRaster ? rasterStatus(d) : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.sampling ? t("catalog.sample_status", { shown: fmtInt(info.sampling.shown), total: fmtInt(info.sampling.total) }) : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
     el("button", { type: "button", class: "more", "aria-expanded": details, onclick: () => { details ? S.expanded.delete(d.id) : S.expanded.add(d.id); renderLeft(); } }, t(details ? "data.hide_details" : "data.details")),
     details ? el("table", { class: "kv detail", "data-testid": "dataset-detail" },
       row(t("catalog.provider"), d.provider), row(t("catalog.license"), d.license.name), d.license.attribution ? row(t("catalog.attribution"), d.license.attribution) : null,
@@ -839,7 +877,7 @@ async function refreshContextOnce(): Promise<void> {
       const b = map.getBounds();
       const filter = d.group === "transport" ? classFilter(map.getZoom()) : null;
       const req = { source: sourceIdOf(d), kind: "features", bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], crs: d.crs, limit: policy.limit, filter: filter ? { column: "class", op: "in", values: filter } : undefined, browser: false, client: { warm: wasm.isWarm() } };
-      const response = await placement.placeWithFallback(await apiRetryBusy<RunResp>("/api/query", req), () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb" }));
+      const { result: response, sampling } = await placedRepresentative(req, policy.limit);
       const current = S.context.get(d.id);
       if (!current || current.seq !== seq) continue;
       const fc = response.geojson ?? empty;
@@ -848,7 +886,7 @@ async function refreshContextOnce(): Promise<void> {
       removeContext(d.id);
       map.addSource(`ctx-${d.id}`, { type: "geojson", data: fc });
       for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, stackAnchor(d.group));
-      S.context.set(d.id, { ...current, features: fc.features.length, limitHit: fc.features.length >= policy.limit, loading: false });
+      S.context.set(d.id, { ...current, features: fc.features.length, limitHit: !sampling && fc.features.length >= policy.limit, loading: false, sampling });
     } catch (e) { log(String(e), true); S.context.set(d.id, { ...old, loading: false, seq }); }
     renderLeft();
   }
@@ -904,6 +942,12 @@ async function queryPlaced(req: Record<string, unknown>): Promise<RunResp> {
     () => apiRetryBusy<RunResp>("/api/query", { ...full, engine: "duckdb", browser: false }),
   );
 }
+/** Demo queries draw through the same representative-sample path as the Run button. */
+async function demoRepresentative(req: Record<string, unknown>, budget: number) {
+  const full = { crs: "OGC:CRS84", browser: true, client: { warm: wasm.isWarm() }, ...req };
+  const result = await placedRepresentative(full, budget);
+  return result;
+}
 async function runDemo(spec: DemoSpec): Promise<void> {
   if (S.busy || !S.catalog) return;
   S.busy = true; setRunDisabled(true); setStatus("status.running");
@@ -930,15 +974,20 @@ async function runDemo(spec: DemoSpec): Promise<void> {
     let summary = "";
     if (spec.id === "a") {
       activate(BUILDINGS);
-      const r = await queryPlaced(requests[0]);
+      const budget = Number((requests[0] as { limit?: number }).limit ?? 20000);
+      const { result: r, sampling } = await demoRepresentative(requests[0], budget);
+      S.sampling = sampling;
       await handle(r, t(spec.title));
-      summary = t("demo.a.sum", { n: fmtInt(r.rows_total), limit: r.rows_total >= 5000 ? t("demo.limited") : "" });
+      summary = sampling ? t("demo.a.sum_sample", { shown: fmtInt(sampling.shown), total: fmtInt(sampling.total) }) : t("demo.a.sum", { n: fmtInt(r.rows_total), limit: "" });
     } else if (spec.id === "b") {
       activate(BUILDINGS);
-      const r = await queryPlaced(requests[0]);
+      const budget = Number((requests[0] as { limit?: number }).limit ?? 20000);
+      const { result: r, sampling } = await demoRepresentative(requests[0], budget);
+      S.sampling = sampling;
       await handle(r, t(spec.title));
       const c = await queryPlaced(requests[1]);
-      summary = t("demo.b.sum", { n: fmtInt(Number(c.rows[0]?.count ?? 0)), d: NEAR_DISTANCE_M });
+      const metric = (c as unknown as { metric_semantics?: { crs?: string | null } }).metric_semantics;
+      summary = t("demo.b.sum", { n: fmtInt(Number(c.rows[0]?.count ?? 0)), d: NEAR_DISTANCE_M, crs: metric?.crs ?? "UTM" });
     } else if (spec.id === "c") {
       activate(BUILDINGS);
       const r = await queryPlaced(requests[0]);
@@ -948,7 +997,8 @@ async function runDemo(spec: DemoSpec): Promise<void> {
       setTab("results");
     } else if (spec.id === "d") {
       activate(PLACES);
-      const r = await queryPlaced(requests[0]);
+      const { result: r, sampling } = await demoRepresentative(requests[0], 5000);
+      S.sampling = sampling;
       await handle(r, t(spec.title));
       const counts = await queryPlaced(requests[1]);
       const { schools, hospitals } = splitPlaces(counts.rows as { category?: unknown; count?: unknown }[]);
@@ -1005,6 +1055,7 @@ function queryTab(): HTMLElement {
     lab(t("query.filter_op"), sel((["eq", "ne", "gt", "ge", "lt", "le"] as const).map((o): [string, string] => [o, t(`op.${o}` as Key)]), S.filter.op, (v) => { S.filter.op = v; })),
     lab(t("query.filter_value"), el("input", { value: S.filter.value, oninput: (e: Event) => { S.filter.value = (e.target as HTMLInputElement).value; } })),
     S.kind === "count_by" ? lab(t("query.group_by"), sel(colOpts.slice(1), S.groupBy, (v) => { S.groupBy = v; })) : null,
+    el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.representative, "data-testid": "q-representative", onchange: (e: Event) => { S.representative = (e.target as HTMLInputElement).checked; } }), t("query.representative")),
     lab(t("query.limit"), el("input", { type: "number", min: 1, max: 100000, value: S.limit, onchange: (e: Event) => { S.limit = Math.min(100000, Math.max(1, Number((e.target as HTMLInputElement).value) || 20000)); } })),
     lab(t("query.where"), sel([["auto", t("query.where.auto")], ["duckdb", t("query.where.server")], ["duckdb-wasm", t("query.where.browser")]], S.engine, (v) => { S.engine = v; if (DEV()) renderHeader(); }, { "data-testid": "q-where" })),
     el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), t("query.allow_browser")),
@@ -1032,6 +1083,7 @@ async function runIr(text: string, explainOnly: boolean) {
       setTab("execution");
     } else {
       const body = { ir, engine: S.engine === "auto" ? undefined : S.engine, browser: S.allowBrowser };
+      S.sampling = null;
       await handle(await placement.placeWithFallback(await api<RunResp>("/api/ir/run", body), () => api<RunResp>("/api/ir/run", { ir, engine: "duckdb", browser: false })), "IR run");
     }
   } catch (e) { log(String(e), true); setTab("logs"); }
@@ -1222,6 +1274,31 @@ document.documentElement.lang = getLang();
 app.classList.add("no-inspector");
 renderAll();
 
+// Device check (?devicecheck=1): a short matrix of queries that shows whether the planner is sane on THIS device (see devicecheck.ts).
+async function startDeviceCheck() {
+  const title = el("div", { class: "dc-title" }, "Device check: waiting for the first analysis…");
+  const copy = el("button", { type: "button", onclick: () => void navigator.clipboard?.writeText(pre.textContent ?? "") }, "Copy JSON");
+  const pre = el("pre", { "data-testid": "devicecheck" });
+  document.body.append(el("div", { class: "devicecheck" }, title, copy, pre));
+  for (let i = 0; i < 600 && (S.busy || S.settling || !S.cur); i++) await new Promise((r) => setTimeout(r, 100));
+  await placement.probeRuntime("device check");
+  title.textContent = "Device check: running (do not close this tab; each case is saved on the server as it finishes)";
+  const report = await runDeviceCheck({
+    post: (path, body) => api(path, body),
+    resolve: (r) => placement.resolvePlacement(r),
+    probe: () => placement.state.probe,
+    recycle: () => wasm.recycle(),
+    log: (m) => log(m),
+    report: async (r) => {
+      pre.textContent = JSON.stringify(r, null, 1);
+      (window as unknown as Record<string, unknown>).__devicecheck = r;
+      try { await fetch("/api/devicecheck", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(r) }); } catch { /* not enabled on this gateway: copy the JSON by hand */ }
+    },
+  });
+  title.textContent = `Device check: done (${report.results.filter((x) => x.status === "ok").length} ok, ${report.results.filter((x) => x.status === "skipped").length} skipped, ${report.results.filter((x) => x.status === "error").length} errors)`;
+}
+if (params.has("devicecheck")) void startDeviceCheck();
+
 // Test hook for the browser tests only (?e2e=1): exposes the map and state, nothing else.
 if (params.has("e2e")) {
   const gf = {
@@ -1243,7 +1320,7 @@ if (params.has("e2e")) {
     layerVisibility: (id: string) => (map.getLayer(id) ? map.getLayoutProperty(id, "visibility") ?? "visible" : null),
     layerOrder: () => map.getStyle().layers.map((l) => l.id),
     layers: S.layers,
-    contextInfo: () => Object.fromEntries([...S.context.entries()].map(([id, x]) => [id, { id, features: x.features, minZoom: x.minZoom, limitHit: x.limitHit, visible: x.visible }])),
+    contextInfo: () => Object.fromEntries([...S.context.entries()].map(([id, x]) => [id, { id, features: x.features, minZoom: x.minZoom, limitHit: x.limitHit, visible: x.visible, sampling: x.sampling ?? null, loading: x.loading }])),
   };
   // tests read `state.probe`; the probe state lives in the placement module
   Object.defineProperty(S, "probe", { get: () => placement.state.probe, set: (v) => { placement.state.probe = v; }, enumerable: true });
