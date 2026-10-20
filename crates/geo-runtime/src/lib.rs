@@ -9,6 +9,7 @@
 
 use geo_engine_browser::{BrowserEngineConfig, DuckDbWasmDescriptor};
 use geo_engine_duckdb::{DuckDbConfig, DuckDbEngine};
+use geo_engine_postgis::PostGisEngine;
 use geo_executor::{EngineDescriptor, ExecutionContext, ExecutionEngine, ExecutionResult};
 use geo_ir::{Node, Plan, PlanNode};
 use geo_planner::{PhysicalPlan, PlanError, PlanInputs, Planner, PlannerConfig, PlannerState};
@@ -58,6 +59,8 @@ pub struct Runtime {
     engines: Vec<Box<dyn ExecutionEngine>>,
     clients: Vec<Box<dyn EngineDescriptor>>,
     planner: Planner,
+    /// The PostGIS engine, when configured (optional: absent in the normal case). Shared with the registered executor.
+    postgis: Option<Arc<PostGisEngine>>,
     /// What the planner knows about the world: probes, health, telemetry, network (ADR-009/010).
     state: Arc<PlannerState>,
 }
@@ -73,7 +76,7 @@ impl From<SourceError> for RuntimeError {
 
 impl Runtime {
     pub fn empty() -> Self {
-        Runtime { engines: Vec::new(), clients: Vec::new(), planner: Planner::default(), state: Arc::new(PlannerState::new()) }
+        Runtime { engines: Vec::new(), clients: Vec::new(), planner: Planner::default(), postgis: None, state: Arc::new(PlannerState::new()) }
     }
 
     /// Server-only runtime: DuckDB.
@@ -93,6 +96,50 @@ impl Runtime {
     pub fn register(&mut self, e: Box<dyn ExecutionEngine>) {
         self.state.register_engine(&e.id().to_string());
         self.engines.push(e);
+    }
+
+    /// Register the optional PostGIS engine: a peer of DuckDB under the same contract (no special path anywhere).
+    pub fn register_postgis(&mut self, engine: PostGisEngine) {
+        let shared = Arc::new(engine);
+        self.postgis = Some(shared.clone());
+        self.register(Box::new(SharedPostGis(shared)));
+    }
+
+    /// Register PostGIS when the environment configures it (`GEOFABRIC_POSTGIS_*`, docs/postgis.md). `Ok(false)` = not configured:
+    /// the normal case, nothing happens. `Err` = configured wrongly (reported by the caller; PostGIS stays off, GeoFabric still runs).
+    pub fn register_postgis_from_env(&mut self) -> Result<bool, String> {
+        let cfg = geo_engine_postgis::PostGisConfig::from_env()?;
+        match geo_engine_postgis::engine_from_config(&cfg)? {
+            Some(engine) => {
+                self.register_postgis(engine);
+                Ok(true)
+            }
+            None => Ok(false),
+        }
+    }
+
+    /// Ask the configured server whether it can run our SQL (system catalogs only) and remember the answer. No-op without PostGIS.
+    pub fn probe_postgis(&self) {
+        if let Some(e) = &self.postgis {
+            let _ = e.probe();
+        }
+    }
+
+    /// For `/api/state`: `{configured: false}` or the sources/probe of the configured engine (never the URL or credentials).
+    pub fn postgis_status(&self) -> serde_json::Value {
+        match &self.postgis {
+            None => serde_json::json!({"configured": false}),
+            Some(e) => serde_json::json!({
+                "configured": true,
+                "sources": e.catalog().len(),
+                "probe": e.last_probe(),
+            }),
+        }
+    }
+
+    /// `None` when PostGIS is not configured.
+    pub fn postgis(&self) -> Option<&Arc<PostGisEngine>> {
+        self.postgis.as_ref()
     }
 
     pub fn register_client(&mut self, d: Box<dyn EngineDescriptor>) {
@@ -122,6 +169,21 @@ impl Runtime {
     pub fn open_source(&self, uri: &str, ctx: &ExecutionContext) -> Result<Node, RuntimeError> {
         let a = ctx.guard.authorize(uri).map_err(|_| RuntimeError::AccessDenied)?;
         Ok(GeoParquetSource::open_authorized(&a)?.to_ir_source())
+    }
+
+    /// A failed execution is a statement about the engine that ran it: health must blame THAT engine (not a hard-coded one), with the
+    /// planner's own failure classification. User errors, limits, authorization and cancellation say nothing about the engine.
+    fn record_engine_failure(&self, engine: &str, plan: &Plan, e: &geo_executor::EngineError) {
+        use geo_executor::EngineError;
+        let classified = match e {
+            EngineError::Timeout { limit_ms } => Some((geo_planner::FailureClass::Timeout, format!("timeout after {limit_ms} ms"))),
+            EngineError::Engine(m) => Some((geo_planner::FailureClass::classify(m), m.clone())),
+            _ => None,
+        };
+        if let Some(outcome) = classified {
+            let source = plan.nodes.values().find_map(|n| if let PlanNode::Source { uri, .. } = n { Some(geo_planner::source_key(uri)) } else { None }).unwrap_or_default();
+            self.state.record(geo_planner::ExecutionReport { engine: engine.to_string(), source, outcome: Err(outcome), observation: None });
+        }
     }
 
     /// Plan across **all** registered engines (executors first, then client engines).
@@ -160,10 +222,13 @@ impl Runtime {
     pub fn dispatch_with_inputs(&self, cfg: &PlannerConfig, plan: &Plan, ctx: &ExecutionContext, inputs: &PlanInputs) -> Result<Dispatch, RuntimeError> {
         let physical = self.plan_with_inputs(cfg, plan, ctx, inputs)?;
         match self.engines.iter().find(|e| e.id() == physical.engine) {
-            Some(engine) => {
-                let result = engine.execute(plan, ctx)?;
-                Ok(Dispatch::Executed(RunOutput { physical, result }))
-            }
+            Some(engine) => match engine.execute(plan, ctx) {
+                Ok(result) => Ok(Dispatch::Executed(RunOutput { physical, result })),
+                Err(e) => {
+                    self.record_engine_failure(&physical.engine.to_string(), plan, &e);
+                    Err(e.into())
+                }
+            },
             None => Ok(Dispatch::Client { physical }),
         }
     }
@@ -174,5 +239,35 @@ impl Runtime {
             Dispatch::Executed(o) => Ok(o),
             Dispatch::Client { physical } => Err(RuntimeError::ClientEngineSelected(physical.engine.to_string())),
         }
+    }
+}
+
+/// The registered executor delegating to the shared engine (so the runtime can also read its probe/status).
+struct SharedPostGis(Arc<PostGisEngine>);
+
+impl EngineDescriptor for SharedPostGis {
+    fn id(&self) -> geo_executor::EngineId {
+        self.0.id()
+    }
+    fn capabilities(&self) -> geo_executor::Capabilities {
+        self.0.capabilities()
+    }
+    fn source_residency(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<(), String> {
+        self.0.source_residency(plan, ctx)
+    }
+    fn calibration(&self) -> geo_executor::EngineCalibration {
+        self.0.calibration()
+    }
+    fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<geo_executor::Estimate, geo_executor::EngineError> {
+        self.0.estimate(plan, ctx)
+    }
+    fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_executor::ExplainStep>, geo_executor::EngineError> {
+        self.0.explain(plan, ctx)
+    }
+}
+
+impl ExecutionEngine for SharedPostGis {
+    fn execute(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<ExecutionResult, geo_executor::EngineError> {
+        self.0.execute(plan, ctx)
     }
 }

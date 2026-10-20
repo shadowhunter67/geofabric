@@ -63,6 +63,15 @@ async fn main() {
         eprintln!("warning: source '{id}' appears in multiple --data directories; using the first");
     }
     let mut rt = tokio::task::spawn_blocking(Runtime::with_duckdb_and_browser).await.unwrap();
+    // PostGIS is optional: configured through GEOFABRIC_POSTGIS_* (docs/postgis.md); anything wrong here disables it, never the gateway
+    match rt.register_postgis_from_env() {
+        Ok(true) => {
+            rt.probe_postgis();
+            eprintln!("PostGIS engine registered (probe: {})", rt.postgis_status()["probe"]);
+        }
+        Ok(false) => {}
+        Err(e) => eprintln!("PostGIS configuration error: {e} (PostGIS stays disabled)"),
+    }
     let mut pcfg = rt.planner_config().clone();
     if args.iter().any(|a| a == "--no-browser") {
         pcfg.allow_browser = false;

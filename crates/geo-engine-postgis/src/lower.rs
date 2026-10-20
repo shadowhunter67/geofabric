@@ -1,0 +1,470 @@
+//! PlanGraph -> PostgreSQL/PostGIS SQL + bind parameters. Private to the adapter; the IR never sees SQL.
+//!
+//! Safety, in this order of importance:
+//! 1. **Values are never SQL text.** Every literal (filter values, bbox coordinates, WKT, limits, distances) is a bind parameter with
+//!    an explicit cast (`$1::double precision`). The SQL text contains no user-supplied value at all.
+//! 2. **Identifiers come from the catalog**, validated once (`[A-Za-z_][A-Za-z0-9_]*`). A column named by a plan (group_by,
+//!    project, sort, filter...) must be a column the catalog/schema knows; anything else is refused, so a plan cannot smuggle an
+//!    identifier. Identifiers are quoted anyway.
+//! 3. Unsupported operations are refused with a reason, never approximated (no `geography`, no silent type coercion).
+//!
+//! Semantics kept identical to the DuckDB lowering (`geo-engine-duckdb/src/sql.rs`), including the places where PostgreSQL's
+//! defaults differ: `NULLS LAST` for both directions (DuckDB's default; PostgreSQL's DESC default is NULLS FIRST), byte-order
+//! collation (`COLLATE "C"`) for text sort keys, `ST_AsBinary(.., 'NDR')` for little-endian WKB, bbox filter =
+//! closed-interval overlap (`&&`), `ST_DWithin` inclusive, semi-join as `EXISTS` (each left row at most once), transforms in
+//! (lon, lat) / (x, y) order through the SRID mapping in [`crate::crs`].
+
+use crate::catalog::{PgColType, PostGisCatalog, PostGisSource};
+use crate::connector::Param;
+use crate::crs::srid_for;
+use geo_ir::{AggFunc, CompareOp, Expr, Literal, NodeId, Plan, PlanNode, SpatialPredicate, SourceFormat};
+use geo_types::{Crs, SpatialSchema};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum LowerError {
+    #[error("invalid plan: {0}")]
+    Invalid(String),
+    /// A feature this adapter does not implement (or refuses to approximate).
+    #[error("unsupported: {0}")]
+    Unsupported(String),
+    /// The plan names a source that is not resident in the database.
+    #[error("source not resident in PostGIS: {0}")]
+    NotResident(String),
+}
+
+/// A lowered statement.
+#[derive(Debug, Clone)]
+pub struct Lowered {
+    pub sql: String,
+    pub params: Vec<Param>,
+    /// Geometry columns of the result (WKB in the Arrow result) and their GeoFabric CRS.
+    pub geometry_outputs: Vec<(String, Crs)>,
+    /// Logical uris of the sources read (all of them resident).
+    pub sources: Vec<String>,
+    /// Columns of the plan's source schemas that the relation does not store (e.g. a GeoParquet `bbox` covering struct). They
+    /// are dropped at the scan; using one later is an error, so the result differs from DuckDB's only by these absent columns.
+    pub dropped_columns: Vec<String>,
+}
+
+pub(crate) fn q_ident(s: &str) -> String {
+    format!("\"{}\"", s.replace('"', "\"\""))
+}
+
+#[derive(Clone, Debug)]
+enum Col {
+    /// geometry column with its GeoFabric CRS
+    Geometry(Crs),
+    Plain(PgColType),
+}
+
+#[derive(Clone)]
+struct Out {
+    name: String,
+    schema: SpatialSchema,
+    cols: BTreeMap<String, Col>,
+}
+
+struct Lower<'a> {
+    plan: &'a Plan,
+    catalog: &'a PostGisCatalog,
+    schemas: BTreeMap<NodeId, SpatialSchema>,
+    memo: HashMap<NodeId, Out>,
+    ctes: Vec<(String, String)>,
+    params: Vec<Param>,
+    sources: BTreeSet<String>,
+    dropped: BTreeSet<String>,
+}
+
+/// Lower `plan` for a database that holds the sources in `catalog`. `max_rows` caps the result (`max_rows + 1` rows are
+/// requested so the caller can tell "exactly the cap" from "over the cap", as in the DuckDB engine).
+pub fn lower(plan: &Plan, catalog: &PostGisCatalog, max_rows: u64) -> Result<Lowered, LowerError> {
+    let schemas = plan.schemas().map_err(|e| LowerError::Invalid(e.to_string()))?;
+    let mut l = Lower { plan, catalog, schemas, memo: HashMap::new(), ctes: Vec::new(), params: Vec::new(), sources: BTreeSet::new(), dropped: BTreeSet::new() };
+    let root = plan.root.clone();
+    let out = l.node(&root)?;
+    let with = l.ctes.iter().map(|(n, s)| format!("{} AS ({})", q_ident(n), s)).collect::<Vec<_>>().join(",\n");
+    let geometry_outputs: Vec<(String, Crs)> = out
+        .schema
+        .fields
+        .iter()
+        .filter_map(|f| match out.cols.get(&f.name) {
+            Some(Col::Geometry(crs)) => Some((f.name.clone(), crs.clone())),
+            _ => None,
+        })
+        .collect();
+    let select = out
+        .schema
+        .fields
+        .iter()
+        .filter(|f| out.cols.contains_key(&f.name))
+        .map(|f| match out.cols.get(&f.name) {
+            Some(Col::Geometry(_)) => format!("ST_AsBinary({0}, 'NDR') AS {0}", q_ident(&f.name)),
+            _ => q_ident(&f.name),
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    if select.is_empty() {
+        return Err(LowerError::Invalid("the plan produces no column that the relation stores".into()));
+    }
+    let limit = l.bind(Param::Int(i64::try_from(max_rows.saturating_add(1)).unwrap_or(i64::MAX)), "bigint");
+    let sql = format!("WITH {with}\nSELECT {select} FROM {} LIMIT {limit}", q_ident(&out.name));
+    Ok(Lowered { sql, params: l.params, geometry_outputs, sources: l.sources.into_iter().collect(), dropped_columns: l.dropped.into_iter().collect() })
+}
+
+impl<'a> Lower<'a> {
+    fn bind(&mut self, p: Param, cast: &str) -> String {
+        self.params.push(p);
+        format!("${}::{cast}", self.params.len())
+    }
+
+    fn float(&mut self, v: f64) -> Result<String, LowerError> {
+        if !v.is_finite() {
+            return Err(LowerError::Invalid(format!("non-finite number {v}")));
+        }
+        Ok(self.bind(Param::Float(v), "double precision"))
+    }
+
+    fn push(&mut self, sql: String) -> String {
+        let name = format!("n{}", self.ctes.len());
+        self.ctes.push((name.clone(), sql));
+        name
+    }
+
+    fn schema_of(&self, id: &NodeId) -> Result<SpatialSchema, LowerError> {
+        self.schemas.get(id).cloned().ok_or_else(|| LowerError::Invalid(format!("no schema for node {id}")))
+    }
+
+    /// Columns of `schema` (in schema order) that exist in `cols`, as a quoted select list, with optional per-column expressions.
+    fn select_list(schema: &SpatialSchema, cols: &BTreeMap<String, Col>, prefix: &str, replace: &BTreeMap<String, String>) -> String {
+        schema
+            .fields
+            .iter()
+            .filter(|f| cols.contains_key(&f.name))
+            .map(|f| match replace.get(&f.name) {
+                Some(expr) => format!("{expr} AS {}", q_ident(&f.name)),
+                None => format!("{prefix}{}", q_ident(&f.name)),
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    fn need_col<'o>(out: &'o Out, name: &str, what: &str) -> Result<&'o Col, LowerError> {
+        out.cols.get(name).ok_or_else(|| {
+            LowerError::Unsupported(format!("{what}: column {name:?} is not stored in the PostGIS relation or not produced by the plan"))
+        })
+    }
+
+    fn geometry_of(out: &Out, name: &str, what: &str) -> Result<Crs, LowerError> {
+        match Self::need_col(out, name, what)? {
+            Col::Geometry(crs) => Ok(crs.clone()),
+            Col::Plain(_) => Err(LowerError::Invalid(format!("{what}: {name:?} is not a geometry column"))),
+        }
+    }
+
+    fn literal(&mut self, column: &str, ty: PgColType, l: &Literal) -> Result<String, LowerError> {
+        let mismatch = |what: &str| {
+            LowerError::Unsupported(format!(
+                "comparing {column:?} ({ty:?}) with a {what} literal needs a type coercion; PostgreSQL would refuse or differ from DuckDB, so the adapter does not guess"
+            ))
+        };
+        Ok(match l {
+            Literal::Null => "NULL".to_string(),
+            Literal::Int(i) => match ty {
+                PgColType::Int | PgColType::Float => self.bind(Param::Int(*i), "bigint"),
+                _ => return Err(mismatch("integer")),
+            },
+            Literal::Float(f) => match ty {
+                PgColType::Int | PgColType::Float => self.float(*f)?,
+                _ => return Err(mismatch("float")),
+            },
+            Literal::Str(s) => match ty {
+                PgColType::Text => self.bind(Param::Text(s.clone()), "text"),
+                _ => return Err(mismatch("string")),
+            },
+            Literal::Bool(b) => match ty {
+                PgColType::Bool => self.bind(Param::Bool(*b), "boolean"),
+                _ => return Err(mismatch("boolean")),
+            },
+        })
+    }
+
+    fn plain_type(out: &Out, column: &str) -> Result<PgColType, LowerError> {
+        match Self::need_col(out, column, "filter")? {
+            Col::Plain(t) => Ok(*t),
+            Col::Geometry(_) => Err(LowerError::Invalid(format!("{column:?} is a geometry column and cannot be compared with a literal"))),
+        }
+    }
+
+    fn expr(&mut self, out: &Out, e: &Expr) -> Result<String, LowerError> {
+        Ok(match e {
+            Expr::Compare { column, op, value } => {
+                let ty = Self::plain_type(out, column)?;
+                let o = match op {
+                    CompareOp::Eq => "=",
+                    CompareOp::Ne => "<>",
+                    CompareOp::Lt => "<",
+                    CompareOp::Le => "<=",
+                    CompareOp::Gt => ">",
+                    CompareOp::Ge => ">=",
+                };
+                format!("{} {o} {}", q_ident(column), self.literal(column, ty, value)?)
+            }
+            Expr::In { column, values } => {
+                if values.is_empty() {
+                    return Err(LowerError::Invalid("empty IN list".into()));
+                }
+                let ty = Self::plain_type(out, column)?;
+                let mut items = Vec::new();
+                for v in values {
+                    items.push(self.literal(column, ty, v)?);
+                }
+                format!("{} IN ({})", q_ident(column), items.join(", "))
+            }
+            Expr::IsNull { column } => {
+                Self::need_col(out, column, "filter")?;
+                format!("{} IS NULL", q_ident(column))
+            }
+            Expr::HashBucket { .. } => {
+                return Err(LowerError::Unsupported(
+                    "hash_bucket (render sampling): DuckDB's md5_number_lower has no byte-exact PostgreSQL equivalent that is also portable; sampling stays on the other engines".into(),
+                ))
+            }
+            Expr::And { exprs } | Expr::Or { exprs } => {
+                if exprs.is_empty() {
+                    return Err(LowerError::Invalid("empty AND/OR".into()));
+                }
+                let sep = if matches!(e, Expr::And { .. }) { " AND " } else { " OR " };
+                let mut parts = Vec::new();
+                for x in exprs {
+                    parts.push(format!("({})", self.expr(out, x)?));
+                }
+                parts.join(sep)
+            }
+            Expr::Not { expr } => format!("NOT ({})", self.expr(out, expr)?),
+        })
+    }
+
+    fn node(&mut self, id: &NodeId) -> Result<Out, LowerError> {
+        if let Some(done) = self.memo.get(id) {
+            return Ok(done.clone());
+        }
+        let out = self.compile_node(id)?;
+        self.memo.insert(id.clone(), out.clone());
+        Ok(out)
+    }
+
+    fn resident(&self, uri: &str) -> Result<&'a PostGisSource, LowerError> {
+        let catalog: &'a PostGisCatalog = self.catalog;
+        catalog.get(uri).ok_or_else(|| LowerError::NotResident(uri.to_string()))
+    }
+
+    fn compile_node(&mut self, id: &NodeId) -> Result<Out, LowerError> {
+        let plan = self.plan;
+        let n = plan.nodes.get(id).ok_or_else(|| LowerError::Invalid(format!("missing node {id}")))?;
+        match n {
+            PlanNode::Source { uri, format, schema, .. } => {
+                if *format != SourceFormat::GeoParquet {
+                    return Err(LowerError::Unsupported(format!("source format {format:?}")));
+                }
+                let src = self.resident(uri)?;
+                let g = schema
+                    .geometry(&src.geometry_column)
+                    .ok_or_else(|| LowerError::Unsupported(format!("{uri}: the plan's schema has no geometry column {:?}", src.geometry_column)))?;
+                if g.crs != src.crs_value() {
+                    return Err(LowerError::Unsupported(format!(
+                        "{uri}: the plan declares CRS {} but the relation stores {} (OGC:CRS84 and EPSG:4326 are different CRSs at the semantic layer; no implicit cast)",
+                        g.crs, src.crs
+                    )));
+                }
+                let mut cols: BTreeMap<String, Col> = BTreeMap::new();
+                for f in &schema.fields {
+                    if f.name == src.geometry_column {
+                        cols.insert(f.name.clone(), Col::Geometry(g.crs.clone()));
+                    } else if let Some(t) = src.columns.get(&f.name) {
+                        cols.insert(f.name.clone(), Col::Plain(*t));
+                    } else {
+                        self.dropped.insert(f.name.clone());
+                    }
+                }
+                self.sources.insert(uri.clone());
+                let list = Self::select_list(schema, &cols, "", &BTreeMap::new());
+                let name = self.push(format!("SELECT {list} FROM {}", src.qualified()));
+                Ok(Out { name, schema: self.schema_of(id)?, cols })
+            }
+            PlanNode::Filter { input, predicate } => {
+                let i = self.node(input)?;
+                let w = self.expr(&i, predicate)?;
+                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let name = self.push(format!("SELECT {list} FROM {} WHERE {w}", q_ident(&i.name)));
+                Ok(Out { name, ..i })
+            }
+            PlanNode::BboxFilter { input, geometry_column, bbox } => {
+                let i = self.node(input)?;
+                let crs = Self::geometry_of(&i, geometry_column, "bbox filter")?;
+                if &crs != bbox.crs() {
+                    return Err(LowerError::Invalid(format!("bbox CRS {} differs from the geometry CRS {crs}", bbox.crs())));
+                }
+                let srid = srid_for(&crs).map_err(LowerError::Unsupported)?;
+                let (x0, y0, x1, y1) = (self.float(bbox.min_x())?, self.float(bbox.min_y())?, self.float(bbox.max_x())?, self.float(bbox.max_y())?);
+                // `&&` is the bounding-box overlap operator (closed intervals, index-assisted): the same rule as the covering-column test
+                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let name = self.push(format!(
+                    "SELECT {list} FROM {} WHERE {} && ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid})",
+                    q_ident(&i.name),
+                    q_ident(geometry_column)
+                ));
+                Ok(Out { name, ..i })
+            }
+            PlanNode::Intersects { input, geometry_column, with } => {
+                let i = self.node(input)?;
+                let crs = Self::geometry_of(&i, geometry_column, "intersects")?;
+                if crs != with.crs {
+                    return Err(LowerError::Invalid(format!("literal CRS {} differs from the geometry CRS {crs}", with.crs)));
+                }
+                if with.wkt.len() > 1_000_000 {
+                    return Err(LowerError::Invalid("WKT literal is too large".into()));
+                }
+                let srid = srid_for(&crs).map_err(LowerError::Unsupported)?;
+                let w = self.bind(Param::Text(with.wkt.clone()), "text");
+                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let name = self.push(format!(
+                    "SELECT {list} FROM {} WHERE ST_Intersects({}, ST_GeomFromText({w}, {srid}))",
+                    q_ident(&i.name),
+                    q_ident(geometry_column)
+                ));
+                Ok(Out { name, ..i })
+            }
+            PlanNode::Transform { input, geometry_column, input_crs, output_crs, output_column } => {
+                let i = self.node(input)?;
+                let crs = Self::geometry_of(&i, geometry_column, "transform")?;
+                if &crs != input_crs {
+                    return Err(LowerError::Invalid(format!("transform input CRS {input_crs} differs from the geometry CRS {crs}")));
+                }
+                let from = srid_for(input_crs).map_err(LowerError::Unsupported)?;
+                let to = srid_for(output_crs).map_err(LowerError::Unsupported)?;
+                // ST_Transform(g, srid): the stored coordinates are (lon, lat) / (x, y); no axis swap happens (crate::crs)
+                let t = format!("ST_Transform(ST_SetSRID({}, {from}), {to})", q_ident(geometry_column));
+                let schema = self.schema_of(id)?;
+                let mut cols = i.cols.clone();
+                cols.insert(output_column.clone(), Col::Geometry(output_crs.clone()));
+                let mut replace = BTreeMap::new();
+                replace.insert(output_column.clone(), t);
+                let list = Self::select_list(&schema, &cols, "", &replace);
+                let name = self.push(format!("SELECT {list} FROM {}", q_ident(&i.name)));
+                Ok(Out { name, schema, cols })
+            }
+            PlanNode::SpatialSemiJoin { left, right, left_column, right_column, predicate } => {
+                let l = self.node(left)?;
+                let r = self.node(right)?;
+                let lc = Self::geometry_of(&l, left_column, "semi join (left)")?;
+                let rc = Self::geometry_of(&r, right_column, "semi join (right)")?;
+                if lc != rc {
+                    return Err(LowerError::Invalid(format!("semi join of different CRSs ({lc} vs {rc}); transform explicitly")));
+                }
+                let pred = match predicate {
+                    SpatialPredicate::Intersects => format!("ST_Intersects(l.{}, r.{})", q_ident(left_column), q_ident(right_column)),
+                    SpatialPredicate::WithinDistance { distance } => {
+                        // a distance with a linear unit is only evaluated in the plane of a local metric CRS - never in degrees
+                        if distance.unit().is_angular() {
+                            return Err(LowerError::Invalid("within_distance with an angular distance".into()));
+                        }
+                        if !lc.is_local_metric() {
+                            return Err(LowerError::Invalid(format!("metric within_distance on {lc}, which is not a local metric CRS (transform first)")));
+                        }
+                        let d = distance.to_meters().map_err(|e| LowerError::Invalid(e.to_string()))?;
+                        let d = self.float(d)?;
+                        format!("ST_DWithin(l.{}, r.{}, {d})", q_ident(left_column), q_ident(right_column))
+                    }
+                };
+                // EXISTS: each left row at most once and no pair table (a join + DISTINCT would build one)
+                let list = Self::select_list(&l.schema, &l.cols, "l.", &BTreeMap::new());
+                let name = self.push(format!(
+                    "SELECT {list} FROM {} AS l WHERE EXISTS (SELECT 1 FROM {} AS r WHERE {pred})",
+                    q_ident(&l.name),
+                    q_ident(&r.name)
+                ));
+                Ok(Out { name, schema: self.schema_of(id)?, cols: l.cols })
+            }
+            PlanNode::Buffer { .. } => Err(LowerError::Unsupported("buffer (not needed since SpatialSemiJoin; not implemented for PostGIS)".into())),
+            PlanNode::SpatialJoin { .. } => Err(LowerError::Unsupported("spatial join (deferred: pair-producing joins are not in PostGIS v0)".into())),
+            PlanNode::Aggregate { input, group_by, aggregates } => {
+                let i = self.node(input)?;
+                let mut cols: BTreeMap<String, Col> = BTreeMap::new();
+                let mut sel: Vec<String> = Vec::new();
+                for g in group_by {
+                    match Self::need_col(&i, g, "group by")? {
+                        Col::Plain(t) => {
+                            cols.insert(g.clone(), Col::Plain(*t));
+                            sel.push(q_ident(g));
+                        }
+                        Col::Geometry(_) => return Err(LowerError::Invalid(format!("cannot group by the geometry column {g:?}"))),
+                    }
+                }
+                for a in aggregates {
+                    let col_ty = match &a.column {
+                        Some(c) => match Self::need_col(&i, c, "aggregate")? {
+                            Col::Plain(t) => Some(*t),
+                            Col::Geometry(_) => return Err(LowerError::Invalid(format!("cannot aggregate the geometry column {c:?}"))),
+                        },
+                        None => None,
+                    };
+                    let (expr, ty) = match (a.func, &a.column, col_ty) {
+                        (AggFunc::Count, None, _) => ("COUNT(*)".to_string(), PgColType::Int),
+                        (AggFunc::Count, Some(c), _) => (format!("COUNT({})", q_ident(c)), PgColType::Int),
+                        (AggFunc::Sum, Some(c), Some(PgColType::Int)) => (format!("SUM({})::bigint", q_ident(c)), PgColType::Int),
+                        (AggFunc::Sum, Some(c), Some(PgColType::Float)) => (format!("SUM({})::double precision", q_ident(c)), PgColType::Float),
+                        (AggFunc::Avg, Some(c), Some(PgColType::Int | PgColType::Float)) => (format!("AVG({})::double precision", q_ident(c)), PgColType::Float),
+                        (AggFunc::Min, Some(c), Some(t @ (PgColType::Int | PgColType::Float | PgColType::Text))) => (format!("MIN({})", q_ident(c)), t),
+                        (AggFunc::Max, Some(c), Some(t @ (PgColType::Int | PgColType::Float | PgColType::Text))) => (format!("MAX({})", q_ident(c)), t),
+                        (f, c, t) => return Err(LowerError::Unsupported(format!("aggregate {f:?} over {c:?} of type {t:?}"))),
+                    };
+                    cols.insert(a.alias.clone(), Col::Plain(ty));
+                    sel.push(format!("{expr} AS {}", q_ident(&a.alias)));
+                }
+                let mut sql = format!("SELECT {} FROM {}", sel.join(", "), q_ident(&i.name));
+                if !group_by.is_empty() {
+                    sql += &format!(" GROUP BY {}", group_by.iter().map(|g| q_ident(g)).collect::<Vec<_>>().join(", "));
+                }
+                let name = self.push(sql);
+                Ok(Out { name, schema: self.schema_of(id)?, cols })
+            }
+            PlanNode::Project { input, columns } => {
+                let i = self.node(input)?;
+                let mut cols = BTreeMap::new();
+                for c in columns {
+                    cols.insert(c.clone(), Self::need_col(&i, c, "project")?.clone());
+                }
+                let sel = columns.iter().map(|c| q_ident(c)).collect::<Vec<_>>().join(", ");
+                let name = self.push(format!("SELECT {sel} FROM {}", q_ident(&i.name)));
+                Ok(Out { name, schema: self.schema_of(id)?, cols })
+            }
+            PlanNode::Limit { input, n: lim } => {
+                let i = self.node(input)?;
+                let p = self.bind(Param::Int(i64::try_from(*lim).unwrap_or(i64::MAX)), "bigint");
+                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let name = self.push(format!("SELECT {list} FROM {} LIMIT {p}", q_ident(&i.name)));
+                Ok(Out { name, ..i })
+            }
+            PlanNode::Sort { input, keys } => {
+                let i = self.node(input)?;
+                if keys.is_empty() {
+                    return Err(LowerError::Invalid("sort without keys".into()));
+                }
+                let mut ob = Vec::new();
+                for k in keys {
+                    let coll = match Self::need_col(&i, &k.column, "sort")? {
+                        Col::Geometry(_) => return Err(LowerError::Invalid(format!("cannot sort by the geometry column {:?}", k.column))),
+                        // byte-order comparison like DuckDB's default; the database collation must not decide ties or order
+                        Col::Plain(PgColType::Text) => " COLLATE \"C\"",
+                        Col::Plain(_) => "",
+                    };
+                    ob.push(format!("{}{coll} {} NULLS LAST", q_ident(&k.column), if k.descending { "DESC" } else { "ASC" }));
+                }
+                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let name = self.push(format!("SELECT {list} FROM {} ORDER BY {}", q_ident(&i.name), ob.join(", ")));
+                Ok(Out { name, ..i })
+            }
+        }
+    }
+}

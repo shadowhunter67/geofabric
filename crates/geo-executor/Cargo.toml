@@ -11,5 +11,6 @@ geo-ir = { path = "../geo-ir" }
 arrow-array = "58"
 arrow-schema = "58"
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 sha2 = "0.10"

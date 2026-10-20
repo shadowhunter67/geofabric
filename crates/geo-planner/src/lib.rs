@@ -46,7 +46,7 @@ pub use probe::{checks as probe_checks, envelope, memory_class_for, BrowserSafet
 pub use state::{now_ms, ExecutionReport, PlanInputs, PlannerState, ProbeVerdict, StateSummary};
 
 use geo_executor::{
-    Capabilities, EngineDescriptor, EngineId, EngineKind, Estimate, ExecutionContext, ExplainStep,
+    Capabilities, EngineCalibration, EngineDescriptor, EngineId, EngineKind, Estimate, ExecutionContext, ExplainStep,
 };
 use geo_ir::{validate, OpKind, Plan, PlanNode, ValidationReport};
 use geo_source_geoparquet::{analyze_plan_with, ReadClass, SourceScan};
@@ -251,6 +251,8 @@ pub struct Candidate {
     pub confidence: Option<Confidence>,
     /// Browser candidates only: risk of the tab running out of memory / failing (0 safe .. 1 certain).
     pub risk: Option<BrowserRisk>,
+    /// `measured` | `unmeasured` (stand-in cost model, never preferred on cost: policy R5d)
+    pub calibration: EngineCalibration,
     pub health: HealthView,
     /// `fresh | stale | missing | not_required`
     pub probe_status: String,
@@ -486,6 +488,9 @@ pub fn source_key(uri: &str) -> String {
 struct EngineView<'a> {
     id: EngineId,
     caps: Capabilities,
+    /// `Err` = the engine cannot reach this plan's data (source residency), checked before scoring.
+    residency: Result<(), String>,
+    calibration: EngineCalibration,
     health: HealthView,
     probe: Option<&'a ProbeReport>,
     probe_status: Freshness,
@@ -634,6 +639,8 @@ impl Planner {
                 let view = EngineView {
                     id: e.id(),
                     caps: e.capabilities(),
+                    residency: e.source_residency(plan, ctx),
+                    calibration: e.calibration(),
                     health: inputs.health.get(&id).cloned().unwrap_or_else(HealthView::unknown),
                     probe,
                     probe_status: match probe {
@@ -686,6 +693,20 @@ impl Planner {
                 .map(|(i, _)| i)
         };
         let mut chosen = chosen.unwrap_or_else(|| cheapest(&|_| true).expect("a feasible candidate exists"));
+        // R5d: an engine whose cost model has never been measured here is not chosen on predicted cost while a measured engine can run the plan
+        if !hinted && candidates[chosen].calibration == EngineCalibration::Unmeasured {
+            if let Some(ci) = cheapest(&|c| c.calibration == EngineCalibration::Measured) {
+                let (u, m) = (&candidates[chosen], &candidates[ci]);
+                policy.push(format!(
+                    "R5d uncalibrated engine: {} has no measurements on this system (stand-in cost {:.0} ms); the measured {} ({:.0} ms) is chosen. An explicit engine hint or its being the only engine that can reach the data selects it",
+                    u.engine,
+                    u.score_ms.unwrap_or(0.0),
+                    m.engine,
+                    m.score_ms.unwrap_or(0.0)
+                ));
+                chosen = ci;
+            }
+        }
         if !hinted && candidates[chosen].kind == EngineKind::Browser {
             if let Some(si) = cheapest(&|c| c.kind == EngineKind::Server) {
                 let (b, s) = (&candidates[chosen], &candidates[si]);
@@ -897,6 +918,12 @@ impl Planner {
         }
         if !plan_sources_supported(plan, caps) {
             why_not.push("source format not supported".into());
+        }
+        if let Err(reason) = &e.residency {
+            why_not.push(format!("data not reachable by this engine: {reason}"));
+        }
+        if e.calibration == EngineCalibration::Unmeasured {
+            why.push("cost is a stand-in (engine not measured on this system): never preferred on predicted cost over a measured engine (R5d)".into());
         }
         if browser && !cfg.allow_browser {
             why_not.push("browser execution is disabled by configuration".into());
@@ -1176,7 +1203,8 @@ impl Planner {
                 0 => 0.6,
                 1 | 2 => 0.8,
                 _ => 1.0,
-            } * if extrapolated { 0.5 } else { 1.0 };
+            } * if extrapolated { 0.5 } else { 1.0 }
+                * if e.calibration == EngineCalibration::Unmeasured { 0.5 } else { 1.0 };
             let ops_v = if !browser || (ops_certain && e.probe.is_some()) { 1.0 } else { 0.7 };
             combine(vec![
                 factor("estimate_quality", est.quality.score(), W_ESTIMATE, format!("result-size estimate quality {:?}", est.quality)),
@@ -1199,7 +1227,7 @@ impl Planner {
                     W_NETWORK,
                     format!("{} ({:?}), network is {:.0}% of the estimated time", net.name, net.origin, transfer_share * 100.0),
                 ),
-                factor("dataset_familiarity", fam_v, W_FAMILIARITY, format!("{} earlier observation(s) on this source{}", f.familiarity, if extrapolated { "; file larger than the browser model was calibrated on (extrapolation)" } else { "" })),
+                factor("dataset_familiarity", fam_v, W_FAMILIARITY, format!("{} earlier observation(s) on this source{}{}", f.familiarity, if extrapolated { "; file larger than the browser model was calibrated on (extrapolation)" } else { "" }, if e.calibration == EngineCalibration::Unmeasured { "; engine cost model not measured on this system" } else { "" })),
                 factor(
                     "operation_support",
                     ops_v,
@@ -1219,6 +1247,7 @@ impl Planner {
             rejected_because: why_not,
             confidence,
             risk,
+            calibration: e.calibration,
             health: e.health.clone(),
             probe_status: probe_status.into(),
         }

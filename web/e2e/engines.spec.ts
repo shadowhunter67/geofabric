@@ -115,6 +115,15 @@ test("UI: auto mode shows the selected engine, the other one as the alternative,
   await expect(panel).toContainText("Estimated input");
 });
 
+test("UI: Developer mode states that the optional PostGIS engine is not configured; Explorer never mentions it", async ({ page }) => {
+  await tab(page, "execution").click();
+  await expect(page.getByTestId("postgis-status")).toContainText("not configured");
+  await expect(page.getByTestId("assessment")).toContainText("PostGIS");
+  // normal users are not shown database engines, not even their absence
+  await openApp(page, { mode: "explorer", lang: "vi" });
+  await expect(page.locator("body")).not.toContainText("PostGIS");
+});
+
 test("UI: when the browser engine fails, the query is re-run on the server and the fallback is shown (failure injected)", async ({ page }) => {
   // inject a failure into the browser engine (the real-world triggers are exercised by the crossover run: unsupported
   // Parquet geometry types, tab crashes); this test covers the fallback mechanics and the honesty of the UI

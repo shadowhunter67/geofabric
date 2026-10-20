@@ -36,6 +36,12 @@ test("core flow: map, sources, run, results, execution plan, inspector", async (
   // 3. the first query runs automatically on selection; status shows rows + engine
   await expect(page.getByTestId("status")).toContainText("results ·", { timeout: 30_000 });
   await expect(page.getByTestId("status")).toContainText("duckdb");
+  // the automatic choice depends on what the planner knows (an earlier browser probe makes the browser eligible, and on a small
+  // file over a fast link it is then measured faster): this test is about the SERVER pipeline, so it asks for the server
+  await tab(page, "query").click();
+  await page.getByTestId("q-where").selectOption("duckdb");
+  await page.getByTestId("q-run").click();
+  await expect(page.getByTestId("status")).toHaveText(/results · .* · duckdb$/, { timeout: 30_000 });
 
   // 4. Execution Plan tab: pipeline steps + metrics with provenance badges
   await tab(page, "execution").click();

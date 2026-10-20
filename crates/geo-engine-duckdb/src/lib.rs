@@ -11,14 +11,13 @@
 
 mod sql;
 
-use duckdb::arrow::datatypes::{Field, Schema};
 use duckdb::arrow::record_batch::RecordBatch;
 use duckdb::Connection;
 use geo_executor::*;
 use geo_ir::{validate, OpKind, Plan, SourceFormat};
 use geo_source_geoparquet::analyze_plan;
 use geo_types::Crs;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc::{channel, RecvTimeoutError};
 use std::sync::Arc;
@@ -330,35 +329,7 @@ impl ExecutionEngine for DuckDbEngine {
     }
 }
 
-/// Attach GeoArrow extension metadata (name + CRS from the IR schema) to WKB geometry columns.
+/// Attach GeoArrow extension metadata (shared with every other engine: `geo_executor::tag_geometry`).
 fn tag_geometry(batches: Vec<RecordBatch>, geoms: &[(String, Crs)]) -> Vec<RecordBatch> {
-    if geoms.is_empty() {
-        return batches;
-    }
-    batches
-        .into_iter()
-        .map(|b| {
-            let fields: Vec<Arc<Field>> = b
-                .schema()
-                .fields()
-                .iter()
-                .map(|f| match geoms.iter().find(|(n, _)| n == f.name()) {
-                    Some((_, crs)) => {
-                        let mut md: HashMap<String, String> = f.metadata().clone();
-                        md.insert("ARROW:extension:name".into(), "geoarrow.wkb".into());
-                        let ext = match crs {
-                            Crs::Epsg(c) => serde_json::json!({"crs": format!("EPSG:{c}"), "crs_type": "authority_code"}),
-                            Crs::OgcCrs84 => serde_json::json!({"crs": "OGC:CRS84", "crs_type": "authority_code"}),
-                            Crs::Undefined => serde_json::json!({"crs_type": "undefined"}),
-                            Crs::Unknown(s) => serde_json::json!({"crs": s, "crs_type": "unknown"}),
-                        };
-                        md.insert("ARROW:extension:metadata".into(), ext.to_string());
-                        Arc::new(f.as_ref().clone().with_metadata(md))
-                    }
-                    None => f.clone(),
-                })
-                .collect();
-            RecordBatch::try_new(Arc::new(Schema::new(fields)), b.columns().to_vec()).unwrap_or(b)
-        })
-        .collect()
+    geo_executor::tag_geometry(batches, geoms)
 }

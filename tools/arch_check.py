@@ -18,6 +18,11 @@ UI = ["maplibre*", "web-sys", "wasm-bindgen", "geo-web*"]
 
 # crate pattern -> forbidden transitive dependency patterns
 RULES = {
+    # engine FAMILIES are isolated from each other (first match wins, so these come before the generic geo-engine-* rule):
+    # the PostGIS adapter knows no DuckDB and no GeoParquet reader; the DuckDB/browser adapters know no PostgreSQL driver
+    "geo-engine-postgis": ["geo-planner", "geo-runtime", "geo-engine-duckdb", "geo-engine-browser", "geo-source-*", "duckdb", "libduckdb-sys"] + UI,
+    "geo-engine-duckdb": ["geo-planner", "geo-runtime", "geo-engine-postgis", "postgres", "tokio-postgres", "sqlx*"] + UI,
+    "geo-engine-browser": ["geo-planner", "geo-runtime", "geo-engine-postgis", "postgres", "tokio-postgres", "sqlx*"] + UI,
     "geo-types": ["geo-ir", "geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-ir": ["geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-executor": ["geo-planner", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
@@ -26,7 +31,9 @@ RULES = {
     "geo-engine-*": ["geo-planner", "geo-runtime"] + UI,             # adapters: geo-types/geo-ir/geo-executor only
 }
 # direct (non-transitive) dependency rules: the gateway must go through geo-runtime
-DIRECT_RULES = {"geo-gateway": ["geo-engine-*", "duckdb", "libduckdb-sys"]}
+DIRECT_RULES = {"geo-gateway": ["geo-engine-*", "duckdb", "libduckdb-sys", "postgres", "tokio-postgres", "sqlx*"],
+                # only the composition root wires engine adapters; the planner and executor contract know none
+                "geo-planner": ["geo-engine-*"]}
 WEB_FORBIDDEN_NPM = ["duckdb", "duckdb-async", "pg", "postgres", "better-sqlite3"]
 
 

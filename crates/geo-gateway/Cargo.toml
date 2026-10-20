@@ -8,6 +8,8 @@ license.workspace = true
 [features]
 default = ["bundled"]
 bundled = ["geo-runtime/bundled"]
+# real PostgreSQL driver for the optional PostGIS engine (unverified against a live server)
+postgis-live = ["geo-runtime/postgis-live"]
 
 [dependencies]
 geo-types = { path = "../geo-types" }

@@ -28,3 +28,7 @@ The data catalog supplies dataset attribution records to `attributions`. The map
 ## Not covered / questions for the data owner
 
 This document does not determine whether a particular downstream product is a produced work or a derived database, whether a planned distribution satisfies ODbL offer requirements, or whether upstream provider notices have changed. The data owner should obtain legal review before redistribution, commercial use, or combining sources beyond the documented normalization.
+
+## PostGIS copies (2026-10-20)
+
+Rows imported into a PostGIS database from Overture-derived GeoParquet files remain ODbL data: the attribution and share-alike obligations above apply to the database copy and anything derived from it (`scripts/postgis/load_data.py` keeps the logical source uri in the source catalog so the origin stays traceable). No data was imported in the phase that added the engine.

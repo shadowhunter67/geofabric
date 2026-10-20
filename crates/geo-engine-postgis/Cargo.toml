@@ -1,0 +1,25 @@
+[package]
+name = "geo-engine-postgis"
+description = "PostGIS execution adapter for GeoFabric (ADR-013). All PostgreSQL/PostGIS specifics live here; optional at runtime."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[features]
+default = []
+# The real PostgreSQL driver. NOT verified against a live server in the phase that added it (no PostgreSQL available): compile-checked only.
+live = ["dep:postgres"]
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+geo-executor = { path = "../geo-executor" }
+arrow-array = "58"
+arrow-schema = "58"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+postgres = { version = "0.19", optional = true, default-features = false }
+
+[dev-dependencies]
+sqlparser = "0.55"

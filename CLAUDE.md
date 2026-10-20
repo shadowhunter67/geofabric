@@ -93,3 +93,12 @@ Chi tiết: `docs/claude/final-planner-validation.md`, báo cáo `REPORT-GEOFABR
 - Test e2e có 3 race đã sửa (chờ trạng thái ổn định rồi mới click): map polygon selection, engines fallback (chờ probe xong trước khi inject lỗi), data-pack click road/place/ward (layer refresh 2 lần cách ~1 s). Mọi test click phải chờ `contextInfo()` không còn `loading` và ổn định.
 - `count_by` có test hồi quy vĩnh viễn (`templates.rs::count_by_ties_are_cut_by_the_group_key…`) — đừng xoá.
 - Tên dữ liệu synthetic mới: `_s5` (held-out trước), `_s6` (held-out cuối, gồm 300mb/500mb/1gb); `gen_synthetic.py --only` để sinh một phần.
+
+## PostGIS engine (2026-10-20)
+
+Chi tiết: `docs/claude/postgis.md`, ADR-013, `docs/postgis.md`. Báo cáo `REPORT-GEOFABRIC-POSTGIS-ENGINE.md`.
+- Engine họ thứ hai nằm dưới CÙNG chuỗi PlanGraph→Planner→EngineDescriptor→ExecutionEngine (không endpoint riêng). Tuỳ chọn: không cấu hình = không có engine, không lỗi. Cấu hình: `GEOFABRIC_POSTGIS_ENABLED/URL/SOURCES/POOL` (URL chứa mật khẩu: không bao giờ in/commit).
+- CHƯA chạy với PostgreSQL thật (user từ chối tải): mọi bằng chứng hiện là test không-DB (lowering + parser PostgreSQL, mock connector, planner/runtime). Driver thật = cargo feature `live` (`postgis-live` ở runtime/gateway), mới compile-check.
+- Trait `EngineDescriptor` có thêm 2 hàm mặc định: `source_residency`, `calibration` (engine `Unmeasured` không bao giờ thắng engine đã đo theo chi phí: policy R5d).
+- Đã thêm dependency (cargo): `postgres 0.19` (chỉ khi feature `live`), `sqlparser 0.55` (dev-dep của geo-engine-postgis, kiểm cú pháp PostgreSQL). KHÔNG tải binary PostgreSQL/PostGIS. Script portable (`tools/postgis_portable.py`) ghim PG 16.9 + PostGIS 3.6.2 nhưng chưa chạy.
+- arch_check có luật cách ly họ engine (PostGIS ↔ DuckDB/browser, gateway không dùng driver).

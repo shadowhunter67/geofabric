@@ -74,6 +74,8 @@ setLang(initialLang);
 const S = {
   sources: [] as SourceMeta[],
   catalog: null as Catalog | null,
+  /** The optional PostGIS engine as /api/state reports it (never credentials). null until asked. */
+  postgis: null as PostgisInfo | null,
   cur: null as SourceMeta | null,
   layers: loadLayerStates() as Record<string, LayerState>,
   demo: { id: null as string | null, summary: "" },
@@ -423,6 +425,7 @@ async function loadSources() {
     const [sources, catalog] = await Promise.all([api<{ sources: SourceMeta[] }>("/api/sources"), fetchCatalog()]);
     S.sources = sources.sources;
     S.catalog = catalog;
+    if (DEV()) void loadPostgis();
     renderLeft();
     // real buildings over the real basemap when the Overture subset is present; else the small synthetic file
     const first = S.sources.find((s) => s.id === params.get("source") && !s.error) ?? S.sources.find((s) => s.id === "overture_buildings_vn_south" && !s.error) ?? S.sources.find((s) => s.id === "clustered_10mb_spatial") ?? S.sources.find((s) => !s.error);
@@ -1101,7 +1104,26 @@ function resultsTab(): HTMLElement {
 }
 
 // ---------- execution ----------
-const ENGINE_LABEL: Record<string, string> = { "duckdb-wasm": "Local Browser / DuckDB-Wasm", duckdb: "Server / DuckDB" };
+const ENGINE_LABEL: Record<string, string> = { "duckdb-wasm": "Local Browser / DuckDB-Wasm", duckdb: "Server / DuckDB", postgis: "Server / PostGIS" };
+
+interface PostgisInfo { configured: boolean; sources?: number; probe?: { reachable: boolean; ok: boolean; postgres_version: string | null; postgis_version: string | null; failed_checks: string[] } | null }
+/** Developer only: ask once whether the optional PostGIS engine exists (the planner panel then says so). Failure = unknown, never an error. */
+async function loadPostgis() {
+  try {
+    const st = await api<{ postgis?: PostgisInfo }>("/api/state");
+    S.postgis = st.postgis ?? { configured: false };
+  } catch { S.postgis = null; }
+}
+function postgisRow(kv: (k: string, ...v: Child[]) => HTMLElement[]): HTMLElement[] {
+  const g = S.postgis;
+  if (!g) return [];
+  if (!g.configured) return kv(t("dev.postgis"), badge(t("dev.postgis.off"), "na", "postgis-status"));
+  const pr = g.probe;
+  return kv(t("dev.postgis"), pr?.ok
+    ? badge(`PostgreSQL ${pr.postgres_version ?? "?"} · PostGIS ${pr.postgis_version ?? "?"}`, "ok", "postgis-status")
+    : badge(t("dev.postgis.unavailable"), "warn", "postgis-status"),
+    el("span", { class: "note" }, ` ${g.sources ?? 0} ${t("dev.postgis.sources")}${pr && !pr.ok ? ` · ${pr.failed_checks[0] ?? ""}` : ""}`));
+}
 
 function executionTab(): HTMLElement {
   const r = S.last;
@@ -1228,6 +1250,7 @@ function assessmentPanel(r: RunResp): HTMLElement {
       ? [badge(t(`dev.safety.${risk.safety}` as Key), risk.safety === "safe" ? "ok" : risk.safety === "risky" ? "warn" : risk.safety === "unsafe" ? "bad" : "na", "safety-badge"),
           el("span", { class: "note", "data-testid": "risk" }, ` ${pct(risk.score)} · ≤ ${fmtBytes(risk.fetch_upper_bytes)} / ${fmtBytes(risk.envelope.unsafe_fetch_bytes)}`)]
       : browser && !browser.feasible ? `✕ ${browser.rejected_because[0]?.slice(0, 120) ?? ""}` : "—"),
+    ...postgisRow(kv),
     ...kv(t("dev.fallback"), a.fallback ? t("dev.fallback_text", { engine: ENGINE_LABEL[a.fallback.engine] ?? a.fallback.engine, n: a.fallback.max_fallbacks }) : p.placement === "browser" ? t("dev.fallback_none") : t("dev.fallback_none_server")),
   ];
   return el("div", { class: "kv2 assess", "data-testid": "assessment" }, rows,

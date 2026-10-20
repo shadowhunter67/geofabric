@@ -1,6 +1,6 @@
 # ADR-010 — Planner confidence, engine health, failure taxonomy, network model
 
-Status: Proposed (2026-10-14; round II 2026-10-15: estimator gates met, network-model gate not met — see addendum)
+Status: **Accepted with documented scope limits** (2026-10-20, Principal Architect decision; was Proposed since 2026-10-14). The limits are part of the decision — see the last section.
 
 **Decision.** The planner answers four questions instead of one: which engine *can* run the plan (feasibility), which *should* (score), how *confident* it is (a number with reasons), and what happens when it is wrong (bounded fallback). Inputs the planner is given besides the plan (`PlanInputs`): runtime probes (ADR-009), observed health, known incompatibilities, a calibration learned from telemetry, the network profile, whether the browser instance is warm.
 
@@ -104,3 +104,14 @@ See `REPORT-GEOFABRIC-PLANNER-HARDENING.md`. On the held-out set (100 cases, nev
 **R5c** (no automatic browser choice above 128 MiB; the model's prediction is kept as is and the policy overrides it, recorded in `assessment.policy`): of 45 large-source cases the cost model alone would have chosen the browser 8 times; R5c fired 8 times; the browser was measured faster in 3 of those (by 1.05×, 1.44×, 1.59×; at most 75 ms saved) and slower in 5 (by 1.07× to 1.63×). The model's own error on these cases was 4–6× (predicted 20–80 ms, measured 128–430 ms). No browser selection above 128 MiB occurred. 13 large cases could not be run in the browser at all (fetch estimate above the 220 MB tab threshold): the server is the safe winner. R5c is accepted as designed.
 
 **Not met → status stays Proposed.** (1) No second physical machine was available: the matrix ran in Chrome, Edge, Firefox and WebKit on this one machine (correctness: digests equal in 7/7 runnable cases in each). (2) LOCAL and FAST_LAN remain biased low (median 1.78× and 1.41×; the same bias, 1.74×, appeared on the previous fresh held-out). Partly explained: the server model is under-predicted by the same factor on LOCAL (1.63×), so the shift is common-mode and the relative decision is preserved (every wrong choice cost ≤ 75 ms); range mode has no decode-per-MB term and the whole-file open cost per MB is ~20 % low at 30 MB; a reference probe per batch (fixed query, both engines) varies 2× on LOCAL within one run and ~1 % on MOBILE/HIGH_LATENCY, but does not predict the browser error (correlation 0.16), so host drift alone is not the explanation. The model was not modified after seeing the held-out.
+
+
+## Acceptance (2026-10-20) — decision of the Principal Architect, with its limits
+
+The second-physical-device validation required by the final-validation addendum was **deferred to P1** by decision, not satisfied by evidence. The gates met on the fresh held-out (browser model median 1.23× / P90 2.66× on sources ≤ 128 MiB: 1.16× / 2.09×; planner accuracy 95 %; regret P90 1.00, max 1.59 = 75 ms; 0 unsafe choices) stand as written above. Binding scope limits of this acceptance:
+
+1. **Timing evidence comes from ONE physical machine** (Chromium-family browsers; Firefox and WebKit only for result correctness). The model carries a measured common-mode bias on fast links (LOCAL/FAST_LAN under-predicted ~1.4–1.8×).
+2. **Network profiles are emulated** (Chrome-level throttling), never measured on a real network.
+3. Browser auto-execution is validated up to **128 MiB**; larger sources default to the server (R5c).
+4. **Second physical-device validation is deferred to P1** (`docs/claude/second-device-check.md`); an unexpected result there reopens this ADR.
+5. New engines enter as `Unmeasured` (policy R5d, ADR-013) and are never preferred on predicted cost over a measured engine until they have their own calibration and held-out.

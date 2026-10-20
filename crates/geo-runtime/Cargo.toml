@@ -9,6 +9,8 @@ license.workspace = true
 # bundled (default) compiles DuckDB; --no-default-features + DUCKDB_LIB_DIR links the verified prebuilt (tools/duckdb_prebuilt.py)
 default = ["bundled"]
 bundled = ["geo-engine-duckdb/bundled"]
+# the real PostgreSQL driver for the PostGIS engine (unverified against a live server in the phase that added it)
+postgis-live = ["geo-engine-postgis/live"]
 
 [dependencies]
 geo-types = { path = "../geo-types" }
@@ -18,11 +20,12 @@ geo-planner = { path = "../geo-planner" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 geo-engine-duckdb = { path = "../geo-engine-duckdb", default-features = false }
 geo-engine-browser = { path = "../geo-engine-browser" }
+geo-engine-postgis = { path = "../geo-engine-postgis" }
 thiserror.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
-serde_json.workspace = true
 arrow-array = "58"
 arrow-schema = "58"
 parquet = { version = "58", default-features = false, features = ["arrow", "snap"] }

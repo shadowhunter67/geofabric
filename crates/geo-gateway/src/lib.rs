@@ -672,14 +672,6 @@ fn observation(physical: &PhysicalPlan, plan: &Plan, engine: &str, actual_rows: 
     }
 }
 
-fn classify_runtime_error(e: &RuntimeError) -> Option<(FailureClass, String)> {
-    match e {
-        RuntimeError::Execution(EngineError::Timeout { limit_ms }) => Some((FailureClass::Timeout, format!("timeout after {limit_ms} ms"))),
-        RuntimeError::Execution(EngineError::Engine(m)) => Some((FailureClass::classify(m), m.clone())),
-        _ => None, // user errors, limits, authorization, cancellation: not a statement about the engine
-    }
-}
-
 async fn run_plan(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiError> {
     let permit = st
         .slots
@@ -710,11 +702,8 @@ async fn run_plan(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiErr
                 Ok::<_, RuntimeError>(to_response(&plan, run, total))
             }
             Ok(Dispatch::Client { physical }) => Ok(client_response(&st2, &plan, physical)),
+            // the runtime has already recorded the failure under the engine that ran (and failed)
             Err(e) => {
-                if let Some((class, msg)) = classify_runtime_error(&e) {
-                    let source = plan.nodes.values().find_map(|n| if let geo_ir::PlanNode::Source { uri, .. } = n { Some(source_key(uri)) } else { None }).unwrap_or_default();
-                    st2.rt.state().record(ExecutionReport { engine: "duckdb".into(), source, outcome: Err((class, msg)), observation: None });
-                }
                 Err(e)
             }
         }
@@ -949,6 +938,7 @@ async fn planner_state(State(st): State<Shared>) -> Json<Value> {
         "pending": st.hist_pending.load(Relaxed),
         "notes": st.hist_notes.lock().map(|g| g.clone()).unwrap_or_default(),
     });
+    v["postgis"] = st.rt.postgis_status();
     Json(v)
 }
 

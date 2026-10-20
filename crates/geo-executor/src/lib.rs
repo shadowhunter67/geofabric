@@ -6,7 +6,7 @@
 
 use arrow_array::RecordBatch;
 use geo_ir::{OpKind, Plan, SourceFormat};
-use geo_types::{RootedAccessGuard, SourceAccessGuard};
+use geo_types::{Crs, RootedAccessGuard, SourceAccessGuard};
 use serde::Serialize;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -248,12 +248,32 @@ pub enum EngineError {
     Engine(String),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EngineCalibration {
+    /// The planner's cost model for this engine was fitted/validated on measurements.
+    Measured,
+    /// No measurements yet: the planner uses a stand-in model and says so.
+    Unmeasured,
+}
+
 /// What the planner needs to know about an engine. Engines that run elsewhere
 /// (the browser) are described to the planner here and executed by their own
 /// host; the planner never executes anything.
 pub trait EngineDescriptor: Send + Sync {
     fn id(&self) -> EngineId;
     fn capabilities(&self) -> Capabilities;
+    /// Can this engine reach the data of `plan`? File engines read the logical file; a database engine can only run plans
+    /// whose sources are resident in it. `Err(reason)` makes the engine infeasible for this plan BEFORE anything runs.
+    /// Must not perform I/O on a source: authorization (the planner's caller) has already happened, and this is a metadata check.
+    fn source_residency(&self, _plan: &Plan, _ctx: &ExecutionContext) -> Result<(), String> {
+        Ok(())
+    }
+    /// Has this engine's cost behaviour been measured on this system? An `Unmeasured` engine is feasible and explained, but the
+    /// planner never prefers it on predicted cost over a `Measured` one (policy R5d): a stand-in cost model is not evidence.
+    fn calibration(&self) -> EngineCalibration {
+        EngineCalibration::Measured
+    }
     fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Estimate, EngineError>;
     fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError>;
 }
@@ -366,4 +386,40 @@ mod digest_tests {
         assert_eq!(count, 2, "two rows, not a scalar count");
         assert_eq!(hash, "51e37fe8c8a5befb8bb7865806599206d250b1e721383f11f58190104aec07c2");
     }
+}
+
+/// Attach GeoArrow extension metadata (name + CRS from the IR schema) to WKB geometry columns. Shared by every engine so a
+/// geometry column is described identically whichever engine produced it.
+pub fn tag_geometry(batches: Vec<RecordBatch>, geoms: &[(String, Crs)]) -> Vec<RecordBatch> {
+    use arrow_schema::{Field, Schema};
+    use std::collections::HashMap;
+    if geoms.is_empty() {
+        return batches;
+    }
+    batches
+        .into_iter()
+        .map(|b| {
+            let fields: Vec<Arc<Field>> = b
+                .schema()
+                .fields()
+                .iter()
+                .map(|f| match geoms.iter().find(|(n, _)| n == f.name()) {
+                    Some((_, crs)) => {
+                        let mut md: HashMap<String, String> = f.metadata().clone();
+                        md.insert("ARROW:extension:name".into(), "geoarrow.wkb".into());
+                        let ext = match crs {
+                            Crs::Epsg(c) => serde_json::json!({"crs": format!("EPSG:{c}"), "crs_type": "authority_code"}),
+                            Crs::OgcCrs84 => serde_json::json!({"crs": "OGC:CRS84", "crs_type": "authority_code"}),
+                            Crs::Undefined => serde_json::json!({"crs_type": "undefined"}),
+                            Crs::Unknown(s) => serde_json::json!({"crs": s, "crs_type": "unknown"}),
+                        };
+                        md.insert("ARROW:extension:metadata".into(), ext.to_string());
+                        Arc::new(f.as_ref().clone().with_metadata(md))
+                    }
+                    None => f.clone(),
+                })
+                .collect();
+            RecordBatch::try_new(Arc::new(Schema::new(fields)), b.columns().to_vec()).unwrap_or(b)
+        })
+        .collect()
 }
