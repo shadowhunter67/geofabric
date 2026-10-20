@@ -1,0 +1,88 @@
+{
+ "runs": [
+  {
+   "iteration": 1,
+   "started": "2026-10-19T11:52:41",
+   "seconds": 182,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 26372,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  },
+  {
+   "iteration": 2,
+   "started": "2026-10-19T11:55:43",
+   "seconds": 207,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 50416,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  },
+  {
+   "iteration": 3,
+   "started": "2026-10-19T11:59:11",
+   "seconds": 182,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 42632,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  },
+  {
+   "iteration": 4,
+   "started": "2026-10-19T12:02:13",
+   "seconds": 177,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 29760,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  },
+  {
+   "iteration": 5,
+   "started": "2026-10-19T12:05:10",
+   "seconds": 177,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 49072,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  },
+  {
+   "iteration": 6,
+   "started": "2026-10-19T12:08:07",
+   "seconds": 177,
+   "browser": "msedge",
+   "port": 8798,
+   "gateway_pid": 28432,
+   "tests": 45,
+   "failed": 0,
+   "failures": [],
+   "shared_state_last_seen": {
+    "unavailable": "<urlopen error timed out>"
+   }
+  }
+ ]
+}

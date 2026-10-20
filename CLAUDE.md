@@ -82,3 +82,14 @@ Chi tiết: `docs/claude/pre-postgis-gate.md`, báo cáo `REPORT-GEOFABRIC-PRE-P
 - `count_by` luôn `ORDER BY count DESC, <group key> ASC`; thiếu tie-break thì 2 engine cắt top-50 khác nhau → digest lệch.
 - Đo thời gian Playwright PHẢI có `GATEWAY_BIN=target\release\geo-gateway.exe` (mặc định là bản debug chậm 2–3×). Harness không trả cả result qua `page.evaluate` (làm phồng thời gian browser).
 - Khoảng cách mét = UTM zone của vùng truy vấn (ADR-011), từ chối khi sai số > 0.5%; không bao giờ đổi độ→mét.
+
+## Final planner validation (2026-10-19/20) — bẫy mới
+
+Chi tiết: `docs/claude/final-planner-validation.md`, báo cáo `REPORT-GEOFABRIC-FINAL-PLANNER-VALIDATION.md`, cách đo máy thứ hai: `docs/claude/second-device-check.md`.
+- Hợp đồng thời gian: thời gian browser đo bằng MỘT đồng hồ trong trang (`performance.now()`), không tính round trip của driver Playwright. Model và harness cùng định nghĩa; đổi định nghĩa = phải calibrate lại + held-out mới.
+- Planner đã đóng băng ở commit `e909764` (model browser refit trên `ccal-*`, server có số hạng byte geometry/attribute). Held-out cuối seed 20261026 (`_s6`, 200 ca): browser median 1.23×, P90 2.66×; accuracy 95%; regret P90 1.00 (max 1.59 = 75 ms); 0 unsafe. KHÔNG chỉnh model sau khi xem kết quả; muốn đo lại phải seed mới + data draw mới.
+- ADR-008 = Accepted (scoped: DuckDB server ↔ DuckDB-Wasm, ≤128 MiB tự động, 1 máy). ADR-010 vẫn Proposed: THIẾU máy vật lý thứ hai (user trả lời "chưa có", 2026-10-20). Chỉ khi chạy `?devicecheck=1` trên laptop khác thì mới đóng được.
+- Đã cài (2026-10-19): Firefox cho Playwright (`npx playwright install firefox`, ~90 MB, ms-playwright/firefox-1555) — chỉ dùng cho device matrix, không nằm trong suite. `benchmarks/run_devicecheck.mjs` phải copy vào `web/` mới import được `@playwright/test`.
+- Test e2e có 3 race đã sửa (chờ trạng thái ổn định rồi mới click): map polygon selection, engines fallback (chờ probe xong trước khi inject lỗi), data-pack click road/place/ward (layer refresh 2 lần cách ~1 s). Mọi test click phải chờ `contextInfo()` không còn `loading` và ổn định.
+- `count_by` có test hồi quy vĩnh viễn (`templates.rs::count_by_ties_are_cut_by_the_group_key…`) — đừng xoá.
+- Tên dữ liệu synthetic mới: `_s5` (held-out trước), `_s6` (held-out cuối, gồm 300mb/500mb/1gb); `gen_synthetic.py --only` để sinh một phần.

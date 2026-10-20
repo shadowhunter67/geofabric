@@ -1,6 +1,171 @@
 {
+ "firefox": {
+  "seconds": 41,
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0",
+  "results": [
+   {
+    "id": "small-local-count",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "medium-features",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-features-small",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-heavy-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "large-result",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "geometry-roads",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "places-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "unsafe-candidate",
+    "status": "skipped",
+    "planner": "server",
+    "refused": false,
+    "note": "browser must not be used for this case"
+   }
+  ]
+ },
+ "chrome": {
+  "seconds": 42,
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "results": [
+   {
+    "id": "small-local-count",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "medium-features",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-features-small",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-heavy-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "large-result",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "geometry-roads",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "places-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "unsafe-candidate",
+    "status": "skipped",
+    "planner": "server",
+    "refused": false,
+    "note": "browser must not be used for this case"
+   }
+  ]
+ },
+ "msedge": {
+  "seconds": 43,
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+  "results": [
+   {
+    "id": "small-local-count",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "medium-features",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-features-small",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "range-heavy-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "large-result",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "geometry-roads",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "places-count-by",
+    "status": "ok",
+    "planner": "server",
+    "digests": true
+   },
+   {
+    "id": "unsafe-candidate",
+    "status": "skipped",
+    "planner": "server",
+    "refused": false,
+    "note": "browser must not be used for this case"
+   }
+  ]
+ },
  "webkit": {
-  "seconds": 50,
+  "seconds": 40,
   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
   "results": [
    {

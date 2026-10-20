@@ -1,0 +1,21 @@
+clustered_10mb_spatial_s6: 9.8 MB, rows=130000, rg=26
+clustered_10mb_shuffled_s6: 10.0 MB, rows=130000, rg=26
+uniform_10mb_spatial_s6: 9.9 MB, rows=130000, rg=26
+uniform_10mb_shuffled_s6: 10.1 MB, rows=130000, rg=26
+clustered_30mb_spatial_s6: 29.6 MB, rows=390000, rg=39
+clustered_30mb_shuffled_s6: 30.4 MB, rows=390000, rg=39
+uniform_30mb_spatial_s6: 29.9 MB, rows=390000, rg=39
+uniform_30mb_shuffled_s6: 30.4 MB, rows=390000, rg=39
+clustered_100mb_spatial_s6: 98.4 MB, rows=1300000, rg=65
+clustered_100mb_shuffled_s6: 101.2 MB, rows=1300000, rg=65
+uniform_100mb_spatial_s6: 99.2 MB, rows=1300000, rg=65
+uniform_100mb_shuffled_s6: 101.4 MB, rows=1300000, rg=65
+clustered_300mb_spatial_s6: 291.8 MB, rows=3900000, rg=78
+clustered_300mb_shuffled_s6: 301.4 MB, rows=3900000, rg=78
+uniform_300mb_spatial_s6: 294.3 MB, rows=3900000, rg=78
+uniform_300mb_shuffled_s6: 302.1 MB, rows=3900000, rg=78
+clustered_500mb_spatial_s6: 485.0 MB, rows=6500000, rg=100
+uniform_500mb_shuffled_s6: 502.9 MB, rows=6500000, rg=100
+clustered_1gb_spatial_s6: 969.0 MB, rows=13000000, rg=130
+uniform_1gb_shuffled_s6: 1007.4 MB, rows=13000000, rg=130
+GENDONE

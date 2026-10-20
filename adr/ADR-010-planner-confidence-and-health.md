@@ -82,3 +82,25 @@ See `REPORT-GEOFABRIC-PLANNER-HARDENING.md`. On the held-out set (100 cases, nev
 **Independent device/browser evidence: insufficient for Accepted.** The in-page device matrix (8 cases, `?devicecheck=1`) ran in Chrome, Edge and Playwright WebKit (a different engine, Windows build) — all on the **same machine**; every runnable case matched the server's result digest and the unsafe candidate stayed on the server. No second physical machine was available. Firefox was not installed (needs a ~90 MB download, not done). Per the acceptance criteria written for this phase, same-machine Edge does not count, and WebKit is partial evidence.
 
 **Status: remains Proposed.** Candidate for Accepted once (a) the device matrix is run on a second physical machine and (b) the LOCAL/FAST_LAN bias is explained or removed. ADR-008 stays Proposed.
+
+## Final validation addendum (2026-10-19, report `REPORT-GEOFABRIC-FINAL-PLANNER-VALIDATION.md`) — status unchanged: Proposed
+
+**Timing contract.** Browser time = ONE clock inside the page, from the moment the placed request leaves to the moment the result exists in the tab: plan request + response (gateway planning included) + engine start (cold only) + open + first batch + drain + conversion. Server time = the same POST through the page. Before this phase the harness clock ran in the test driver and included ~3 driver round trips (and the model's `plan_ms` had absorbed them); the model was therefore recalibrated under the new contract (159 runs, `ccal-*`), refitted, frozen (commit `e909764`), then validated once on a fresh held-out.
+
+**Server model.** The server result term ignored geometry (every row cost the same), so a 25-row administrative-boundary query was predicted at 84 ms and took 818 ms. It now has fitted terms per MB of geometry (155 ms) and attributes (234 ms) of the result, and result bytes on the wire include the GeoJSON text. Server error on the calibration set: median 1.12×, P90 1.71×.
+
+**Fresh held-out v2** (seed 20261026, new data draw `_s6`, 200 cases: 118 synthetic ≤ 100 MB, 37 real pack layers, 45 sources above 128 MiB — 300/500 MB and 1 GB synthetic plus the 1.45 GB Overture file; 5 CDP profiles; frozen model, policy and estimator; run once):
+
+| measure | result | gate |
+|---|---|---|
+| browser time model, median / P90 / P95 / max (187 measurable cases) | **1.23× / 2.66× / 3.67× / 6.6×** | ≤ 1.25× / ≤ 3× |
+| same, sources ≤ 128 MiB only (155) | 1.16× / 2.09× / 2.58× / 3.8× | |
+| same, sources > 128 MiB (32) | 1.74× / 5.5× / 6.1× / 6.6× — outside the calibrated range, covered by R5c, no claim | |
+| server model, median / P90 / max | 1.40× / 2.0× / 3.7× | |
+| planner accuracy | 95.0 % (always-server 81.5 %) | |
+| regret P50 / P90 / P95 / max | 1.00 / 1.00 / 1.001 / 1.59 (max absolute penalty 75 ms) | P90 ≤ 1.25 |
+| unsafe browser choices / browser crashes / digest or row mismatches | 0 / 0 / 0 | 0 |
+
+**R5c** (no automatic browser choice above 128 MiB; the model's prediction is kept as is and the policy overrides it, recorded in `assessment.policy`): of 45 large-source cases the cost model alone would have chosen the browser 8 times; R5c fired 8 times; the browser was measured faster in 3 of those (by 1.05×, 1.44×, 1.59×; at most 75 ms saved) and slower in 5 (by 1.07× to 1.63×). The model's own error on these cases was 4–6× (predicted 20–80 ms, measured 128–430 ms). No browser selection above 128 MiB occurred. 13 large cases could not be run in the browser at all (fetch estimate above the 220 MB tab threshold): the server is the safe winner. R5c is accepted as designed.
+
+**Not met → status stays Proposed.** (1) No second physical machine was available: the matrix ran in Chrome, Edge, Firefox and WebKit on this one machine (correctness: digests equal in 7/7 runnable cases in each). (2) LOCAL and FAST_LAN remain biased low (median 1.78× and 1.41×; the same bias, 1.74×, appeared on the previous fresh held-out). Partly explained: the server model is under-predicted by the same factor on LOCAL (1.63×), so the shift is common-mode and the relative decision is preserved (every wrong choice cost ≤ 75 ms); range mode has no decode-per-MB term and the whole-file open cost per MB is ~20 % low at 30 MB; a reference probe per batch (fixed query, both engines) varies 2× on LOCAL within one run and ~1 % on MOBILE/HIGH_LATENCY, but does not predict the browser error (correlation 0.16), so host drift alone is not the explanation. The model was not modified after seeing the held-out.

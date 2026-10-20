@@ -86,6 +86,15 @@ test.describe("data pack (Explorer, Vietnamese)", () => {
     for (const id of ["overture_places_hcm", "overture_transport_hcm", "overture_admin_hcm"]) {
       await expect.poll(async () => (await page.evaluate(() => (window as unknown as { __gf: GF }).__gf.contextInfo()))[id]?.features ?? 0, { timeout: 60_000 }).toBeGreaterThan(0);
     }
+    // the layers load in a cascade and refresh a second time ~1 s later (each refresh removes and re-adds a layer): wait for a picture
+    // that stays the same, or the click lands while a layer is being swapped (flake investigation 2026-10-19: 20 % of solo runs)
+    let before = "";
+    await expect.poll(async () => {
+      const now = await page.evaluate(() => { const ci = (window as unknown as { __gf: GF }).__gf.contextInfo() as Record<string, { features: number; loading: boolean }>; return JSON.stringify(Object.entries(ci).map(([k, v]) => [k, v.features, v.loading])); });
+      const stable = now === before && !now.includes("true");
+      before = now;
+      return stable;
+    }, { timeout: 30_000, intervals: [1200] }).toBe(true);
     await settled(page);
     const clickOn = async (prefix: string) => {
       const find = (p: string) => page.evaluate((p) => {

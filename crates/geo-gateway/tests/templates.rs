@@ -132,6 +132,16 @@ fn fixtures() -> PathBuf {
         }
     }
     write(&root.join("clusters.parquet"), 4326, cluster_ids, vec![None; 1600], vec![None; 1600], cluster_geoms);
+    // 120 groups of exactly 3 buildings each: every group ties on the count, and only 50 groups are returned
+    let tie_names: Vec<String> = (0..120).map(|g| format!("g{g:03}")).flat_map(|n| std::iter::repeat(n).take(3)).collect();
+    write(
+        &root.join("ties.parquet"),
+        4326,
+        (0..360).collect(),
+        tie_names.iter().map(|n| Some(n.as_str())).collect(),
+        vec![None; 360],
+        (0..360i64).map(|i| rect(106.0 + i as f64 * 0.00005, 10.8, 106.0 + i as f64 * 0.00005 + 0.00002, 10.8002)).collect(),
+    );
     write(
         &root.join("projected.parquet"),
         3857,
@@ -397,5 +407,26 @@ async fn the_sample_of_a_filtered_query_is_a_subset_of_the_filtered_result() {
     let (_, s8) = call(&st, sampled).await;
     for f in s8["geojson"]["features"].as_array().expect("f") {
         assert!(all_ids.contains(&f["properties"]["id"].as_i64().expect("id")));
+    }
+}
+
+/// Regression (final planner validation): `count_by` cut at 50 groups with ties on the count must cut at the same place in every
+/// engine. Ties are ordered by the group key, ascending; the browser SQL has the same ORDER BY (golden fixture `count_by_sorted`).
+/// Before the tie-break, 8 of 72 cross-engine digests of a held-out run differed on exactly this.
+#[tokio::test]
+async fn count_by_ties_are_cut_by_the_group_key_so_every_engine_returns_the_same_top_50() {
+    let st = state();
+    let req = json!({"source": "ties", "kind": "count_by", "group_by": "class", "bbox": [105.99, 10.79, 106.03, 10.82], "crs": "EPSG:4326", "browser": false});
+    let (status, first) = call(&st, req.clone()).await;
+    assert_eq!(status, StatusCode::OK, "{first}");
+    let rows = first["rows"].as_array().expect("rows");
+    assert_eq!(rows.len(), 50);
+    for (i, row) in rows.iter().enumerate() {
+        assert_eq!(row["class"], json!(format!("g{i:03}")), "row {i} must be the {i}th group by key among equal counts");
+        assert_eq!(row["count"].as_i64(), Some(3));
+    }
+    for _ in 0..3 {
+        let (_, again) = call(&st, req.clone()).await;
+        assert_eq!(again["result_digest"], first["result_digest"], "stable digest across runs");
     }
 }

@@ -1,5 +1,5 @@
 {
- "started": "2026-10-19T02:42:22.058Z",
+ "started": "2026-10-19T10:29:08.937Z",
  "device": {
   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
   "platform": "Win32",
@@ -12,114 +12,114 @@
   ]
  },
  "link": {
-  "rtt_ms_median": 0.800000011920929,
-  "down_mbps_estimate": 4725.976322158302
+  "rtt_ms_median": 1,
+  "down_mbps_estimate": 2728.0026122017316
  },
  "probe": {
   "engine": "duckdb-wasm",
-  "session": "mvenf69l-cixq20a3",
+  "session": "mvf43bc9-6il27ms6",
   "engine_version": "1.33.1-dev57.0",
   "runtime_version": "v1.5.4",
-  "captured_at_ms": 1792377742056,
-  "duration_ms": 42.89999997615814,
+  "captured_at_ms": 1792405748934,
+  "duration_ms": 90.80000001192093,
   "checks": [
    {
     "name": "worker",
     "ok": true,
     "required": true,
     "detail": "Worker available",
-    "ms": 0.09999996423721313
+    "ms": 0
    },
    {
     "name": "init",
     "ok": true,
     "required": true,
     "detail": "DuckDB v1.5.4",
-    "ms": 1.300000011920929
+    "ms": 7.5
    },
    {
     "name": "arrow",
     "ok": true,
     "required": true,
     "detail": "Arrow table 1x2",
-    "ms": 0.6000000238418579
+    "ms": 1.100000023841858
    },
    {
     "name": "extension_load",
     "ok": true,
     "required": false,
     "detail": "parquet=absent, spatial=absent",
-    "ms": 0.699999988079071
+    "ms": 2.099999964237213
    },
    {
     "name": "parquet",
     "ok": true,
     "required": true,
     "detail": "compiled plan read 64 rows over HTTP range requests",
-    "ms": 2.300000011920929
+    "ms": 7.699999988079071
    },
    {
     "name": "http_range",
     "ok": true,
     "required": false,
     "detail": "range-request reads work",
-    "ms": 4.699999988079071
+    "ms": 10.100000023841858
    },
    {
     "name": "geometry_wkb",
     "ok": true,
     "required": true,
     "detail": "decoded Polygon from streamed WKB bytes",
-    "ms": 3.100000023841858
+    "ms": 6.899999976158142
    },
    {
     "name": "covering",
     "ok": true,
     "required": true,
     "detail": "bbox covering columns filterable",
-    "ms": 3.5
+    "ms": 5.5
    },
    {
     "name": "read_class:plain_wkb",
     "ok": true,
     "required": false,
     "detail": "reads plain WKB files (Polygon)",
-    "ms": 3.5
+    "ms": 6.199999988079071
    },
    {
     "name": "read_class:duckdb_typed",
     "ok": true,
     "required": false,
     "detail": "reads DuckDB>=1.5 typed-geometry files (Polygon)",
-    "ms": 2.699999988079071
+    "ms": 9.600000023841858
    },
    {
     "name": "op:source",
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 2.800000011920929
+    "ms": 4.700000047683716
    },
    {
     "name": "op:filter",
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 2.5
+    "ms": 5.300000011920929
    },
    {
     "name": "op:bbox_filter",
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 2.199999988079071
+    "ms": 5
    },
    {
     "name": "op:aggregate",
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 3.400000035762787
+    "ms": 4.600000023841858
    },
    {
     "name": "op:project",
@@ -133,14 +133,14 @@
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 2.5
+    "ms": 4.300000011920929
    },
    {
     "name": "op:sort",
     "ok": true,
     "required": false,
     "detail": "ran",
-    "ms": 3.300000011920929
+    "ms": 5.899999976158142
    }
   ],
   "memory_class": "high",
@@ -173,26 +173,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.9502002165056764,
-    "server_ms": 83.23568211674498,
-    "browser_ms": 620.4250017173977,
+    "server_ms": 83.22125267338562,
+    "browser_ms": 679.3907714331015,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    77.5,
-    84.80000001192093
+    141.0999999642372,
+    125.60000002384186
    ],
    "browser_phases": {
     "init_ms": 0,
-    "open_ms": 17.69999998807907,
-    "first_ms": 7.399999976158142,
+    "open_ms": 45.40000003576279,
+    "first_ms": 14.799999952316284,
     "drain_ms": 0,
     "rows": 1,
-    "boundary_ms": 0
+    "boundary_ms": 0.09999996423721313
    },
    "browser_ms": [
-    587.5,
-    28.5
+    1015.3999999761581,
+    66.59999996423721
    ],
    "digests_match": true,
    "rows": {
@@ -208,26 +208,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.7556664186550787,
-    "server_ms": 111.16713614907074,
-    "browser_ms": 649.5829637912152,
+    "server_ms": 110.3198230342636,
+    "browser_ms": 711.8395658237163,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    123.80000001192093,
-    109.39999997615814
+    177.60000002384186,
+    198.70000004768372
    ],
    "browser_phases": {
     "init_ms": 0,
-    "open_ms": 25.30000001192093,
-    "first_ms": 10.899999976158142,
-    "drain_ms": 0.7000000476837158,
+    "open_ms": 52.5,
+    "first_ms": 16.700000047683716,
+    "drain_ms": 1.0999999642372131,
     "rows": 1500,
-    "boundary_ms": 6.600000023841858
+    "boundary_ms": 11.699999988079071
    },
    "browser_ms": [
-    57.10000002384186,
-    48.09999996423721
+    99.79999995231628,
+    88
    ],
    "digests_match": true,
    "rows": {
@@ -243,26 +243,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.7556664186550787,
-    "server_ms": 86.11263914208222,
-    "browser_ms": 658.2721902422913,
+    "server_ms": 86.02810807875062,
+    "browser_ms": 703.6423145991382,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    92.20000004768372,
-    88.39999997615814
+    146.69999998807907,
+    146
    ],
    "browser_phases": {
     "init_ms": 0,
-    "open_ms": 0.19999998807907104,
-    "first_ms": 58.69999998807907,
-    "drain_ms": 0,
+    "open_ms": 0.40000003576278687,
+    "first_ms": 107.59999996423721,
+    "drain_ms": 0.20000004768371582,
     "rows": 119,
-    "boundary_ms": 0.6000000238418579
+    "boundary_ms": 0.9000000357627869
    },
    "browser_ms": [
-    69.60000002384186,
-    64.09999996423721
+    119.90000003576279,
+    115.30000001192093
    ],
    "digests_match": true,
    "rows": {
@@ -278,26 +278,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.7556664186550787,
-    "server_ms": 102.33740093750762,
-    "browser_ms": 1233.871310291928,
+    "server_ms": 102.22196539063263,
+    "browser_ms": 1132.5164158667797,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    103,
-    103.60000002384186
+    173.10000002384186,
+    170.5
    ],
    "browser_phases": {
-    "init_ms": 416.9000000357628,
-    "open_ms": 0.8999999761581421,
-    "first_ms": 660,
+    "init_ms": 674.8000000119209,
+    "open_ms": 1.699999988079071,
+    "first_ms": 1166.0999999642372,
     "drain_ms": 0,
     "rows": 8,
     "boundary_ms": 0
    },
    "browser_ms": [
-    487.0999999642372,
-    1081.6000000238419
+    894.6999999880791,
+    1849.3999999761581
    ],
    "digests_match": true,
    "rows": {
@@ -312,27 +312,27 @@
    "planner": {
     "engine": "duckdb",
     "placement": "server",
-    "confidence": 0.47021835507780535,
-    "server_ms": 811.4729891621093,
-    "browser_ms": 834.6947381195324,
+    "confidence": 0.5489511628624046,
+    "server_ms": 788.877977100586,
+    "browser_ms": 936.9742784125278,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    654.8000000119209,
-    632.1999999880791
+    1271.5,
+    1223.1000000238419
    ],
    "browser_phases": {
     "init_ms": 0,
-    "open_ms": 26.30000001192093,
-    "first_ms": 21.19999998807907,
-    "drain_ms": 14,
+    "open_ms": 54.5,
+    "first_ms": 37.10000002384186,
+    "drain_ms": 20.600000023841858,
     "rows": 40000,
-    "boundary_ms": 172.5
+    "boundary_ms": 285.10000002384186
    },
    "browser_ms": [
-    328.30000001192093,
-    238.30000001192093
+    565.2999999523163,
+    405.80000001192093
    ],
    "digests_match": true,
    "rows": {
@@ -348,26 +348,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.9502002165056764,
-    "server_ms": 125.39643085446167,
-    "browser_ms": 657.8989213291032,
+    "server_ms": 136.11713999634017,
+    "browser_ms": 707.3676431985023,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    128.5999999642372,
-    129.5
+    232.19999998807907,
+    231
    ],
    "browser_phases": {
-    "init_ms": 443.80000001192093,
-    "open_ms": 0.699999988079071,
-    "first_ms": 229.0999999642372,
-    "drain_ms": 4.100000023841858,
+    "init_ms": 684.1000000238419,
+    "open_ms": 1.5999999642372131,
+    "first_ms": 393.2000000476837,
+    "drain_ms": 3.899999976158142,
     "rows": 2000,
-    "boundary_ms": 10.300000011920929
+    "boundary_ms": 16.19999998807907
    },
    "browser_ms": [
-    78.90000003576279,
-    692
+    130,
+    1105.300000011921
    ],
    "digests_match": true,
    "rows": {
@@ -383,26 +383,26 @@
     "engine": "duckdb",
     "placement": "server",
     "confidence": 0.7556664186550787,
-    "server_ms": 89.6220054251175,
-    "browser_ms": 656.2186424332369,
+    "server_ms": 88.90053325714874,
+    "browser_ms": 719.878538583129,
     "browser_safety": "safe",
     "browser_feasible": true
    },
    "server_ms": [
-    103.60000002384186,
-    79.80000001192093
+    132.60000002384186,
+    136.79999995231628
    ],
    "browser_phases": {
     "init_ms": 0,
-    "open_ms": 42.10000002384186,
-    "first_ms": 33.59999996423721,
+    "open_ms": 75.5,
+    "first_ms": 77.19999998807907,
     "drain_ms": 0.10000002384185791,
     "rows": 50,
-    "boundary_ms": 0.10000002384185791
+    "boundary_ms": 0
    },
    "browser_ms": [
-    79.69999998807907,
-    79.69999998807907
+    152.9000000357628,
+    158.80000001192093
    ],
    "digests_match": true,
    "rows": {
@@ -417,16 +417,16 @@
    "planner": {
     "engine": "duckdb",
     "placement": "server",
-    "confidence": 0.9299409893200876,
-    "server_ms": 2131.729084154747,
-    "browser_ms": 1122.677810302092,
+    "confidence": 0.9502002165056764,
+    "server_ms": 3058.7282520468057,
+    "browser_ms": 1262.3982945838006,
     "browser_safety": "risky",
     "browser_feasible": true
    },
    "browser_refused_correctly": false,
    "server_ms": [
-    2735.2999999523163,
-    2822.100000023842
+    5116.299999952316,
+    4997.200000047684
    ],
    "note": "browser must not be used for this case",
    "rows": {
