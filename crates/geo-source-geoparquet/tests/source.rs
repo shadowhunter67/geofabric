@@ -67,7 +67,8 @@ fn write_fixture(path: &std::path::Path, crs_json: &str) {
 }
 
 fn tmp(name: &str) -> std::path::PathBuf {
-    let d = std::env::temp_dir().join("geofabric-tests");
+    // canonical temp dir: on Windows runners the temp path is an 8.3 short name (RUNNER~1), which the guard's lexical check rightly refuses
+    let d = std::fs::canonicalize(std::env::temp_dir()).unwrap().join("geofabric-tests");
     std::fs::create_dir_all(&d).unwrap();
     d.join(name)
 }
