@@ -113,8 +113,7 @@ impl DuckDbEngine {
         sources: &[geo_types::AuthorizedSource],
         profile_dir: &std::path::Path,
     ) -> Result<Connection, EngineError> {
-        let e = |x: duckdb::Error| EngineError::Engine(x.to_string());
-        let conn = Connection::open_in_memory().map_err(e)?;
+        let conn = Connection::open_in_memory().map_err(|x| EngineError::Engine(format!("open in-memory connection: {x}")))?;
         if self.spatial {
             load_spatial(&conn, self.config.allow_extension_install).map_err(EngineError::Engine)?;
         }
@@ -130,7 +129,7 @@ impl DuckDbEngine {
             files.join(", "),
             dirs.join(", ")
         ))
-        .map_err(e)?;
+        .map_err(|x| EngineError::Engine(format!("session setup (SET threads/memory_limit/allowed_paths/...): {x}")))?;
         Ok(conn)
     }
 }
@@ -258,7 +257,7 @@ impl ExecutionEngine for DuckDbEngine {
                 "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
                 sql::q_str(&sql::sql_path(&profile_file))
             ))
-            .map_err(e)?;
+            .map_err(|x| EngineError::Engine(format!("profiling setup: {x}")))?;
 
             // Watchdog: really interrupts the running query.
             let handle = conn.interrupt_handle();
@@ -289,7 +288,7 @@ impl ExecutionEngine for DuckDbEngine {
             };
             let start = Instant::now();
             let run = (|| {
-                let mut stmt = conn.prepare(&compiled.sql).map_err(e)?;
+                let mut stmt = conn.prepare(&compiled.sql).map_err(|x| EngineError::Engine(format!("prepare: {x}")))?;
                 let batches: Vec<_> = match stmt.query_arrow([]) {
                     Ok(arrow) => arrow.collect(),
                     Err(first) => {
