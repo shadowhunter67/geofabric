@@ -290,7 +290,18 @@ impl ExecutionEngine for DuckDbEngine {
             let start = Instant::now();
             let run = (|| {
                 let mut stmt = conn.prepare(&compiled.sql).map_err(e)?;
-                let batches: Vec<_> = stmt.query_arrow([]).map_err(e)?.collect();
+                let batches: Vec<_> = match stmt.query_arrow([]) {
+                    Ok(arrow) => arrow.collect(),
+                    Err(first) => {
+                        // the arrow path reports a failed statement as an opaque "Error code N" without DuckDB's message; the row API
+                        // keeps the message, so re-run the failing statement through it purely to say what actually went wrong
+                        let detail = conn.prepare(&compiled.sql).and_then(|mut s| s.query([]).map(|_| ())).err().map(|d| d.to_string());
+                        return Err(match detail {
+                            Some(d) if d != first.to_string() => EngineError::Engine(format!("{first} ({d})")),
+                            _ => e(first),
+                        });
+                    }
+                };
                 Ok::<_, EngineError>(batches)
             })();
             let elapsed = start.elapsed();
