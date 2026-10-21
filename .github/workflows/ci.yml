@@ -68,5 +68,5 @@ jobs:
           lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*/\1/')"
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
-      - name: Tests (no database server is started: live PostgreSQL tests skip and are not counted as evidence)
+      - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
         run: cargo test --workspace --no-default-features
