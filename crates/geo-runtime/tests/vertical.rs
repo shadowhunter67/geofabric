@@ -214,8 +214,8 @@ fn security_path_and_injection() {
     let Some(p) = file("clustered_10mb_spatial") else { return };
     let src = rt().open_source(p.to_str().unwrap(), &ctx()).unwrap();
     // 1. source outside allowed roots
-    let outside = ExecutionContext::new(vec![std::env::temp_dir().join("geofabric-nothing-here")]);
-    std::fs::create_dir_all(std::env::temp_dir().join("geofabric-nothing-here")).unwrap();
+    let outside = ExecutionContext::new(vec![std::fs::canonicalize(std::env::temp_dir()).unwrap().join("geofabric-nothing-here")]);
+    std::fs::create_dir_all(std::fs::canonicalize(std::env::temp_dir()).unwrap().join("geofabric-nothing-here")).unwrap();
     match rt().run(&Plan::new(count_agg(src.clone())), &outside) {
         Err(RuntimeError::AccessDenied) => {}
         other => panic!("expected access denied, got {:?}", other.map(|_| ())),

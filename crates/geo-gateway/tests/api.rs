@@ -132,9 +132,9 @@ fn ir_source_outside(path: &str) -> Value {
 async fn unauthorized_source_is_denied_without_an_existence_oracle() {
     let st = state(GatewayConfig::default());
     // a *valid* parquet outside the root (copy of a benchmark file in temp)
-    let outside = std::env::temp_dir().join(format!("gf-outside-{}.parquet", std::process::id()));
+    let outside = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("gf-outside-{}.parquet", std::process::id()));
     std::fs::copy(data_dir().join("clustered_10mb_spatial.parquet"), &outside).unwrap();
-    let missing = std::env::temp_dir().join("gf-definitely-missing.parquet");
+    let missing = std::fs::canonicalize(std::env::temp_dir()).unwrap().join("gf-definitely-missing.parquet");
     let (s1, j1) = call(&st, "POST", "/api/ir/run", Some(ir_source_outside(outside.to_str().unwrap()).to_string()), true).await;
     let (s2, j2) = call(&st, "POST", "/api/ir/run", Some(ir_source_outside(missing.to_str().unwrap()).to_string()), true).await;
     let (s3, j3) = call(&st, "POST", "/api/ir/explain", Some(ir_source_outside(outside.to_str().unwrap()).to_string()), true).await;

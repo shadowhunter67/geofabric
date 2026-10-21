@@ -67,7 +67,7 @@ fn write(path: &PathBuf, ids: Vec<i64>, geoms: Vec<Vec<u8>>) {
 fn dir() -> &'static PathBuf {
     static D: OnceLock<PathBuf> = OnceLock::new();
     D.get_or_init(|| {
-        let d = std::env::temp_dir().join(format!("geofabric-join-{}", std::process::id()));
+        let d = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geofabric-join-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         write(
             &d.join("left.parquet"),

@@ -68,7 +68,7 @@ fn write(path: &PathBuf, epsg: u32, ids: Vec<i64>, geoms: Vec<Option<Vec<u8>>>) 
 fn dir() -> &'static PathBuf {
     static D: OnceLock<PathBuf> = OnceLock::new();
     D.get_or_init(|| {
-        let d = std::env::temp_dir().join(format!("geofabric-semijoin-{}", std::process::id()));
+        let d = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geofabric-semijoin-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
         let some = |v: Vec<u8>| Some(v);
         // planar part: LEFT 1..6 / RIGHT with 0, 1 and several matches

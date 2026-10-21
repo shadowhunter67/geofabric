@@ -142,7 +142,7 @@ fn invalid_plan_is_rejected_before_engines_are_consulted() {
 fn unauthorized_source_fails_before_any_metadata_io_with_opaque_error() {
     let Some(p) = data() else { return };
     // guard whose only root is an unrelated, empty directory
-    let root = std::env::temp_dir().join(format!("gf-planner-root-{}", std::process::id()));
+    let root = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("gf-planner-root-{}", std::process::id()));
     std::fs::create_dir_all(&root).unwrap();
     let ctx = ExecutionContext::new(vec![root]);
     let m = Mock { id: "m", ops: vec![OpKind::Source, OpKind::BboxFilter] };

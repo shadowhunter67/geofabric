@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tower::ServiceExt;
 
 fn temp_dir(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("geo-gateway-{name}-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("clock").as_nanos()));
+    let path = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geo-gateway-{name}-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("clock").as_nanos()));
     std::fs::create_dir_all(&path).expect("create temp directory");
     path
 }

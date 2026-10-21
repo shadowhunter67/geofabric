@@ -252,7 +252,7 @@ fn unauthorized_shared_source_is_denied_before_any_read() {
     let p = tmp("fx_shared_denied.parquet");
     write_fixture(&p, r#""crs":{"id":{"authority":"EPSG","code":4326}},"#);
     let s = GeoParquetSource::open(&p).unwrap();
-    let other_root = std::env::temp_dir().join(format!("gf-other-root-{}", std::process::id()));
+    let other_root = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("gf-other-root-{}", std::process::id()));
     std::fs::create_dir_all(&other_root).unwrap();
     let guard = geo_types::RootedAccessGuard::new([other_root]);
     let plan = shared_source_join(s.to_ir_source(), BoundingBox::new(0.0, 0.0, 1.0, 1.0, Crs::Epsg(4326)).unwrap(), None);

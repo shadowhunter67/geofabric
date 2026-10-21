@@ -28,7 +28,7 @@ fn point(x: f64, y: f64) -> Vec<u8> {
 
 /// A small GeoParquet file (the LOGICAL source) in its own directory; returns (directory, absolute uri).
 fn fixture(tag: &str) -> (PathBuf, String) {
-    let dir = std::env::temp_dir().join(format!("geo-runtime-postgis-{tag}-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    let dir = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geo-runtime-postgis-{tag}-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
     std::fs::create_dir_all(&dir).unwrap();
     let dir = dir.canonicalize().unwrap();
     let path = dir.join("places.parquet");

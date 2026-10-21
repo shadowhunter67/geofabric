@@ -72,7 +72,7 @@ fn plan(uri: &str) -> Plan {
 
 /// A directory the guard allows, holding the logical source file (the guard authorizes real paths).
 fn allowed_dir() -> PathBuf {
-    let d = std::env::temp_dir().join(format!("geo-postgis-test-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    let d = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geo-postgis-test-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
     std::fs::create_dir_all(&d).unwrap();
     std::fs::write(d.join("buildings.parquet"), b"x").unwrap();
     d.canonicalize().unwrap()
@@ -85,7 +85,7 @@ fn env() -> (String, ExecutionContext) {
 }
 
 fn ctx_denying() -> ExecutionContext {
-    let other = std::env::temp_dir().join(format!("geo-postgis-other-{}", std::process::id()));
+    let other = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geo-postgis-other-{}", std::process::id()));
     std::fs::create_dir_all(&other).unwrap();
     ExecutionContext::new(vec![other.canonicalize().unwrap()])
 }

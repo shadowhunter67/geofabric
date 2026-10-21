@@ -130,7 +130,7 @@ mod tests {
     use super::*;
 
     fn setup() -> (PathBuf, PathBuf) {
-        let base = std::env::temp_dir().join(format!("geo-types-access-{}", std::process::id()));
+        let base = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!("geo-types-access-{}", std::process::id()));
         let root = base.join("root");
         let outside = base.join("outside");
         std::fs::create_dir_all(&root).unwrap();

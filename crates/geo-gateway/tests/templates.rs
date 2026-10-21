@@ -73,7 +73,7 @@ fn write(
 }
 
 fn fixtures() -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
+    let root = std::fs::canonicalize(std::env::temp_dir()).unwrap().join(format!(
         "geo-gateway-templates-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
