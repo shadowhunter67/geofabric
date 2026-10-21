@@ -17,5 +17,5 @@ export default defineConfig({
   use: { baseURL: BASE, channel: (process.env.PW_CHANNEL ?? "chrome") as "chrome" | "msedge", headless: true, viewport: { width: 1500, height: 900 } },
   webServer: PUBLIC_URL
     ? undefined
-    : { command: `npx vite preview --outDir dist-static --base /geofabric/ --host 127.0.0.1 --port ${PORT} --strictPort`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
+    : { command: `npx vite preview --outDir ${process.env.GF_OUT ?? "dist-static"} --base /geofabric/ --host 127.0.0.1 --port ${PORT} --strictPort`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
 });

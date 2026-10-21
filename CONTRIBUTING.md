@@ -15,7 +15,7 @@ npm ci
 npm run typecheck && npm test                                  # TypeScript unit tests
 GF_BASE=/geofabric/ npm run build:static                       # static browser profile
 npx playwright install chromium                                # once
-PW_CHANNEL=chromium npx playwright test -c playwright.static.config.ts    # static-mode browser tests
+GF_OUT=dist PW_CHANNEL=chrome npx playwright test -c playwright.static.config.ts    # static-mode browser tests
 
 # Rust
 python tools/duckdb_prebuilt.py                                # verified libduckdb (sha256 pinned)

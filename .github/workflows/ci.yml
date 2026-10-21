@@ -36,9 +36,8 @@ jobs:
         env:
           GF_BASE: /geofabric/
       - name: Static-mode browser tests (no Gateway, no PostGIS)
-        run: |
-          npx playwright install --with-deps chromium
-          PW_CHANNEL=chromium npx playwright test -c playwright.static.config.ts
+        # the GitHub-hosted runner ships Google Chrome: no browser download
+        run: GF_OUT=dist PW_CHANNEL=chrome npx playwright test -c playwright.static.config.ts
 
   architecture:
     name: Architecture rules
@@ -61,6 +60,10 @@ jobs:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Generate the small synthetic GeoParquet files the gateway tests read (benchmarks/data is not committed)
+        run: |
+          python -m pip install pyarrow duckdb numpy
+          python benchmarks/gen_synthetic.py --size 10mb --out benchmarks/data
       - name: Fetch and verify the prebuilt libduckdb (sha256-pinned)
         shell: bash
         run: |
