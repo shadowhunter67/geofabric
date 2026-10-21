@@ -43,7 +43,12 @@ pub struct DuckDbEngine {
     spatial_error: Option<String>,
 }
 
+/// Serializes the extension load/install inside this process: on a machine that has never installed `spatial`, several engines
+/// created at once would all run `INSTALL` against the same extension directory and one of them fails with an opaque error.
+static EXTENSION_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn load_spatial(conn: &Connection, allow_install: bool) -> Result<(), String> {
+    let _guard = EXTENSION_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     if conn.execute_batch("LOAD spatial").is_ok() {
         return Ok(());
     }
