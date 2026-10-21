@@ -76,3 +76,9 @@ jobs:
       - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
         # two test threads: the hosted runner is small, and many in-process DuckDB instances opening at once were seen to fail sporadically
         run: cargo test --workspace --no-default-features -- --test-threads=2
+      - name: Diagnostics when the tests failed (DuckDB probe, then the semi-join tests alone, three times)
+        if: failure()
+        shell: bash
+        run: |
+          cargo run -q -p geo-engine-duckdb --example probe --no-default-features || true
+          for i in 1 2 3; do cargo test -q -p geo-runtime --test semi_join --no-default-features -- --nocapture --test-threads=1 2>&1 | tail -25 || true; done

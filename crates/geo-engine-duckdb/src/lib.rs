@@ -86,6 +86,11 @@ impl DuckDbEngine {
         self.spatial
     }
 
+    /// Why the spatial extension could not be loaded (None when it is available): shown by the probe and the Developer view.
+    pub fn spatial_error(&self) -> Option<&str> {
+        self.spatial_error.as_deref()
+    }
+
     /// The SQL this adapter would run for `plan` (for explain / debugging).
     pub fn compile_sql(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<String, EngineError> {
         Ok(sql::compile(plan, ctx, self.spatial)?.sql)
