@@ -72,4 +72,5 @@ jobs:
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
       - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
-        run: cargo test --workspace --no-default-features
+        # two test threads: the hosted runner is small, and many in-process DuckDB instances opening at once were seen to fail sporadically
+        run: cargo test --workspace --no-default-features -- --test-threads=2
