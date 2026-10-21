@@ -58,7 +58,7 @@ npm run build:static            # GF_BASE=/geofabric/ for a sub-path host such a
 npx vite preview --outDir dist  # then open the printed URL
 ```
 
-The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
+The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. Its files are plain GeoParquet published with a `.zip` suffix: GitHub Pages gzips `application/octet-stream` and then serves byte ranges of the compressed bytes, which breaks range reads; a `.zip` type is left alone. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
 
 ### Local full stack (Windows, one-time setup)
 
