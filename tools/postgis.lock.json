@@ -1,0 +1,14 @@
+{
+ "postgresql-16.9-1-windows-x64-binaries.zip": {
+  "url": "https://get.enterprisedb.com/postgresql/postgresql-16.9-1-windows-x64-binaries.zip",
+  "size": 314500604,
+  "sha256": "304eb7dab70717015c4fd09986122e470d53a57a3a2b443d31e2c1d83d88db88",
+  "integrity": "trusted on first acquisition over HTTPS; locally pinned SHA-256"
+ },
+ "postgis-bundle-pg16-3.6.2x64.zip": {
+  "url": "https://download.osgeo.org/postgis/windows/pg16/postgis-bundle-pg16-3.6.2x64.zip",
+  "size": 123957610,
+  "sha256": "9f4e8a30d69ed7cc0088dd3d218ac65bd4e26aa5b7bffcb2ebd7dcb74a4ff2a6",
+  "integrity": "vendor md5 verified"
+ }
+}

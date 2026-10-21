@@ -31,8 +31,11 @@ import urllib.request
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-BASE = ROOT / "tools" / ".cache" / "postgres"
-DL = BASE / "dl"
+# Downloads stay in the repo cache (gitignored). The SERVER lives in an ASCII-only directory OUTSIDE the repo: PostgreSQL cannot start
+# from a path with Vietnamese diacritics (the workspace root is "Lap trinh" with diacritics; same family of bug as Tesseract, see the
+# workspace CLAUDE.md). Default: %LOCALAPPDATA%/geofabric-runtime/postgres (no admin rights, no service); override with GEOFABRIC_RUNTIME_DIR.
+DL = ROOT / "tools" / ".cache" / "postgres" / "dl"
+BASE = pathlib.Path(os.environ.get("GEOFABRIC_RUNTIME_DIR") or (pathlib.Path(os.environ["LOCALAPPDATA"]) / "geofabric-runtime" / "postgres"))
 PGHOME = BASE / "pg16"
 DATA = BASE / "data"
 PORT = 5433
@@ -42,14 +45,30 @@ GIS_URL = "https://download.osgeo.org/postgis/windows/pg16/postgis-bundle-pg16-3
 GIS_MD5 = "6730107131c29b7ff9a36702f736007b"
 
 
+LOCK = ROOT / "tools" / "postgis.lock.json"
+# exact sizes observed on 2026-10-20 (HEAD request); a different size means a different file: stop
+PINNED = {
+    "postgresql-16.9-1-windows-x64-binaries.zip": {"url": PG_URL, "size": 314500604},
+    "postgis-bundle-pg16-3.6.2x64.zip": {"url": GIS_URL, "size": 123957610, "md5": GIS_MD5},
+}
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        raise SystemExit("STOP: the download URL redirected; the pinned URLs are expected to answer directly. Investigate before continuing.")
+
+
 def fetch(url: str, dest: pathlib.Path):
     if dest.exists():
         return
     DL.mkdir(parents=True, exist_ok=True)
     print("downloading", url)
+    opener = urllib.request.build_opener(_NoRedirect())
     tmp = dest.with_suffix(".part")
-    with urllib.request.urlopen(url) as r, open(tmp, "wb") as f:
-        shutil.copyfileobj(r, f, 1 << 20)
+    with opener.open(url) as r:
+        print("  status", r.status, "length", r.headers.get("Content-Length"), "server", r.headers.get("Server"))
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(r, f, 1 << 20)
     tmp.rename(dest)
 
 
@@ -62,21 +81,24 @@ def digest(path: pathlib.Path, algo: str) -> str:
 
 
 def download():
-    pg, gis = DL / "postgresql-16.9-1-windows-x64-binaries.zip", DL / "postgis-bundle-pg16-3.6.2x64.zip"
-    fetch(PG_URL, pg)
-    fetch(GIS_URL, gis)
-    if digest(gis, "md5") != GIS_MD5:
-        gis.unlink()
-        sys.exit("PostGIS bundle md5 mismatch: deleted, nothing was extracted")
-    sums = DL / "SHA256SUMS"
-    known = dict(l.split("  ", 1)[::-1] for l in sums.read_text().splitlines()) if sums.exists() else {}
-    for p in (pg, gis):
-        d = digest(p, "sha256")
-        if p.name in known and known[p.name] != d:
-            sys.exit(f"{p.name}: sha256 changed since the first download - refusing to continue")
-        known[p.name] = d
-    sums.write_text("".join(f"{d}  {n}\n" for n, d in known.items()))
-    print("ok: archives verified (PostGIS md5 matches the published one; sha256s recorded)")
+    lock = json.loads(LOCK.read_text()) if LOCK.exists() else {}
+    for name, pin in PINNED.items():
+        path = DL / name
+        fetch(pin["url"], path)
+        if path.stat().st_size != pin["size"]:
+            path.unlink()
+            sys.exit(f"STOP: {name} has {path.stat().st_size} bytes, expected {pin['size']}: deleted, nothing extracted")
+        if "md5" in pin and digest(path, "md5") != pin["md5"]:
+            path.unlink()
+            sys.exit(f"STOP: {name} md5 does not match the vendor-published value: deleted")
+        sha = digest(path, "sha256")
+        if name in lock and lock[name]["sha256"] != sha:
+            sys.exit(f"STOP: {name} sha256 differs from the locked value in {LOCK.name}")
+        lock.setdefault(name, {"url": pin["url"], "size": pin["size"], "sha256": sha,
+                               "integrity": "vendor md5 verified" if "md5" in pin else "trusted on first acquisition over HTTPS; locally pinned SHA-256"})
+        print(f"  {name}: {lock[name]['integrity']}; sha256 {sha}")
+    LOCK.write_text(json.dumps(lock, indent=1))
+    print("ok: archives verified; lock manifest:", LOCK)
 
 
 def exe(name: str) -> str:
@@ -84,7 +106,10 @@ def exe(name: str) -> str:
 
 
 def run(cmd, **kw):
-    return subprocess.run(cmd, check=True, text=True, capture_output=True, **kw)
+    r = subprocess.run(cmd, text=True, capture_output=True, **kw)
+    if r.returncode != 0:
+        sys.exit("STOP: " + pathlib.Path(cmd[0]).name + " failed (" + str(r.returncode) + ")" + chr(10) + r.stdout[-1500:] + chr(10) + r.stderr[-2500:])
+    return r
 
 
 def psql(sql: str, db: str = "postgres", user: str = "gf_admin", password: str | None = None):
@@ -96,8 +121,9 @@ def setup():
     download()
     if not (PGHOME / "pgsql").exists():
         PGHOME.mkdir(parents=True, exist_ok=True)
+        skip = ("pgsql/pgAdmin 4/", "pgsql/doc/", "pgsql/StackBuilder/", "pgsql/include/")  # not needed to run a server (~18,000 files)
         with zipfile.ZipFile(DL / "postgresql-16.9-1-windows-x64-binaries.zip") as z:
-            z.extractall(PGHOME)
+            z.extractall(PGHOME, members=[m for m in z.namelist() if not m.startswith(skip)])
         # the PostGIS bundle is laid out as the PostgreSQL tree (bin, lib, share): copy it over the server tree
         tmp = BASE / "gis-extract"
         with zipfile.ZipFile(DL / "postgis-bundle-pg16-3.6.2x64.zip") as z:

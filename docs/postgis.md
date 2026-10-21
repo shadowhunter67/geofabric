@@ -1,6 +1,6 @@
 # PostGIS in GeoFabric (optional engine)
 
-Design and decisions: `adr/ADR-013-postgis-engine.md`. Architecture: `docs/architecture/engine-postgis.md`. Status: **implemented and tested without a database; never run against a live server** (see "What is verified" below).
+Design and decisions: `adr/ADR-013-postgis-engine.md`. Architecture: `docs/architecture/engine-postgis.md`. Status: **implemented and verified against a live PostgreSQL 16.9 / PostGIS 3.6.2** (2026-10-21; evidence: `REPORT-GEOFABRIC-POSTGIS-LIVE-VERIFICATION.md`). No cost model yet: the planner never picks it on predicted cost (R5d).
 
 ## What it is
 
@@ -11,11 +11,13 @@ An additional *execution engine* for plans whose data is resident in a PostgreSQ
 | component | version | source |
 |---|---|---|
 | PostgreSQL | 16.9 (minimum accepted by the probe: 14) | EnterpriseDB portable zip (`postgresql-16.9-1-windows-x64-binaries.zip`) |
-| PostGIS | 3.6.2 (minimum: 3.3) | osgeo.org bundle `postgis-bundle-pg16-3.6.2x64.zip`, md5 `6730107131c29b7ff9a36702f736007b` |
+| PostGIS | 3.6.2 (minimum: 3.3) | osgeo.org bundle `postgis-bundle-pg16-3.6.2x64.zip`, vendor md5 verified; SHA-256 pinned in `tools/postgis.lock.json` |
+
+Integrity wording (exact): PostgreSQL = *trusted on first acquisition over HTTPS; locally pinned SHA-256*. PostGIS = vendor checksum (md5) verified, plus the same locally pinned SHA-256. Redirects are refused; sizes are pinned.
 
 Native alternatives (an existing PostgreSQL ≥ 14 with PostGIS ≥ 3.3, Docker, Podman) work the same way: only the environment variables below matter. Docker/Podman/WSL were not present on the development machine.
 
-## Setup (portable, no admin rights, no service) — NOT RUN YET
+## Setup (portable, no admin rights, no service)
 
 ```
 python tools/postgis_portable.py setup     # download + verify (md5 / recorded sha256), extract, initdb (UTF8, C locale), roles, extension
@@ -24,7 +26,7 @@ python scripts/postgis/load_data.py --parquet data/local/overture_places_hcm.par
        --logical-uri <the uri plans use>   # table + GiST index + ANALYZE + parity check + registers the source
 python tools/postgis_portable.py stop      # stops only the server this script started (PID from postmaster.pid)
 ```
-Roles: `gf_admin` (owner; setup/import) and `gf_reader` (SELECT only; what the gateway uses). Local development passwords are generated into `tools/.cache/postgres/credentials.json` (gitignored); nothing secret is committed. The port is bound to 127.0.0.1 and must stay there (the browser never talks to PostgreSQL).
+Roles: `gf_admin` (owner; setup/import) and `gf_reader` (SELECT only; what the gateway uses). The runtime directory is `%LOCALAPPDATA%\geofabric-runtime\postgres` (override: `GEOFABRIC_RUNTIME_DIR`): it must be an ASCII path outside the repo, because `initdb` fails on a path with Vietnamese diacritics. Local development passwords are generated into `credentials.json` there (never in the repo); nothing secret is committed. The port is bound to 127.0.0.1 and must stay there (the browser never talks to PostgreSQL).
 
 ## Configuration
 
@@ -48,12 +50,12 @@ OGC:CRS84 → SRID 4326, coordinates (lon, lat); CRS84 and EPSG:4326 are differe
 ## Tests
 
 * Without a database (part of `cargo test --workspace`, 34 tests): `crates/geo-engine-postgis/{src,tests}` (config redaction, catalog, CRS mapping, probe evaluation, SQLSTATE mapping, lowering goldens + PostgreSQL-grammar syntax check of every statement, injection, refusals, capability matrix, engine behaviour with a mock connector) and `crates/geo-runtime/tests/postgis.rs` (planner + runtime + health with the real DuckDB engine and a mock PostGIS).
-* With a database: `GEOFABRIC_POSTGIS_URL=… cargo test -p geo-engine-postgis --features live --test live` (probe, bound parameters, server-side timeout, server-side cancellation, bounded pool). Without the URL these tests print SKIP and pass — a skip is not evidence.
+* With a database: `GEOFABRIC_POSTGIS_URL=… [GEOFABRIC_POSTGIS_RO_URL=…] cargo test -p geo-engine-postgis --features live --test live` (8 tests: probe, bound/hostile parameters, failure taxonomy, read-only account, server-side timeout, server-side cancellation, bounded pool). Cross-engine: `cargo test -p geo-runtime --no-default-features --features postgis-live --test postgis_live` (17 plans; `GF_XE_*` variables name the data; `GF_BENCH=1` runs the benchmark). Without the URL these tests print SKIP and pass: a skip is not evidence, so report live and offline results separately.
 * Cross-engine correctness (needs the data loaded): run the same plan through `POST /api/query` with `"engine":"duckdb"` and `"engine":"postgis"` and compare `result_digest`; Demo B must give the same 27,624 ids as `python benchmarks/oracle_near.py`. Geometry comparison must use topological/normalized equality where byte equality is not stable.
 
 ## What is verified, what is not
 
-Verified (no database): lowering shape and syntax, parameterization, refusals, authorization order, cancellation before the call, row cap, error mapping, health blame, planner exclusion by residency/capability, R5d policy, graceful absence, arch rules. **Not verified**: that a real PostgreSQL/PostGIS accepts and answers the SQL; row/geometry parity with DuckDB; Demo B on PostGIS; index use; performance; the live driver (pool, statement timeout, cancel); the setup and import scripts. Do not treat any of these as done.
+Verified without a database: lowering shape and syntax, parameterization, refusals, authorization order, error mapping, health blame, planner exclusion, R5d, graceful absence, arch rules. Verified live (2026-10-21): see ADR-013 "Live verification". **Not done**: a measured PostGIS cost model (R5d stays), TLS, a second machine, a dataset that exists only in the database.
 
 ## Licences
 

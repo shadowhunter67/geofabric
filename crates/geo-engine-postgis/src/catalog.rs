@@ -54,6 +54,23 @@ pub struct PostGisSource {
     /// A GiST index exists on the geometry column (bbox filters can use it). Recorded after `CREATE INDEX` + `ANALYZE`.
     #[serde(default)]
     pub spatially_indexed: bool,
+    /// `[min_x, min_y, max_x, max_y]` in the source's CRS when the relation holds only the rows that intersect this region (a clipped
+    /// copy). A partial copy must never answer a question it cannot answer completely: the lowering refuses any plan that reads this
+    /// source other than through a `BboxFilter` whose window lies inside the coverage. `None` = the relation holds the whole source.
+    #[serde(default)]
+    pub coverage: Option<[f64; 4]>,
+    /// Columns of the relation that hold the file bbox COVERING box (the flattened GeoParquet `bbox` struct). When present,
+    /// `BboxFilter` is "covering overlaps the window", exactly like the engines that read the file.
+    #[serde(default)]
+    pub covering: Option<CoveringCols>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CoveringCols {
+    pub xmin: String,
+    pub ymin: String,
+    pub xmax: String,
+    pub ymax: String,
 }
 
 /// `[A-Za-z_][A-Za-z0-9_]{0,62}`: PostgreSQL identifiers we are willing to quote.
@@ -82,6 +99,18 @@ impl PostGisSource {
         if self.columns.contains_key(&self.geometry_column) {
             return Err("the geometry column must not be listed among the plain columns".into());
         }
+        if let Some(c) = &self.covering {
+            for n in [&c.xmin, &c.ymin, &c.xmax, &c.ymax] {
+                if !valid_identifier(n) {
+                    return Err(format!("covering column {n:?} is not a plain identifier"));
+                }
+            }
+        }
+        if let Some(c) = self.coverage {
+            if !c.iter().all(|v| v.is_finite()) || c[0] >= c[2] || c[1] >= c[3] {
+                return Err("coverage must be [min_x, min_y, max_x, max_y] with min < max".into());
+            }
+        }
         let crs = parse_crs(&self.crs)?;
         if srid_for(&crs)? != self.srid {
             return Err(format!("srid {} does not match crs {} (expected {})", self.srid, self.crs, srid_for(&crs)?));
@@ -106,6 +135,18 @@ impl PostGisSource {
     }
 }
 
+/// The same file has several spellings: the access guard hands out the CANONICAL path (on Windows `\\?\C:\data\x.parquet`), a
+/// configuration naturally says `C:\data\x.parquet` or `C:/data/x.parquet`. Found by the first live run (a plan carried the
+/// canonical form while the catalog was keyed by the plain one: "source not resident"). Lookups compare the normalized form.
+pub fn normalize_uri(uri: &str) -> String {
+    let u = uri.strip_prefix("\\\\?\\").unwrap_or(uri).replace('\\', "/");
+    if cfg!(windows) {
+        u.to_lowercase()
+    } else {
+        u
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct PostGisCatalog {
     by_uri: BTreeMap<String, PostGisSource>,
@@ -116,7 +157,7 @@ impl PostGisCatalog {
         let mut by_uri = BTreeMap::new();
         for s in sources {
             s.validate().map_err(|e| format!("{}: {e}", s.logical_uri))?;
-            if by_uri.insert(s.logical_uri.clone(), s.clone()).is_some() {
+            if by_uri.insert(normalize_uri(&s.logical_uri), s.clone()).is_some() {
                 return Err(format!("{}: listed twice", s.logical_uri));
             }
         }
@@ -124,7 +165,7 @@ impl PostGisCatalog {
     }
 
     pub fn get(&self, logical_uri: &str) -> Option<&PostGisSource> {
-        self.by_uri.get(logical_uri)
+        self.by_uri.get(&normalize_uri(logical_uri))
     }
 
     pub fn len(&self) -> usize {
@@ -152,6 +193,8 @@ pub(crate) fn test_source(uri: &str, relation: &str) -> PostGisSource {
         columns: [("id", PgColType::Int), ("class", PgColType::Text), ("height", PgColType::Float)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(1000),
         spatially_indexed: true,
+        coverage: None,
+        covering: None,
     }
 }
 
@@ -166,6 +209,20 @@ mod tests {
         }
         for bad in ["", "1a", "a b", "a\"b", "a;drop", "a-b", &"x".repeat(64)] {
             assert!(!valid_identifier(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn the_canonical_and_the_plain_spelling_of_a_path_are_the_same_source() {
+        let c = PostGisCatalog::new(vec![test_source("C:\\Data\\Places.parquet", "places")]).unwrap();
+        // forward slashes and the verbatim prefix of the canonical form name the same file
+        assert!(c.get("C:/Data/Places.parquet").is_some());
+        assert!(c.get("\\\\?\\C:\\Data\\Places.parquet").is_some());
+        assert!(c.get("C:\\Data\\Other.parquet").is_none());
+        if cfg!(windows) {
+            assert!(c.get("\\\\?\\c:\\data\\places.parquet").is_some(), "case-insensitive on Windows");
+            let dup = PostGisCatalog::new(vec![test_source("C:\\a\\x.parquet", "x"), test_source("\\\\?\\C:\\A\\X.parquet", "y")]);
+            assert!(dup.unwrap_err().contains("twice"), "two spellings of one file are a duplicate");
         }
     }
 

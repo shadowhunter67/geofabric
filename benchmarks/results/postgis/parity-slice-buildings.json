@@ -1,0 +1,105 @@
+{
+ "table": "buildings",
+ "source_file": "E:\\L\u1eadp tr\u00ecnh\\l\u1eadp tr\u00ecnh\\6-du-an-khac\\geofabric\\benchmarks\\data\\overture_buildings_vn_south.parquet",
+ "clip_bbox": [
+  106.66,
+  10.74,
+  106.74,
+  10.82
+ ],
+ "columns_stored": [
+  "id",
+  "level",
+  "height",
+  "min_height",
+  "is_underground",
+  "num_floors",
+  "num_floors_underground",
+  "min_floor",
+  "subtype",
+  "class",
+  "facade_color",
+  "facade_material",
+  "roof_material",
+  "roof_shape",
+  "roof_direction",
+  "roof_orientation",
+  "roof_color",
+  "roof_height",
+  "has_parts",
+  "version",
+  "bbox_xmin",
+  "bbox_ymin",
+  "bbox_xmax",
+  "bbox_ymax"
+ ],
+ "columns_not_stored": [
+  "names",
+  "sources"
+ ],
+ "parity": {
+  "rows": [
+   173232,
+   173232
+  ],
+  "id_set_equal": true,
+  "distinct_ids": [
+   173232,
+   173232
+  ],
+  "null_geometries": [
+   0,
+   0
+  ],
+  "geometry_types": [
+   {
+    "POLYGON": 173229,
+    "MULTIPOLYGON": 3
+   },
+   {
+    "MULTIPOLYGON": 3,
+    "POLYGON": 173229
+   }
+  ],
+  "srid_values": [
+   "4326"
+  ],
+  "id_geometry_digest_equal": true,
+  "digest_source": 99963121556345949306331,
+  "digest_postgis": 99963121556345949306331,
+  "covering_columns": {
+   "xmin": "bbox_xmin",
+   "ymin": "bbox_ymin",
+   "xmax": "bbox_xmax",
+   "ymax": "bbox_ymax"
+  },
+  "covering_digest_equal": true,
+  "covering_digest_source": 100028937655879137074209,
+  "covering_digest_postgis": 100028937655879137074209
+ },
+ "parity_ok": true,
+ "invalid_geometries_reported_not_repaired": 0,
+ "indexes": [
+  {
+   "name": "buildings_geometry_gix",
+   "definition": "CREATE INDEX buildings_geometry_gix ON geofabric.buildings USING gist (geometry)"
+  },
+  {
+   "name": "buildings_covering_gix",
+   "definition": "CREATE INDEX buildings_covering_gix ON geofabric.buildings USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+  }
+ ],
+ "analyze": {
+  "last_analyze": "2026-10-21 08:41:15.422758+07",
+  "reltuples": 173232,
+  "relpages": 5312
+ },
+ "sizes_bytes": {
+  "table_with_indexes": 57753600,
+  "table_heap": 43515904
+ },
+ "seconds": {
+  "copy": 2.8,
+  "index_and_analyze": 0.8
+ }
+}

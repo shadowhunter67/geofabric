@@ -63,7 +63,19 @@ struct Out {
     name: String,
     schema: SpatialSchema,
     cols: BTreeMap<String, Col>,
+    /// The file bbox COVERING columns travel with the rows as hidden columns `__cov_xmin..__cov_ymax` while the chain preserves them
+    /// (Filter, BboxFilter, Intersects, Limit, Sort - exactly where the DuckDB lowering keeps its covering). `BboxFilter` then means
+    /// "the covering box overlaps the window", the definition every other engine uses. Cleared by Transform, Project, Aggregate, joins.
+    cov: Option<Cov>,
 }
+
+#[derive(Clone)]
+struct Cov {
+    geom: String,
+    crs: Crs,
+}
+
+const COV: [&str; 4] = ["__cov_xmin", "__cov_ymin", "__cov_xmax", "__cov_ymax"];
 
 struct Lower<'a> {
     plan: &'a Plan,
@@ -74,13 +86,15 @@ struct Lower<'a> {
     params: Vec<Param>,
     sources: BTreeSet<String>,
     dropped: BTreeSet<String>,
+    /// > 0 while compiling the right-hand input of a semi join (see `BboxFilter`)
+    inner: usize,
 }
 
 /// Lower `plan` for a database that holds the sources in `catalog`. `max_rows` caps the result (`max_rows + 1` rows are
 /// requested so the caller can tell "exactly the cap" from "over the cap", as in the DuckDB engine).
 pub fn lower(plan: &Plan, catalog: &PostGisCatalog, max_rows: u64) -> Result<Lowered, LowerError> {
     let schemas = plan.schemas().map_err(|e| LowerError::Invalid(e.to_string()))?;
-    let mut l = Lower { plan, catalog, schemas, memo: HashMap::new(), ctes: Vec::new(), params: Vec::new(), sources: BTreeSet::new(), dropped: BTreeSet::new() };
+    let mut l = Lower { plan, catalog, schemas, memo: HashMap::new(), ctes: Vec::new(), params: Vec::new(), sources: BTreeSet::new(), dropped: BTreeSet::new(), inner: 0 };
     let root = plan.root.clone();
     let out = l.node(&root)?;
     let with = l.ctes.iter().map(|(n, s)| format!("{} AS ({})", q_ident(n), s)).collect::<Vec<_>>().join(",\n");
@@ -147,6 +161,17 @@ impl<'a> Lower<'a> {
             })
             .collect::<Vec<_>>()
             .join(", ")
+    }
+
+    /// The select list of a node that passes its input through unchanged (hidden covering columns included).
+    fn pass_list(i: &Out) -> String {
+        let mut list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+        if i.cov.is_some() {
+            for c in COV {
+                list += &format!(", {}", q_ident(c));
+            }
+        }
+        list
     }
 
     fn need_col<'o>(out: &'o Out, name: &str, what: &str) -> Result<&'o Col, LowerError> {
@@ -268,6 +293,31 @@ impl<'a> Lower<'a> {
                     return Err(LowerError::Unsupported(format!("source format {format:?}")));
                 }
                 let src = self.resident(uri)?;
+                if let Some(cov) = src.coverage {
+                    // a clipped copy answers only what lies inside its coverage: every consumer of this source must be a bbox filter
+                    // on its geometry column whose window is inside the coverage, or the plan would silently see fewer rows than
+                    // the logical source holds (the other engines see all of them)
+                    let consumers: Vec<&PlanNode> = plan.nodes.values().filter(|n| n.inputs().contains(&id)).collect();
+                    if consumers.is_empty() {
+                        return Err(LowerError::Unsupported(format!("{uri}: the relation is a clipped copy (coverage {cov:?}); an unwindowed read of the whole source cannot be answered from it")));
+                    }
+                    for c in consumers {
+                        match c {
+                            PlanNode::BboxFilter { geometry_column, bbox, .. }
+                                if *geometry_column == src.geometry_column
+                                    && *bbox.crs() == src.crs_value()
+                                    && bbox.min_x() >= cov[0]
+                                    && bbox.min_y() >= cov[1]
+                                    && bbox.max_x() <= cov[2]
+                                    && bbox.max_y() <= cov[3] => {}
+                            _ => {
+                                return Err(LowerError::Unsupported(format!(
+                                    "{uri}: the relation is a clipped copy (coverage {cov:?}); it can only be read through a bbox filter whose window lies inside the coverage"
+                                )))
+                            }
+                        }
+                    }
+                }
                 let g = schema
                     .geometry(&src.geometry_column)
                     .ok_or_else(|| LowerError::Unsupported(format!("{uri}: the plan's schema has no geometry column {:?}", src.geometry_column)))?;
@@ -288,14 +338,21 @@ impl<'a> Lower<'a> {
                     }
                 }
                 self.sources.insert(uri.clone());
-                let list = Self::select_list(schema, &cols, "", &BTreeMap::new());
+                let mut list = Self::select_list(schema, &cols, "", &BTreeMap::new());
+                let mut cov = None;
+                if let Some(c) = &src.covering {
+                    for (alias, col) in COV.iter().zip([&c.xmin, &c.ymin, &c.xmax, &c.ymax]) {
+                        list += &format!(", {} AS {}", q_ident(col), q_ident(alias));
+                    }
+                    cov = Some(Cov { geom: src.geometry_column.clone(), crs: g.crs.clone() });
+                }
                 let name = self.push(format!("SELECT {list} FROM {}", src.qualified()));
-                Ok(Out { name, schema: self.schema_of(id)?, cols })
+                Ok(Out { name, schema: self.schema_of(id)?, cols, cov })
             }
             PlanNode::Filter { input, predicate } => {
                 let i = self.node(input)?;
                 let w = self.expr(&i, predicate)?;
-                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let list = Self::pass_list(&i);
                 let name = self.push(format!("SELECT {list} FROM {} WHERE {w}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
@@ -307,13 +364,28 @@ impl<'a> Lower<'a> {
                 }
                 let srid = srid_for(&crs).map_err(LowerError::Unsupported)?;
                 let (x0, y0, x1, y1) = (self.float(bbox.min_x())?, self.float(bbox.min_y())?, self.float(bbox.max_x())?, self.float(bbox.max_y())?);
-                // `&&` is the bounding-box overlap operator (closed intervals, index-assisted): the same rule as the covering-column test
-                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
-                let name = self.push(format!(
-                    "SELECT {list} FROM {} WHERE {} && ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid})",
-                    q_ident(&i.name),
-                    q_ident(geometry_column)
-                ));
+                let g = q_ident(geometry_column);
+                let list = Self::pass_list(&i);
+                let covered = i.cov.as_ref().is_some_and(|c| c.geom == *geometry_column && c.crs == crs);
+                // The right-hand input of a semi join is probed once PER LEFT ROW. There the envelope `&&` (an index assist for a standalone
+                // windowed scan) is a pessimization: on 3.8 M buildings the planner repeated the covering-index probe 41,150 times
+                // (10.4 s); with only the exact comparisons, which decide the result anyway, the same plan took 0.9 s. Results are unchanged.
+                let assist = self.inner == 0;
+                let pred = if covered {
+                    // The definition the other engines use: the file covering box overlaps the window, in exact double arithmetic.
+                    // (Overture covering boxes are padded by up to ~1.6 m; `&&` on the geometry, whose float4 box differs again, gave
+                    // 41,165 rows where DuckDB and the browser give 41,150 - found by the first live cross-check.) The envelope
+                    // overlap first lets a functional GiST index on the covering envelope prune; the four comparisons decide.
+                    let env = format!("ST_MakeEnvelope({}, {}, {}, {}, {srid})", q_ident(COV[0]), q_ident(COV[1]), q_ident(COV[2]), q_ident(COV[3]));
+                    let exact = format!("{} <= {x1} AND {} >= {x0} AND {} <= {y1} AND {} >= {y0}", q_ident(COV[0]), q_ident(COV[2]), q_ident(COV[1]), q_ident(COV[3]));
+                    if assist { format!("{env} && ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid}) AND {exact}") } else { exact }
+                } else {
+                    // No covering (or it was lost on the way): exact envelope overlap like DuckDB fallback; `&&` is the index-assisted,
+                    // outward-rounded prefilter that can only add candidates, ST_Intersects on the exact envelope decides.
+                    let exact = format!("ST_Intersects(ST_Envelope({g}), ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid}))");
+                    if assist { format!("{g} && ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid}) AND {exact}") } else { exact }
+                };
+                let name = self.push(format!("SELECT {list} FROM {} WHERE {pred}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
             PlanNode::Intersects { input, geometry_column, with } => {
@@ -327,7 +399,7 @@ impl<'a> Lower<'a> {
                 }
                 let srid = srid_for(&crs).map_err(LowerError::Unsupported)?;
                 let w = self.bind(Param::Text(with.wkt.clone()), "text");
-                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let list = Self::pass_list(&i);
                 let name = self.push(format!(
                     "SELECT {list} FROM {} WHERE ST_Intersects({}, ST_GeomFromText({w}, {srid}))",
                     q_ident(&i.name),
@@ -352,11 +424,14 @@ impl<'a> Lower<'a> {
                 replace.insert(output_column.clone(), t);
                 let list = Self::select_list(&schema, &cols, "", &replace);
                 let name = self.push(format!("SELECT {list} FROM {}", q_ident(&i.name)));
-                Ok(Out { name, schema, cols })
+                Ok(Out { name, schema, cols, cov: None })
             }
             PlanNode::SpatialSemiJoin { left, right, left_column, right_column, predicate } => {
                 let l = self.node(left)?;
-                let r = self.node(right)?;
+                self.inner += 1;
+                let r = self.node(right);
+                self.inner -= 1;
+                let r = r?;
                 let lc = Self::geometry_of(&l, left_column, "semi join (left)")?;
                 let rc = Self::geometry_of(&r, right_column, "semi join (right)")?;
                 if lc != rc {
@@ -384,7 +459,7 @@ impl<'a> Lower<'a> {
                     q_ident(&l.name),
                     q_ident(&r.name)
                 ));
-                Ok(Out { name, schema: self.schema_of(id)?, cols: l.cols })
+                Ok(Out { name, schema: self.schema_of(id)?, cols: l.cols, cov: None })
             }
             PlanNode::Buffer { .. } => Err(LowerError::Unsupported("buffer (not needed since SpatialSemiJoin; not implemented for PostGIS)".into())),
             PlanNode::SpatialJoin { .. } => Err(LowerError::Unsupported("spatial join (deferred: pair-producing joins are not in PostGIS v0)".into())),
@@ -427,7 +502,7 @@ impl<'a> Lower<'a> {
                     sql += &format!(" GROUP BY {}", group_by.iter().map(|g| q_ident(g)).collect::<Vec<_>>().join(", "));
                 }
                 let name = self.push(sql);
-                Ok(Out { name, schema: self.schema_of(id)?, cols })
+                Ok(Out { name, schema: self.schema_of(id)?, cols, cov: None })
             }
             PlanNode::Project { input, columns } => {
                 let i = self.node(input)?;
@@ -437,12 +512,12 @@ impl<'a> Lower<'a> {
                 }
                 let sel = columns.iter().map(|c| q_ident(c)).collect::<Vec<_>>().join(", ");
                 let name = self.push(format!("SELECT {sel} FROM {}", q_ident(&i.name)));
-                Ok(Out { name, schema: self.schema_of(id)?, cols })
+                Ok(Out { name, schema: self.schema_of(id)?, cols, cov: None })
             }
             PlanNode::Limit { input, n: lim } => {
                 let i = self.node(input)?;
                 let p = self.bind(Param::Int(i64::try_from(*lim).unwrap_or(i64::MAX)), "bigint");
-                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let list = Self::pass_list(&i);
                 let name = self.push(format!("SELECT {list} FROM {} LIMIT {p}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
@@ -461,7 +536,7 @@ impl<'a> Lower<'a> {
                     };
                     ob.push(format!("{}{coll} {} NULLS LAST", q_ident(&k.column), if k.descending { "DESC" } else { "ASC" }));
                 }
-                let list = Self::select_list(&i.schema, &i.cols, "", &BTreeMap::new());
+                let list = Self::pass_list(&i);
                 let name = self.push(format!("SELECT {list} FROM {} ORDER BY {}", q_ident(&i.name), ob.join(", ")));
                 Ok(Out { name, ..i })
             }

@@ -62,16 +62,23 @@ async fn main() {
     for id in duplicate_ids {
         eprintln!("warning: source '{id}' appears in multiple --data directories; using the first");
     }
-    let mut rt = tokio::task::spawn_blocking(Runtime::with_duckdb_and_browser).await.unwrap();
-    // PostGIS is optional: configured through GEOFABRIC_POSTGIS_* (docs/postgis.md); anything wrong here disables it, never the gateway
-    match rt.register_postgis_from_env() {
-        Ok(true) => {
-            rt.probe_postgis();
-            eprintln!("PostGIS engine registered (probe: {})", rt.postgis_status()["probe"]);
+    // The synchronous PostgreSQL driver cannot connect on an async-runtime thread (it panics: "cannot start a runtime from within a
+    // runtime" - found by the first live run), so the engine set-up and its probe run on a blocking thread, like every query.
+    // PostGIS is optional: configured through GEOFABRIC_POSTGIS_* (docs/postgis.md); anything wrong here disables it, never the gateway.
+    let mut rt = tokio::task::spawn_blocking(|| {
+        let mut rt = Runtime::with_duckdb_and_browser();
+        match rt.register_postgis_from_env() {
+            Ok(true) => {
+                rt.probe_postgis();
+                eprintln!("PostGIS engine registered (probe: {})", rt.postgis_status()["probe"]);
+            }
+            Ok(false) => {}
+            Err(e) => eprintln!("PostGIS configuration error: {e} (PostGIS stays disabled)"),
         }
-        Ok(false) => {}
-        Err(e) => eprintln!("PostGIS configuration error: {e} (PostGIS stays disabled)"),
-    }
+        rt
+    })
+    .await
+    .unwrap();
     let mut pcfg = rt.planner_config().clone();
     if args.iter().any(|a| a == "--no-browser") {
         pcfg.allow_browser = false;

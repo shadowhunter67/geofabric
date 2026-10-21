@@ -21,7 +21,7 @@ pub mod live;
 pub mod lower;
 pub mod probe;
 
-pub use catalog::{PgColType, PostGisCatalog, PostGisSource};
+pub use catalog::{CoveringCols, PgColType, PostGisCatalog, PostGisSource};
 pub use config::PostGisConfig;
 pub use connector::{Param, PgConnector, PgError, PgErrorKind, PgQuery, UnavailableConnector};
 pub use engine::PostGisEngine;

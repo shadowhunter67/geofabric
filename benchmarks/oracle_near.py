@@ -62,7 +62,15 @@ def main():
     ap.add_argument("--bbox", type=float, nargs=4, default=[106.68, 10.76, 106.72, 10.80])
     ap.add_argument("--distance", type=float, default=200.0)
     ap.add_argument("--out", default=str(ROOT / "benchmarks" / "results" / "oracle-near.json"))
+    # other data (PostGIS live verification): the same question on other sources and on several engines
+    ap.add_argument("--buildings-file", default=str(BUILDINGS))
+    ap.add_argument("--roads-file", default=str(ROADS))
+    ap.add_argument("--buildings-source", default="overture_buildings_vn_south", help="source id at the gateway")
+    ap.add_argument("--roads-source", default="overture_transport_hcm")
+    ap.add_argument("--classes", default=",".join(MAIN), help="road classes that count as main roads")
+    ap.add_argument("--engines", default="", help="comma list (e.g. duckdb,postgis): run GeoFabric once per engine and require each to match the oracle")
     a = ap.parse_args()
+    main_classes = [c for c in a.classes.split(",") if c]
     x0, y0, x1, y1 = a.bbox
     t0 = time.time()
 
@@ -74,8 +82,8 @@ def main():
     # road candidates: the window grown by the distance (conservative degree margins; a prefilter only, the decision is metric)
     mlat = a.distance / 110_574.0 * 1.02
     mlon = a.distance / (111_320.0 * np.cos(np.radians(max(abs(y0), abs(y1)) + 0.01))) * 1.02
-    b_ids, b_geo = read(BUILDINGS, a.bbox)
-    r_ids, r_geo = read(ROADS, [x0 - mlon, y0 - mlat, x1 + mlon, y1 + mlat], pc.field("class").isin(MAIN))
+    b_ids, b_geo = read(pathlib.Path(a.buildings_file), a.bbox)
+    r_ids, r_geo = read(pathlib.Path(a.roads_file), [x0 - mlon, y0 - mlat, x1 + mlon, y1 + mlat], pc.field("class").isin(main_classes))
     bm, rm = project(b_geo, tr), project(r_geo, tr)
     tree = STRtree(rm)
     hits = tree.query(bm, predicate="dwithin", distance=a.distance)  # shape (2, n): input index, tree index
@@ -101,22 +109,32 @@ def main():
     oracle_time = time.time() - t0
 
     # --- GeoFabric ---------------------------------------------------------------------------------------------------
-    with_ = {"source": "overture_transport_hcm", "filter": {"column": "class", "op": "in", "values": MAIN}, "distance_m": a.distance}
-    base = {"source": "overture_buildings_vn_south", "bbox": a.bbox, "crs": "OGC:CRS84", "with": with_, "browser": False}
-    t1 = time.time()
-    near = post(a.gateway + "/api/query", {**base, "kind": "near", "limit": 100000})
-    count = post(a.gateway + "/api/query", {**base, "kind": "near_count"})
-    gf_time = time.time() - t1
-    gf_ids = sorted(f["properties"]["id"] for f in near["geojson"]["features"])
-    ids_equal = gf_ids == oracle_ids
+    with_ = {"source": a.roads_source, "filter": {"column": "class", "op": "in", "values": main_classes}, "distance_m": a.distance}
+    base = {"source": a.buildings_source, "bbox": a.bbox, "crs": "OGC:CRS84", "with": with_, "browser": False}
+    runs = {}
+    for engine in (a.engines.split(",") if a.engines else [None]):
+        eb = {**base, **({"engine": engine} if engine else {})}
+        t1 = time.time()
+        near = post(a.gateway + "/api/query", {**eb, "kind": "near", "limit": 100000})
+        count = post(a.gateway + "/api/query", {**eb, "kind": "near_count"})
+        ids = sorted(f["properties"]["id"] for f in near["geojson"]["features"])
+        runs[engine or "auto"] = {"engine_that_ran": (near.get("physical") or {}).get("engine"), "near_rows": len(ids), "near_count": count["rows"][0]["count"],
+                                  "count_engine": (count.get("physical") or {}).get("engine"), "ids_sha256": hashlib.sha256(chr(10).join(map(str, ids)).encode()).hexdigest(),
+                                  "seconds": round(time.time() - t1, 2), "ids_equal_oracle": ids == oracle_ids, "distinct_ids": len(set(ids)) == len(ids),
+                                  "only_oracle": sorted(set(oracle_ids) - set(ids))[:10], "only_engine": sorted(set(ids) - set(oracle_ids))[:10],
+                                  "metric_semantics": near.get("metric_semantics")}
+    first = next(iter(runs.values()))
+    gf_ids = None
+    gf_time = first["seconds"]
+    count = {"rows": [{"count": first["near_count"]}]}
+    near = {"metric_semantics": first["metric_semantics"]}
+    ids_equal = all(r["ids_equal_oracle"] and r["near_count"] == len(oracle_ids) and r["distinct_ids"] for r in runs.values())
     out = {
         "window": a.bbox, "distance_m": a.distance, "utm_epsg": epsg, "buildings_in_window": len(b_ids), "roads_considered": len(r_ids),
-        "oracle": {"near_count": len(oracle_ids), "ids_sha256": hashlib.sha256("\n".join(sorted(oracle_ids)).encode()).hexdigest(), "seconds": round(oracle_time, 1)},
-        "geofabric": {"near_rows": len(gf_ids), "near_count": count["rows"][0]["count"], "ids_sha256": hashlib.sha256("\n".join(gf_ids).encode()).hexdigest(),
-                      "seconds": round(gf_time, 1), "metric_semantics": near.get("metric_semantics")},
+        "oracle": {"near_count": len(oracle_ids), "ids_sha256": hashlib.sha256(chr(10).join(map(str, sorted(oracle_ids))).encode()).hexdigest(), "seconds": round(oracle_time, 1)},
+        "geofabric_runs": runs,
         "ids_equal": ids_equal,
-        "only_oracle": sorted(set(oracle_ids) - set(gf_ids))[:10], "only_geofabric": sorted(set(gf_ids) - set(oracle_ids))[:10],
-        "counts_equal": count["rows"][0]["count"] == len(oracle_ids) == len(gf_ids),
+        "counts_equal": all(r["near_count"] == len(oracle_ids) == r["near_rows"] for r in runs.values()),
         "geodesic_check": {"pairs_within_5pct_of_limit": len(close), "classification_flips_vs_geodesic": flips,
                            "note": "UTM planar distance vs WGS 84 ellipsoidal distance between the nearest points of each pair"},
     }

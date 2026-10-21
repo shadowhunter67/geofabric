@@ -1,0 +1,604 @@
+[
+  {
+    "case": "limit_unordered",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 20
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\" LIMIT $5::bigint)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n3\" LIMIT $6::bigint"
+  },
+  {
+    "case": "bbox_sort_limit",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 500
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" LIMIT $5::bigint)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "filter_eq_text",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "text",
+        "v": "school"
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n1\" WHERE \"class\" = $5::text),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\"),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "filter_in_or_isnull",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "text",
+        "v": "house"
+      },
+      {
+        "t": "text",
+        "v": "apartments"
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n1\" WHERE (\"class\" IN ($5::text, $6::text)) OR (\"height\" IS NULL)),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\"),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $7::bigint"
+  },
+  {
+    "case": "filter_numeric_and_not",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 9.0
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n1\" WHERE (\"height\" > $5::double precision) AND (NOT (\"class\" IS NULL))),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\"),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "sort_desc_nulls_then_id",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 40
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\" ORDER BY \"height\" DESC NULLS LAST, \"id\" COLLATE \"C\" ASC NULLS LAST),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" LIMIT $5::bigint)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "sort_text_asc_then_id",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 40
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\" ORDER BY \"class\" COLLATE \"C\" ASC NULLS LAST, \"id\" COLLATE \"C\" ASC NULLS LAST),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" LIMIT $5::bigint)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "aggregate_count_star",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT COUNT(*) AS \"n\" FROM \"n1\")\nSELECT \"n\" FROM \"n2\" LIMIT $5::bigint"
+  },
+  {
+    "case": "count_by_with_ties_and_null_group",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 50
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"class\", COUNT(*) AS \"count\" FROM \"n1\" GROUP BY \"class\"),\n\"n3\" AS (SELECT \"class\", \"count\" FROM \"n2\" ORDER BY \"count\" DESC NULLS LAST, \"class\" COLLATE \"C\" ASC NULLS LAST),\n\"n4\" AS (SELECT \"class\", \"count\" FROM \"n3\" LIMIT $5::bigint)\nSELECT \"class\", \"count\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "aggregate_min_max_avg_count_by_group",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"class\", MIN(\"height\") AS \"lo\", MAX(\"height\") AS \"hi\", AVG(\"height\")::double precision AS \"mean\", COUNT(\"height\") AS \"known\" FROM \"n1\" GROUP BY \"class\"),\n\"n3\" AS (SELECT \"class\", \"lo\", \"hi\", \"mean\", \"known\" FROM \"n2\" ORDER BY \"class\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"class\", \"lo\", \"hi\", \"mean\", \"known\" FROM \"n3\" LIMIT $5::bigint"
+  },
+  {
+    "case": "intersects_polygon",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "text",
+        "v": "POLYGON((106.688 10.768, 106.708 10.768, 106.708 10.788, 106.688 10.788, 106.688 10.768))"
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n1\" WHERE ST_Intersects(\"geometry\", ST_GeomFromText($5::text, 4326))),\n\"n3\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n2\"),\n\"n4\" AS (SELECT \"id\", \"class\", \"height\", \"geometry\" FROM \"n3\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", \"height\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n4\" LIMIT $6::bigint"
+  },
+  {
+    "case": "transform_to_utm48_column",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"geometry\", \"geometry_metric\" FROM \"n2\"),\n\"n4\" AS (SELECT \"id\", \"geometry\", \"geometry_metric\" FROM \"n3\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\", ST_AsBinary(\"geometry_metric\", 'NDR') AS \"geometry_metric\" FROM \"n4\" LIMIT $5::bigint"
+  },
+  {
+    "case": "semi_join_metric_200m",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 200.0
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"transport\"),\n\"n4\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n3\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($5::double precision, $6::double precision, $7::double precision, $8::double precision, 4326) AND \"__cov_xmin\" <= $7::double precision AND \"__cov_xmax\" >= $5::double precision AND \"__cov_ymin\" <= $8::double precision AND \"__cov_ymax\" >= $6::double precision),\n\"n5\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n4\"),\n\"n6\" AS (SELECT l.\"id\", l.\"level\", l.\"height\", l.\"min_height\", l.\"is_underground\", l.\"num_floors\", l.\"num_floors_underground\", l.\"min_floor\", l.\"subtype\", l.\"class\", l.\"facade_color\", l.\"facade_material\", l.\"roof_material\", l.\"roof_shape\", l.\"roof_direction\", l.\"roof_orientation\", l.\"roof_color\", l.\"roof_height\", l.\"geometry\", l.\"has_parts\", l.\"version\", l.\"geometry_metric\" FROM \"n2\" AS l WHERE EXISTS (SELECT 1 FROM \"n5\" AS r WHERE ST_DWithin(l.\"geometry_metric\", r.\"geometry_metric\", $9::double precision))),\n\"n7\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n6\"),\n\"n8\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n7\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n8\" LIMIT $10::bigint"
+  },
+  {
+    "case": "semi_join_metric_50m",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 50.0
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"transport\"),\n\"n4\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n3\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($5::double precision, $6::double precision, $7::double precision, $8::double precision, 4326) AND \"__cov_xmin\" <= $7::double precision AND \"__cov_xmax\" >= $5::double precision AND \"__cov_ymin\" <= $8::double precision AND \"__cov_ymax\" >= $6::double precision),\n\"n5\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n4\"),\n\"n6\" AS (SELECT l.\"id\", l.\"level\", l.\"height\", l.\"min_height\", l.\"is_underground\", l.\"num_floors\", l.\"num_floors_underground\", l.\"min_floor\", l.\"subtype\", l.\"class\", l.\"facade_color\", l.\"facade_material\", l.\"roof_material\", l.\"roof_shape\", l.\"roof_direction\", l.\"roof_orientation\", l.\"roof_color\", l.\"roof_height\", l.\"geometry\", l.\"has_parts\", l.\"version\", l.\"geometry_metric\" FROM \"n2\" AS l WHERE EXISTS (SELECT 1 FROM \"n5\" AS r WHERE ST_DWithin(l.\"geometry_metric\", r.\"geometry_metric\", $9::double precision))),\n\"n7\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n6\"),\n\"n8\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n7\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n8\" LIMIT $10::bigint"
+  },
+  {
+    "case": "demo_b_count_template_shape",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 106.67813438906768
+      },
+      {
+        "t": "double precision",
+        "v": 10.758155081664768
+      },
+      {
+        "t": "double precision",
+        "v": 106.72186561093233
+      },
+      {
+        "t": "double precision",
+        "v": 10.801844918335233
+      },
+      {
+        "t": "text",
+        "v": "motorway"
+      },
+      {
+        "t": "text",
+        "v": "trunk"
+      },
+      {
+        "t": "text",
+        "v": "primary"
+      },
+      {
+        "t": "double precision",
+        "v": 200.0
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"transport\"),\n\"n4\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n3\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($5::double precision, $6::double precision, $7::double precision, $8::double precision, 4326) AND \"__cov_xmin\" <= $7::double precision AND \"__cov_xmax\" >= $5::double precision AND \"__cov_ymin\" <= $8::double precision AND \"__cov_ymax\" >= $6::double precision),\n\"n5\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n4\" WHERE \"class\" IN ($9::text, $10::text, $11::text)),\n\"n6\" AS (SELECT \"geometry\" FROM \"n5\"),\n\"n7\" AS (SELECT ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry\" FROM \"n6\"),\n\"n8\" AS (SELECT l.\"id\", l.\"level\", l.\"height\", l.\"min_height\", l.\"is_underground\", l.\"num_floors\", l.\"num_floors_underground\", l.\"min_floor\", l.\"subtype\", l.\"class\", l.\"facade_color\", l.\"facade_material\", l.\"roof_material\", l.\"roof_shape\", l.\"roof_direction\", l.\"roof_orientation\", l.\"roof_color\", l.\"roof_height\", l.\"geometry\", l.\"has_parts\", l.\"version\", l.\"geometry_metric\" FROM \"n2\" AS l WHERE EXISTS (SELECT 1 FROM \"n7\" AS r WHERE ST_DWithin(l.\"geometry_metric\", r.\"geometry\", $12::double precision))),\n\"n9\" AS (SELECT COUNT(*) AS \"count\" FROM \"n8\")\nSELECT \"count\" FROM \"n9\" LIMIT $13::bigint"
+  },
+  {
+    "case": "demo_b_ids_template_shape",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 106.67813438906768
+      },
+      {
+        "t": "double precision",
+        "v": 10.758155081664768
+      },
+      {
+        "t": "double precision",
+        "v": 106.72186561093233
+      },
+      {
+        "t": "double precision",
+        "v": 10.801844918335233
+      },
+      {
+        "t": "text",
+        "v": "motorway"
+      },
+      {
+        "t": "text",
+        "v": "trunk"
+      },
+      {
+        "t": "text",
+        "v": "primary"
+      },
+      {
+        "t": "double precision",
+        "v": 200.0
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry_metric\" FROM \"n1\"),\n\"n3\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"transport\"),\n\"n4\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n3\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($5::double precision, $6::double precision, $7::double precision, $8::double precision, 4326) AND \"__cov_xmin\" <= $7::double precision AND \"__cov_xmax\" >= $5::double precision AND \"__cov_ymin\" <= $8::double precision AND \"__cov_ymax\" >= $6::double precision),\n\"n5\" AS (SELECT \"id\", \"name\", \"subtype\", \"class\", \"subclass\", \"surface\", \"max_speed\", \"max_speed_unit\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n4\" WHERE \"class\" IN ($9::text, $10::text, $11::text)),\n\"n6\" AS (SELECT \"geometry\" FROM \"n5\"),\n\"n7\" AS (SELECT ST_Transform(ST_SetSRID(\"geometry\", 4326), 32648) AS \"geometry\" FROM \"n6\"),\n\"n8\" AS (SELECT l.\"id\", l.\"level\", l.\"height\", l.\"min_height\", l.\"is_underground\", l.\"num_floors\", l.\"num_floors_underground\", l.\"min_floor\", l.\"subtype\", l.\"class\", l.\"facade_color\", l.\"facade_material\", l.\"roof_material\", l.\"roof_shape\", l.\"roof_direction\", l.\"roof_orientation\", l.\"roof_color\", l.\"roof_height\", l.\"geometry\", l.\"has_parts\", l.\"version\", l.\"geometry_metric\" FROM \"n2\" AS l WHERE EXISTS (SELECT 1 FROM \"n7\" AS r WHERE ST_DWithin(l.\"geometry_metric\", r.\"geometry\", $12::double precision))),\n\"n9\" AS (SELECT \"id\", \"geometry\" FROM \"n8\"),\n\"n10\" AS (SELECT \"id\", \"geometry\" FROM \"n9\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n10\" LIMIT $13::bigint"
+  },
+  {
+    "case": "semi_join_intersects_admin",
+    "params": [
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "double precision",
+        "v": 106.68
+      },
+      {
+        "t": "double precision",
+        "v": 10.76
+      },
+      {
+        "t": "double precision",
+        "v": 106.72
+      },
+      {
+        "t": "double precision",
+        "v": 10.8
+      },
+      {
+        "t": "bigint",
+        "v": 1000001
+      }
+    ],
+    "sql": "WITH \"n0\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"buildings\"),\n\"n1\" AS (SELECT \"id\", \"level\", \"height\", \"min_height\", \"is_underground\", \"num_floors\", \"num_floors_underground\", \"min_floor\", \"subtype\", \"class\", \"facade_color\", \"facade_material\", \"roof_material\", \"roof_shape\", \"roof_direction\", \"roof_orientation\", \"roof_color\", \"roof_height\", \"geometry\", \"has_parts\", \"version\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n0\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326) AND \"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision),\n\"n2\" AS (SELECT \"id\", \"name\", \"subtype\", \"admin_level\", \"class\", \"region\", \"division_id\", \"is_land\", \"source_dataset\", \"version\", \"geometry\", \"bbox_xmin\" AS \"__cov_xmin\", \"bbox_ymin\" AS \"__cov_ymin\", \"bbox_xmax\" AS \"__cov_xmax\", \"bbox_ymax\" AS \"__cov_ymax\" FROM \"geofabric\".\"admin\"),\n\"n3\" AS (SELECT \"id\", \"name\", \"subtype\", \"admin_level\", \"class\", \"region\", \"division_id\", \"is_land\", \"source_dataset\", \"version\", \"geometry\", \"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\" FROM \"n2\" WHERE ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($5::double precision, $6::double precision, $7::double precision, $8::double precision, 4326) AND \"__cov_xmin\" <= $7::double precision AND \"__cov_xmax\" >= $5::double precision AND \"__cov_ymin\" <= $8::double precision AND \"__cov_ymax\" >= $6::double precision),\n\"n4\" AS (SELECT l.\"id\", l.\"level\", l.\"height\", l.\"min_height\", l.\"is_underground\", l.\"num_floors\", l.\"num_floors_underground\", l.\"min_floor\", l.\"subtype\", l.\"class\", l.\"facade_color\", l.\"facade_material\", l.\"roof_material\", l.\"roof_shape\", l.\"roof_direction\", l.\"roof_orientation\", l.\"roof_color\", l.\"roof_height\", l.\"geometry\", l.\"has_parts\", l.\"version\" FROM \"n1\" AS l WHERE EXISTS (SELECT 1 FROM \"n3\" AS r WHERE ST_Intersects(l.\"geometry\", r.\"geometry\"))),\n\"n5\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n4\"),\n\"n6\" AS (SELECT \"id\", \"class\", \"geometry\" FROM \"n5\" ORDER BY \"id\" COLLATE \"C\" ASC NULLS LAST)\nSELECT \"id\", \"class\", ST_AsBinary(\"geometry\", 'NDR') AS \"geometry\" FROM \"n6\" LIMIT $9::bigint"
+  }
+]

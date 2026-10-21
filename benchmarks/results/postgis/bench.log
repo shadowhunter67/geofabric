@@ -1,0 +1,51 @@
+=== window small (106.690,10.770,106.700,10.780) skip=[]
+limit_unordered                            first d=247 p=34 | warm d=263 p=33 ms
+bbox_sort_limit                            first d=244 p=33 | warm d=226 p=33 ms
+filter_eq_text                             first d=208 p=34 | warm d=228 p=33 ms
+filter_in_or_isnull                        first d=245 p=37 | warm d=273 p=36 ms
+filter_numeric_and_not                     first d=276 p=34 | warm d=211 p=32 ms
+sort_desc_nulls_then_id                    first d=221 p=32 | warm d=217 p=32 ms
+sort_text_asc_then_id                      first d=213 p=32 | warm d=220 p=32 ms
+aggregate_count_star                       first d=191 p=32 | warm d=190 p=32 ms
+count_by_with_ties_and_null_group          first d=187 p=34 | warm d=189 p=32 ms
+aggregate_min_max_avg_count_by_group       first d=189 p=32 | warm d=189 p=32 ms
+intersects_polygon                         first d=202 p=33 | warm d=210 p=33 ms
+transform_to_utm48_column                  first d=212 p=35 | warm d=213 p=33 ms
+semi_join_metric_200m                      first d=294 p=112 | warm d=280 p=110 ms
+semi_join_metric_50m                       first d=257 p=188 | warm d=269 p=188 ms
+demo_b_count_template_shape                first d=225 p=96 | warm d=229 p=95 ms
+demo_b_ids_template_shape                  first d=221 p=95 | warm d=232 p=96 ms
+semi_join_intersects_admin                 first d=1847 p=67 | warm d=1915 p=50 ms
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.33s
+=== window medium (106.68,10.76,106.72,10.80) skip=[semi_join_intersects_admin]
+limit_unordered                            first d=260 p=33 | warm d=242 p=33 ms
+bbox_sort_limit                            first d=235 p=67 | warm d=225 p=50 ms
+filter_eq_text                             first d=233 p=49 | warm d=225 p=49 ms
+filter_in_or_isnull                        first d=246 p=99 | warm d=226 p=115 ms
+filter_numeric_and_not                     first d=217 p=65 | warm d=234 p=51 ms
+sort_desc_nulls_then_id                    first d=282 p=196 | warm d=428 p=81 ms
+sort_text_asc_then_id                      first d=327 p=86 | warm d=448 p=180 ms
+aggregate_count_star                       first d=404 p=83 | warm d=405 p=82 ms
+count_by_with_ties_and_null_group          first d=368 p=82 | warm d=360 p=83 ms
+aggregate_min_max_avg_count_by_group       first d=392 p=83 | warm d=383 p=83 ms
+intersects_polygon                         first d=406 p=75 | warm d=393 p=70 ms
+transform_to_utm48_column                  first d=460 p=376 | warm d=477 p=351 ms
+semi_join_metric_200m                      first d=3521 p=1750 | warm d=3529 p=1710 ms
+semi_join_metric_50m                       first d=2678 p=2500 | warm d=2588 p=2554 ms
+demo_b_count_template_shape                first d=329 p=944 | warm d=324 p=983 ms
+demo_b_ids_template_shape                  first d=345 p=983 | warm d=338 p=1001 ms
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 93.17s
+=== window wide (106.60,10.72,106.76,10.86) skip=[semi_join_intersects_admin]
+limit_unordered                            first d=272 p=39 | warm d=265 p=35 ms
+bbox_sort_limit                            first d=328 p=161 | warm d=541 p=147 ms
+filter_eq_text                             first d=522 p=128 | warm d=490 p=117 ms
+filter_in_or_isnull                        first d=798 p=1896 | warm d=790 p=1836 ms
+filter_numeric_and_not                     first d=466 p=111 | warm d=458 p=114 ms
+sort_desc_nulls_then_id                    first d=459 p=145 | warm d=501 p=145 ms
+sort_text_asc_then_id                      first d=546 p=95 | warm d=483 p=96 ms
+aggregate_count_star                       first d=220 p=79 | warm d=205 p=79 ms
+count_by_with_ties_and_null_group          first d=208 p=93 | warm d=203 p=96 ms
+aggregate_min_max_avg_count_by_group       first d=202 p=94 | warm d=220 p=100 ms
+intersects_polygon                         first d=357 p=379 | warm d=335 p=378 ms
+transform_to_utm48_column                  first d=666 p=1242 | warm d=673 p=1331 ms
+BENCHDONE

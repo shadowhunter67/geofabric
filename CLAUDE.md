@@ -94,11 +94,11 @@ Chi tiết: `docs/claude/final-planner-validation.md`, báo cáo `REPORT-GEOFABR
 - `count_by` có test hồi quy vĩnh viễn (`templates.rs::count_by_ties_are_cut_by_the_group_key…`) — đừng xoá.
 - Tên dữ liệu synthetic mới: `_s5` (held-out trước), `_s6` (held-out cuối, gồm 300mb/500mb/1gb); `gen_synthetic.py --only` để sinh một phần.
 
-## PostGIS engine (2026-10-20)
+## PostGIS engine (2026-10-20; xác minh live 2026-10-21)
 
-Chi tiết: `docs/claude/postgis.md`, ADR-013, `docs/postgis.md`. Báo cáo `REPORT-GEOFABRIC-POSTGIS-ENGINE.md`.
+Chi tiết: `docs/claude/postgis.md`, ADR-013 (Accepted), `docs/postgis.md`. Báo cáo `REPORT-GEOFABRIC-POSTGIS-ENGINE.md` + `REPORT-GEOFABRIC-POSTGIS-LIVE-VERIFICATION.md`.
 - Engine họ thứ hai nằm dưới CÙNG chuỗi PlanGraph→Planner→EngineDescriptor→ExecutionEngine (không endpoint riêng). Tuỳ chọn: không cấu hình = không có engine, không lỗi. Cấu hình: `GEOFABRIC_POSTGIS_ENABLED/URL/SOURCES/POOL` (URL chứa mật khẩu: không bao giờ in/commit).
-- CHƯA chạy với PostgreSQL thật (user từ chối tải): mọi bằng chứng hiện là test không-DB (lowering + parser PostgreSQL, mock connector, planner/runtime). Driver thật = cargo feature `live` (`postgis-live` ở runtime/gateway), mới compile-check.
+- ĐÃ chạy trên PostgreSQL 16.9 + PostGIS 3.6.2 portable thật (2026-10-21): parity chặt 5 bộ dữ liệu HCMC (buildings 3.85 M), 17 plan giống hệt DuckDB, Demo B 27,624 id = oracle độc lập, timeout/cancel/pool chứng minh phía server. Driver thật = cargo feature `live` (`postgis-live` ở runtime/gateway). CHƯA có cost model PostGIS (R5d giữ); đo thật cho thấy không engine nào thắng mọi workload (PostGIS thắng cửa sổ nhỏ có index, DuckDB thắng semi-join mét lớn ~10x).
 - Trait `EngineDescriptor` có thêm 2 hàm mặc định: `source_residency`, `calibration` (engine `Unmeasured` không bao giờ thắng engine đã đo theo chi phí: policy R5d).
-- Đã thêm dependency (cargo): `postgres 0.19` (chỉ khi feature `live`), `sqlparser 0.55` (dev-dep của geo-engine-postgis, kiểm cú pháp PostgreSQL). KHÔNG tải binary PostgreSQL/PostGIS. Script portable (`tools/postgis_portable.py`) ghim PG 16.9 + PostGIS 3.6.2 nhưng chưa chạy.
+- Đã thêm dependency (cargo): `postgres 0.19` (chỉ khi feature `live`), `sqlparser 0.55` (dev-dep của geo-engine-postgis, kiểm cú pháp PostgreSQL). Binary PostgreSQL 16.9 (EnterpriseDB zip) + PostGIS 3.6.2 (osgeo bundle) tải 2026-10-21 qua `tools/postgis_portable.py`, ghim SHA-256 trong `tools/postgis.lock.json`, cài ở `%LOCALAPPDATA%\geofabric-runtime\postgres` (ASCII, NGOÀI repo; initdb hỏng với đường dẫn có dấu), lắng nghe 127.0.0.1:5433, không service/PATH/admin. Gỡ: `python tools/postgis_portable.py stop` rồi xoá thư mục đó. Dữ liệu nạp bằng `scripts/postgis/load_data.py`; kết quả bằng chứng ở `benchmarks/results/postgis/`.
 - arch_check có luật cách ly họ engine (PostGIS ↔ DuckDB/browser, gateway không dùng driver).

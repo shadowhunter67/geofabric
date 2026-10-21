@@ -41,6 +41,8 @@ fn rel(uri: &str, relation: &str) -> PostGisSource {
         columns: [("id", PgColType::Int), ("class", PgColType::Text), ("height", PgColType::Float)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(1000),
         spatially_indexed: true,
+        coverage: None,
+        covering: None,
     }
 }
 
@@ -251,6 +253,60 @@ fn a_source_must_be_resident_and_in_the_same_crs() {
     // OGC:CRS84 and EPSG:4326 are different CRSs at the semantic layer even though they share SRID 4326
     let e = lower(&Plan::new(source("buildings.parquet", Crs::Epsg(4326))), &catalog(), 10).unwrap_err();
     assert!(matches!(&e, LowerError::Unsupported(m) if m.contains("different CRSs")), "{e}");
+}
+
+#[test]
+fn bbox_filter_means_the_covering_box_overlaps_the_window_like_every_other_engine() {
+    use geo_engine_postgis::CoveringCols;
+    let mut with_cov = rel("buildings.parquet", "buildings");
+    with_cov.covering = Some(CoveringCols { xmin: "bbox_xmin".into(), ymin: "bbox_ymin".into(), xmax: "bbox_xmax".into(), ymax: "bbox_ymax".into() });
+    let cat = PostGisCatalog::new(vec![with_cov]).unwrap();
+    let l = lower(&Plan::new(Node::Limit { input: Box::new(windowed("buildings.parquet")), n: 5 }), &cat, 10).unwrap();
+    assert_postgres_syntax(&l.sql);
+    // the covering columns are read under hidden names and decide the filter, exactly: the four comparisons use the same bound parameters
+    assert!(l.sql.contains("\"bbox_xmin\" AS \"__cov_xmin\"") && l.sql.contains("\"bbox_ymax\" AS \"__cov_ymax\""), "{}", l.sql);
+    assert!(l.sql.contains("ST_MakeEnvelope(\"__cov_xmin\", \"__cov_ymin\", \"__cov_xmax\", \"__cov_ymax\", 4326) && ST_MakeEnvelope($1::double precision, $2::double precision, $3::double precision, $4::double precision, 4326)"), "{}", l.sql);
+    assert!(l.sql.contains("\"__cov_xmin\" <= $3::double precision AND \"__cov_xmax\" >= $1::double precision AND \"__cov_ymin\" <= $4::double precision AND \"__cov_ymax\" >= $2::double precision"), "{}", l.sql);
+    assert_eq!(l.params.iter().filter(|p| matches!(p, Param::Float(_))).count(), 4, "each coordinate is bound once and reused");
+    // after a Transform the covering is gone (as in the DuckDB lowering): the filter falls back to the exact envelope
+    let after_transform = Node::BboxFilter { input: Box::new(metric("buildings.parquet")), geometry_column: "geometry_metric".into(), bbox: BoundingBox::new(500_000.0, 1_190_000.0, 520_000.0, 1_200_000.0, Crs::Epsg(32648)).unwrap() };
+    let l = lower(&Plan::new(after_transform), &cat, 10).unwrap();
+    assert!(l.sql.contains("ST_Intersects(ST_Envelope(\"geometry_metric\")"), "{}", l.sql);
+    assert_postgres_syntax(&l.sql);
+}
+
+#[test]
+fn the_probed_side_of_a_semi_join_has_no_envelope_assist_only_the_exact_comparisons() {
+    use geo_engine_postgis::CoveringCols;
+    let cov = || CoveringCols { xmin: "bbox_xmin".into(), ymin: "bbox_ymin".into(), xmax: "bbox_xmax".into(), ymax: "bbox_ymax".into() };
+    let (mut b, mut r) = (rel("buildings.parquet", "buildings"), rel("roads.parquet", "roads"));
+    b.covering = Some(cov());
+    r.covering = Some(cov());
+    let cat = PostGisCatalog::new(vec![b, r]).unwrap();
+    let l = lower(&Plan::new(Node::Project { input: Box::new(near(Distance::new(200.0, DistanceUnit::Meter).unwrap(), true)), columns: vec!["id".into(), "geometry".into()] }), &cat, 10).unwrap();
+    assert_postgres_syntax(&l.sql);
+    // one envelope && for the scanned (left) side; the side probed once per left row keeps only the four exact comparisons
+    assert_eq!(l.sql.matches(" && ST_MakeEnvelope").count(), 1, "{}", l.sql);
+    assert_eq!(l.sql.matches("\"__cov_xmin\" <=").count(), 2, "both sides still filter exactly: {}", l.sql);
+}
+
+#[test]
+fn a_clipped_copy_answers_only_what_lies_inside_its_coverage() {
+    let mut clipped = rel("buildings.parquet", "buildings");
+    clipped.coverage = Some([105.9, 10.6, 106.2, 10.9]);
+    let cat = PostGisCatalog::new(vec![clipped]).unwrap();
+    // the window (106.0..106.1 x 10.7..10.8) is inside: fine
+    assert!(lower(&Plan::new(windowed("buildings.parquet")), &cat, 10).is_ok());
+    // a window that sticks out of the coverage, an unwindowed read, a read that bypasses the window: all refused
+    let outside = Node::BboxFilter { input: Box::new(source("buildings.parquet", Crs::OgcCrs84)), geometry_column: "geometry".into(), bbox: BoundingBox::new(105.0, 10.7, 106.1, 10.8, Crs::OgcCrs84).unwrap() };
+    for node in [
+        outside,
+        source("buildings.parquet", Crs::OgcCrs84),
+        Node::Filter { input: Box::new(source("buildings.parquet", Crs::OgcCrs84)), predicate: Expr::IsNull { column: "height".into() } },
+    ] {
+        let e = lower(&Plan::new(node), &cat, 10).unwrap_err();
+        assert!(matches!(&e, LowerError::Unsupported(m) if m.contains("clipped copy")), "{e}");
+    }
 }
 
 #[test]

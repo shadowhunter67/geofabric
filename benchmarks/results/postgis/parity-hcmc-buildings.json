@@ -1,0 +1,109 @@
+{
+ "table": "buildings",
+ "source_file": "E:\\L\u1eadp tr\u00ecnh\\l\u1eadp tr\u00ecnh\\6-du-an-khac\\geofabric\\benchmarks\\data\\overture_buildings_vn_south.parquet",
+ "clip_bbox": [
+  106.35,
+  10.35,
+  107.05,
+  11.25
+ ],
+ "columns_stored": [
+  "id",
+  "level",
+  "height",
+  "min_height",
+  "is_underground",
+  "num_floors",
+  "num_floors_underground",
+  "min_floor",
+  "subtype",
+  "class",
+  "facade_color",
+  "facade_material",
+  "roof_material",
+  "roof_shape",
+  "roof_direction",
+  "roof_orientation",
+  "roof_color",
+  "roof_height",
+  "has_parts",
+  "version",
+  "bbox_xmin",
+  "bbox_ymin",
+  "bbox_xmax",
+  "bbox_ymax"
+ ],
+ "columns_not_stored": [
+  "names",
+  "sources"
+ ],
+ "parity": {
+  "rows": [
+   3845734,
+   3845734
+  ],
+  "id_set_equal": true,
+  "distinct_ids": [
+   3845734,
+   3845734
+  ],
+  "null_geometries": [
+   0,
+   0
+  ],
+  "geometry_types": [
+   {
+    "POLYGON": 3845702,
+    "MULTIPOLYGON": 32
+   },
+   {
+    "MULTIPOLYGON": 32,
+    "POLYGON": 3845702
+   }
+  ],
+  "srid_values": [
+   "4326"
+  ],
+  "id_geometry_digest_equal": true,
+  "digest_source": 2216175240671598814145806,
+  "digest_postgis": 2216175240671598814145806,
+  "covering_columns": {
+   "xmin": "bbox_xmin",
+   "ymin": "bbox_ymin",
+   "xmax": "bbox_xmax",
+   "ymax": "bbox_ymax"
+  },
+  "covering_digest_equal": true,
+  "covering_digest_source": 2217178019343768976099835,
+  "covering_digest_postgis": 2217178019343768976099835
+ },
+ "parity_ok": true,
+ "invalid_geometries_reported_not_repaired": 0,
+ "indexes": [
+  {
+   "name": "buildings_geometry_gix",
+   "definition": "CREATE INDEX buildings_geometry_gix ON geofabric.buildings USING gist (geometry)"
+  },
+  {
+   "name": "buildings_covering_gix",
+   "definition": "CREATE INDEX buildings_covering_gix ON geofabric.buildings USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+  },
+  {
+   "name": "buildings_utm32648_gix",
+   "definition": "CREATE INDEX buildings_utm32648_gix ON geofabric.buildings USING gist (st_transform(st_setsrid(geometry, 4326), 32648))"
+  }
+ ],
+ "analyze": {
+  "last_analyze": "2026-10-21 08:54:56.382485+07",
+  "reltuples": 3846524,
+  "relpages": 116844
+ },
+ "sizes_bytes": {
+  "table_with_indexes": 1436196864,
+  "table_heap": 957186048
+ },
+ "seconds": {
+  "copy": 62.1,
+  "index_and_analyze": 28.2
+ }
+}

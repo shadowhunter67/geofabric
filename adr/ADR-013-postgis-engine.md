@@ -1,6 +1,6 @@
 # ADR-013 — PostGIS as an execution engine (the first engine family other than DuckDB)
 
-Status: Accepted as a DESIGN and an offline-verified implementation (2026-10-20). **Not verified against a live PostgreSQL/PostGIS server** — none was available and the ~440 MB download was declined. Every claim below says whether it is verified by tests without a database, or unverified.
+Status: **Accepted (2026-10-21)** after live verification on PostgreSQL 16.9 + PostGIS 3.6.2 (portable, 127.0.0.1): live fixture, server-side timeout/cancel/pool, strict data parity on 3.85 M buildings + 4 other HCMC datasets, 17/17 plans identical to DuckDB on a slice, on the full data and on a 535 k-building window, Demo B equal to the independent oracle by hash. Evidence and numbers: `REPORT-GEOFABRIC-POSTGIS-LIVE-VERIFICATION.md`. Still **not** done: a PostGIS cost model (R5d stays), a shared-lowering refactor, a second machine. Text below marked "unverified" is superseded by the "Live verification" section.
 
 ## Context
 
@@ -42,9 +42,17 @@ The descriptor reports `calibration() = Unmeasured`: there is no measurement of 
 
 `elapsed_ms` and `rows_returned` are `EngineObserved`; `rows_scanned_upper_bound` is `SourceEstimated` (catalog `row_estimate`); `bytes_read`, `peak_memory_bytes` are `Unknown` (PostgreSQL gives no trustworthy number through this path); columns the relation does not store (e.g. the GeoParquet `bbox` covering struct) are reported in `notes`.
 
+## Live verification (2026-10-21)
+
+Corrections the live run forced (each is now a test): (1) BboxFilter on PostGIS must mean *covering-box overlap* like the GeoParquet side, not geometry-envelope overlap (Overture covering boxes are padded ~1.6 m; 41,150 vs 41,165 rows): covering columns are stored, `&&` is only an index assist backed by exact comparisons on the stored float8 columns; (2) a semi-join's right input is probed per left row, so the envelope assist is omitted there (10.4 s -> 0.9 s, identical rows); (3) catalog URI normalization (`\\?\` prefix, slashes, case); (4) the synchronous driver must run on blocking threads; (5) clipped copies need a `coverage` guard so a partial copy never answers for the whole dataset.
+
+Verified live: probe; bound parameters incl. hostile and Unicode strings; SQLSTATE taxonomy (relation, column, capability, other, connection refused with no credential in the message); read-only account refused on write (42501); statement timeout and cancellation proven server-side through `pg_stat_activity`; bounded pool; strict parity (ids, null geometries, geometry types, SRID, order-independent geometry digest, bit-exact covering digest) for buildings 3,845,734, places 449,849, transport 453,550, landuse 13,277, admin 325; 17 plans identical (canonical digest, coordinate-wise geometry compare) on the slice, on the full data in the Demo B window and in a 535 k-building window; Demo B = 27,624 ids = the independent shapely/pyproj oracle (SHA-256 equal), and 189,772 ids on the wide window likewise; the optional-unavailable path (PostgreSQL stopped: the gateway starts, the probe says unreachable, DuckDB and the UI work).
+
+Measured, not assumed: PostGIS wins when a selective index applies (small window 30-110 ms vs 190-300 ms; admin semi-join 50-250 ms vs 1.9-57 s); DuckDB wins on large metric semi-joins (wide-window Demo B 1.0-1.9 s vs 12-17 s) and on `IN`/`IS NULL` filters over wide windows. No single engine dominates, which is why a measured cost model is the next phase and R5d stays.
+
 ## Not done / not verified (the honest list)
 
-No PostgreSQL ran: no data import, no parity check, no index evidence (`EXPLAIN`), no cross-engine digests, no Demo B on PostGIS, no benchmarks, no measured cost model, no live cancellation/timeout, no live health. The import scripts (`tools/postgis_portable.py`, `scripts/postgis/load_data.py`) were written, not run. `SpatialJoin` and `Buffer` are not implemented.
+No PostGIS cost model (still `Unmeasured`, R5d in force), no held-out calibration, no TLS, a single machine, `SpatialJoin` and `Buffer` not implemented, the shared lowering (RFC-004) not realized (three compilers of the IR).
 
 ## Debt
 

@@ -1,0 +1,259 @@
+{
+ "bbox_sort_limit": {
+  "plan": "SET\nPREPARE\nLimit  (cost=9180.78..9201.68 rows=152 width=84) (actual time=1.188..1.343 rows=500 loops=1)\n  Buffers: shared hit=95\n  ->  Subquery Scan on n4  (cost=9180.78..9201.68 rows=152 width=84) (actual time=1.186..1.323 rows=500 loops=1)\n        Buffers: shared hit=95\n        ->  Limit  (cost=9180.78..9182.68 rows=152 width=180) (actual time=1.178..1.245 rows=500 loops=1)\n              Buffers: shared hit=95\n              ->  Subquery Scan on n3  (cost=9180.78..9182.68 rows=152 width=180) (actual time=1.178..1.225 rows=500 loops=1)\n                    Buffers: shared hit=95\n                    ->  Sort  (cost=9180.78..9181.16 rows=152 width=212) (actual time=1.177..1.190 rows=500 loops=1)\n                          Sort Key: buildings.id COLLATE \"C\"\n                          Sort Method: top-N heapsort  Memory: 273kB\n                          Buffers: shared hit=95\n                          ->  Bitmap Heap Scan on buildings  (cost=71.02..9175.27 rows=152 width=212) (actual time=0.211..0.683 rows=1645 loops=1)\n                                Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision))\n                                Rows Removed by Filter: 1\n                                Heap Blocks: exact=69\n                                Buffers: shared hit=92\n                                ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.196..0.196 rows=1646 loops=1)\n                                      Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                      Buffers: shared hit=23\nPlanning:\n  Buffers: shared hit=202 read=1\nPlanning Time: 6.899 ms\nExecution Time: 1.848 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   }
+  ],
+  "planning_ms": 6.899,
+  "execution_ms": 1.848
+ },
+ "filter_eq_text": {
+  "plan": "SET\nPREPARE\nLimit  (cost=9181.44..9181.58 rows=1 width=84) (actual time=0.624..0.627 rows=5 loops=1)\n  Buffers: shared hit=95\n  ->  Subquery Scan on n4  (cost=9181.44..9181.58 rows=1 width=84) (actual time=0.623..0.625 rows=5 loops=1)\n        Buffers: shared hit=95\n        ->  Sort  (cost=9181.44..9181.44 rows=1 width=212) (actual time=0.615..0.616 rows=5 loops=1)\n              Sort Key: buildings.id COLLATE \"C\"\n              Sort Method: quicksort  Memory: 28kB\n              Buffers: shared hit=95\n              ->  Bitmap Heap Scan on buildings  (cost=70.99..9181.43 rows=1 width=212) (actual time=0.209..0.589 rows=5 loops=1)\n                    Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                    Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision) AND (class = 'school'::text))\n                    Rows Removed by Filter: 1641\n                    Heap Blocks: exact=69\n                    Buffers: shared hit=92\n                    ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.193..0.194 rows=1646 loops=1)\n                          Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                          Buffers: shared hit=23\nPlanning:\n  Buffers: shared hit=203\nPlanning Time: 5.341 ms\nExecution Time: 1.087 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   }
+  ],
+  "planning_ms": 5.341,
+  "execution_ms": 1.087
+ },
+ "aggregate_count_star": {
+  "plan": "SET\nPREPARE\nLimit  (cost=9175.65..9175.66 rows=1 width=8) (actual time=0.695..0.695 rows=1 loops=1)\n  Buffers: shared hit=92\n  ->  Aggregate  (cost=9175.65..9175.66 rows=1 width=8) (actual time=0.693..0.693 rows=1 loops=1)\n        Buffers: shared hit=92\n        ->  Bitmap Heap Scan on buildings  (cost=71.02..9175.27 rows=152 width=0) (actual time=0.218..0.638 rows=1645 loops=1)\n              Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n              Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision))\n              Rows Removed by Filter: 1\n              Heap Blocks: exact=69\n              Buffers: shared hit=92\n              ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.205..0.205 rows=1646 loops=1)\n                    Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                    Buffers: shared hit=23\nPlanning:\n  Buffers: shared hit=171\nPlanning Time: 5.208 ms\nExecution Time: 1.184 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Aggregate",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   }
+  ],
+  "planning_ms": 5.208,
+  "execution_ms": 1.184
+ },
+ "count_by_with_ties_and_null_group": {
+  "plan": "SET\nPREPARE\nLimit  (cost=9182.63..9182.91 rows=22 width=15) (actual time=0.977..0.982 rows=16 loops=1)\n  Buffers: shared hit=98\n  ->  Limit  (cost=9182.63..9182.91 rows=22 width=15) (actual time=0.976..0.979 rows=16 loops=1)\n        Buffers: shared hit=98\n        ->  Subquery Scan on n3  (cost=9182.63..9182.91 rows=22 width=15) (actual time=0.975..0.978 rows=16 loops=1)\n              Buffers: shared hit=98\n              ->  Sort  (cost=9182.63..9182.69 rows=22 width=47) (actual time=0.975..0.976 rows=16 loops=1)\n                    Sort Key: n2.count DESC NULLS LAST, n2.class COLLATE \"C\"\n                    Sort Method: quicksort  Memory: 26kB\n                    Buffers: shared hit=98\n                    ->  Subquery Scan on n2  (cost=9180.78..9182.14 rows=22 width=47) (actual time=0.835..0.950 rows=16 loops=1)\n                          Buffers: shared hit=92\n                          ->  GroupAggregate  (cost=9180.78..9182.14 rows=22 width=15) (actual time=0.833..0.948 rows=16 loops=1)\n                                Group Key: buildings.class\n                                Buffers: shared hit=92\n                                ->  Sort  (cost=9180.78..9181.16 rows=152 width=7) (actual time=0.825..0.866 rows=1645 loops=1)\n                                      Sort Key: buildings.class\n                                      Sort Method: quicksort  Memory: 53kB\n                                      Buffers: shared hit=92\n                                      ->  Bitmap Heap Scan on buildings  (cost=71.02..9175.27 rows=152 width=7) (actual time=0.242..0.689 rows=1645 loops=1)\n                                            Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                            Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision))\n                                            Rows Removed by Filter: 1\n                                            Heap Blocks: exact=69\n                                            Buffers: shared hit=92\n                                            ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.228..0.228 rows=1646 loops=1)\n                                                  Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                                  Buffers: shared hit=23\nPlanning:\n  Buffers: shared hit=196\nPlanning Time: 5.807 ms\nExecution Time: 1.494 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Aggregate",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   }
+  ],
+  "planning_ms": 5.807,
+  "execution_ms": 1.494
+ },
+ "intersects_polygon": {
+  "plan": "SET\nPREPARE\nLimit  (cost=104.38..104.52 rows=1 width=84) (actual time=0.949..1.036 rows=374 loops=1)\n  Buffers: shared hit=47 read=10\n  ->  Subquery Scan on n4  (cost=104.38..104.52 rows=1 width=84) (actual time=0.947..1.019 rows=374 loops=1)\n        Buffers: shared hit=47 read=10\n        ->  Sort  (cost=104.38..104.39 rows=1 width=212) (actual time=0.941..0.952 rows=374 loops=1)\n              Sort Key: buildings.id COLLATE \"C\"\n              Sort Method: quicksort  Memory: 128kB\n              Buffers: shared hit=47 read=10\n              ->  Bitmap Heap Scan on buildings  (cost=87.72..104.37 rows=1 width=212) (actual time=0.450..0.799 rows=374 loops=1)\n                    Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                    Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision) AND st_intersects(geometry, '0103000020E610000001000000050000003F355EBA49AC5A4025068195438B2540F853E3A59BAC5A4025068195438B2540F853E3A59BAC5A40E7FBA9F1D28D25403F355EBA49AC5A40E7FBA9F1D28D25403F355EBA49AC5A4025068195438B2540'::geometry))\n                    Rows Removed by Filter: 2\n                    Heap Blocks: exact=21\n                    Buffers: shared hit=44 read=10\n                    ->  BitmapAnd  (cost=87.72..87.72 rows=1 width=0) (actual time=0.367..0.367 rows=0 loops=1)\n                          Buffers: shared hit=23 read=10\n                          ->  Bitmap Index Scan on buildings_geometry_gix  (cost=0.00..16.49 rows=543 width=0) (actual time=0.177..0.177 rows=376 loops=1)\n                                Index Cond: (geometry && '0103000020E610000001000000050000003F355EBA49AC5A4025068195438B2540F853E3A59BAC5A4025068195438B2540F853E3A59BAC5A40E7FBA9F1D28D25403F355EBA49AC5A40E7FBA9F1D28D25403F355EBA49AC5A4025068195438B2540'::geometry)\n                                Buffers: shared read=10\n                          ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.189..0.189 rows=1646 loops=1)\n                                Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                Buffers: shared hit=23\nPlanning:\n  Buffers: shared hit=269\nPlanning Time: 6.192 ms\nExecution Time: 1.610 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   }
+  ],
+  "planning_ms": 6.192,
+  "execution_ms": 1.61
+ },
+ "demo_b_ids_template_shape": {
+  "plan": "SET\nPREPARE\nLimit  (cost=175565.10..175565.24 rows=1 width=69) (actual time=89.492..93.624 rows=1056 loops=1)\n  Buffers: shared hit=57503\n  ->  Subquery Scan on n10  (cost=175565.10..175565.24 rows=1 width=69) (actual time=89.490..93.577 rows=1056 loops=1)\n        Buffers: shared hit=57503\n        ->  Sort  (cost=175565.10..175565.11 rows=1 width=197) (actual time=89.483..93.404 rows=1056 loops=1)\n              Sort Key: buildings.id COLLATE \"C\"\n              Sort Method: quicksort  Memory: 350kB\n              Buffers: shared hit=57503\n              ->  Gather  (cost=1083.94..175565.09 rows=1 width=197) (actual time=6.202..92.870 rows=1056 loops=1)\n                    Workers Planned: 1\n                    Workers Launched: 1\n                    Buffers: shared hit=57500\n                    ->  Nested Loop Semi Join  (cost=83.94..174564.99 rows=1 width=197) (actual time=5.868..72.559 rows=528 loops=2)\n                          Buffers: shared hit=57500\n                          ->  Parallel Bitmap Heap Scan on buildings  (cost=71.02..9024.89 rows=89 width=165) (actual time=0.135..0.418 rows=822 loops=2)\n                                Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision))\n                                Rows Removed by Filter: 0\n                                Heap Blocks: exact=46\n                                Buffers: shared hit=92\n                                ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.225..0.225 rows=1646 loops=1)\n                                      Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                      Buffers: shared hit=23\n                          ->  Index Scan using transport_utm32648_gix on transport  (cost=12.91..1859.99 rows=1 width=99) (actual time=0.078..0.078 rows=1 loops=1645)\n                                Index Cond: (st_transform(st_setsrid(geometry, 4326), 32648) && st_expand(st_transform(st_setsrid(buildings.geometry, 4326), 32648), '200'::double precision))\n                                Filter: ((bbox_xmin <= '106.70186548680587'::double precision) AND (bbox_xmax >= '106.68813451319413'::double precision) AND (bbox_ymin <= '10.781844918335231'::double precision) AND (bbox_ymax >= '10.768155081664768'::double precision) AND (class = ANY ('{motorway,trunk,primary}'::text[])) AND st_dwithin(st_transform(st_setsrid(buildings.geometry, 4326), 32648), st_transform(st_setsrid(geometry, 4326), 32648), '200'::double precision))\n                                Rows Removed by Filter: 51\n                                Buffers: shared hit=56913\nPlanning:\n  Buffers: shared hit=372\nPlanning Time: 7.599 ms\nExecution Time: 94.370 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Nested Loop",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   },
+   {
+    "node": "Index Scan",
+    "index": "transport_utm32648_gix"
+   }
+  ],
+  "planning_ms": 7.599,
+  "execution_ms": 94.37
+ },
+ "semi_join_intersects_admin": {
+  "plan": "SET\nPREPARE\nLimit  (cost=11275.65..11276.90 rows=5 width=76) (actual time=21.597..25.208 rows=1645 loops=1)\n  Buffers: shared hit=5054 read=148\n  ->  Subquery Scan on n6  (cost=11275.65..11276.90 rows=5 width=76) (actual time=21.595..25.151 rows=1645 loops=1)\n        Buffers: shared hit=5054 read=148\n        ->  Gather Merge  (cost=11275.65..11276.22 rows=5 width=204) (actual time=21.582..24.861 rows=1645 loops=1)\n              Workers Planned: 1\n              Workers Launched: 1\n              Buffers: shared hit=5054 read=148\n              ->  Sort  (cost=10275.64..10275.65 rows=5 width=204) (actual time=8.131..8.185 rows=822 loops=2)\n                    Sort Key: buildings.id COLLATE \"C\"\n                    Sort Method: quicksort  Memory: 524kB\n                    Buffers: shared hit=5054 read=148\n                    Worker 0:  Sort Method: quicksort  Memory: 25kB\n                    ->  Nested Loop Semi Join  (cost=71.16..10275.58 rows=5 width=204) (actual time=1.675..7.814 rows=822 loops=2)\n                          Buffers: shared hit=5046 read=148\n                          ->  Parallel Bitmap Heap Scan on buildings  (cost=71.02..9024.89 rows=89 width=172) (actual time=0.172..0.384 rows=822 loops=2)\n                                Recheck Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision))\n                                Rows Removed by Filter: 0\n                                Heap Blocks: exact=69\n                                Buffers: shared hit=92\n                                ->  Bitmap Index Scan on buildings_covering_gix  (cost=0.00..70.98 rows=2476 width=0) (actual time=0.308..0.308 rows=1646 loops=1)\n                                      Index Cond: (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326) && '0103000020E610000001000000050000005C8FC2F528AC5A400AD7A3703D8A25405C8FC2F528AC5A408FC2F5285C8F2540CDCCCCCCCCAC5A408FC2F5285C8F2540CDCCCCCCCCAC5A400AD7A3703D8A25405C8FC2F528AC5A400AD7A3703D8A2540'::geometry)\n                                      Buffers: shared hit=23\n                          ->  Index Scan using admin_geometry_gix on admin  (cost=0.14..14.98 rows=1 width=19678) (actual time=0.009..0.009 rows=1 loops=1645)\n                                Index Cond: (geometry && buildings.geometry)\n                                Filter: ((bbox_xmin <= '106.7'::double precision) AND (bbox_xmax >= '106.69'::double precision) AND (bbox_ymin <= '10.78'::double precision) AND (bbox_ymax >= '10.77'::double precision) AND st_intersects(buildings.geometry, geometry))\n                                Buffers: shared hit=4954 read=148\nPlanning:\n  Buffers: shared hit=311 read=6\nPlanning Time: 7.417 ms\nExecution Time: 26.086 ms\n",
+  "nodes": [
+   {
+    "node": "Limit",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Sort",
+    "index": null
+   },
+   {
+    "node": "Nested Loop",
+    "index": null
+   },
+   {
+    "node": "Bitmap Heap Scan",
+    "index": null
+   },
+   {
+    "node": "Bitmap Index Scan",
+    "index": null
+   },
+   {
+    "node": "Index Scan",
+    "index": "admin_geometry_gix"
+   }
+  ],
+  "planning_ms": 7.417,
+  "execution_ms": 26.086
+ }
+}

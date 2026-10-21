@@ -4,10 +4,16 @@ Báo cáo: `REPORT-GEOFABRIC-POSTGIS-ENGINE.md`. ADR-013. Hướng dẫn vận h
 
 ## Trạng thái thật (đừng nói quá)
 - ĐÃ có: crate `geo-engine-postgis` (descriptor, capability matrix, lowering PostgreSQL có tham số hoá, catalog nguồn "resident", ánh xạ CRS→SRID, probe, ánh xạ lỗi theo SQLSTATE, `PgConnector` + mock, driver thật sau feature `live`), tích hợp planner (`source_residency`, `calibration`, policy R5d), runtime ghi health đúng engine lỗi, gateway cấu hình tuỳ chọn + `/api/state.postgis`, dòng PostGIS ở Developer, arch_check chặn lẫn họ engine. 34 test mới không cần DB.
-- CHƯA từng chạy với PostgreSQL thật (user từ chối tải 440 MB, 2026-10-20): không import dữ liệu, không parity, không digest chéo engine, không Demo B trên PostGIS, không benchmark, không cost model đo được, driver `live` chỉ compile-check, script `tools/postgis_portable.py` + `scripts/postgis/load_data.py` chưa chạy.
-- Bước kế tiếp đúng: cho phép tải portable → chạy `postgis_portable.py setup/start` → `load_data.py` → `cargo test -p geo-engine-postgis --features live --test live` → cross-check digest DuckDB vs PostGIS + Demo B 27,624 → benchmark → calibrate PostGIS → held-out.
+- ĐÃ chạy live 2026-10-21 (PG 16.9 / PostGIS 3.6.2 portable): xem `REPORT-GEOFABRIC-POSTGIS-LIVE-VERIFICATION.md`. Parity chặt + 17 plan giống DuckDB + Demo B = oracle; 8 test live (`--features live`); benchmark cold/warm.
+- CHƯA: cost model PostGIS đo được (R5d giữ), held-out, shared-lowering (RFC-004), máy thứ hai.
+- Bước kế tiếp đúng: cost model PostGIS có đầu vào selectivity/dạng semi-join (không dùng một hệ số hằng) → held-out → mới bỏ R5d.
 
 ## Bẫy
+- BboxFilter trên PostGIS = giao hộp *covering* (Overture đệm ~1.6 m), KHÔNG phải envelope hình học: đã lệch 41,150 vs 41,165. Giữ cột covering `__cov_*`; `&&` chỉ là gợi ý index.
+- Nhánh phải của semi-join bỏ envelope assist (thăm mỗi hàng trái; 10.4 s → 0.9 s). Đừng thêm lại.
+- Driver `postgres` đồng bộ: chạy trong `spawn_blocking`, không trong runtime async (panic).
+- Chạy live cần ASCII runtime dir ngoài repo; `Get-Process`/kill chỉ theo PID (postmaster.pid), không `taskkill /IM postgres.exe`.
+- Cold = restart PG (cache OS vẫn ấm) — ghi rõ khi báo cáo benchmark.
 - Engine mới = `Unmeasured`: planner không bao giờ chọn nó theo chi phí dự đoán trước engine đã đo (R5d); chỉ chọn khi hint tường minh.
 - Dataset chỉ có trong PostGIS (không có file) CHƯA plan được vì planner đọc footer Parquet (P1: cần source-metadata provider).
 - PostgreSQL khác mặc định DuckDB ở: `NULLS LAST`, collation (dùng `COLLATE "C"` + cluster locale C), endianness WKB (`'NDR'`), kiểu tham số (cast tường minh), ép kiểu so sánh (lowering từ chối, không đoán). Đừng bỏ.

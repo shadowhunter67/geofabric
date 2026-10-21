@@ -1,0 +1,78 @@
+{
+ "table": "fx_buildings",
+ "source_file": "C:\\Users\\<user>\\AppData\\Local\\geofabric-runtime\\fixture\\fx_buildings.parquet",
+ "clip_bbox": null,
+ "columns_stored": [
+  "id",
+  "class",
+  "height",
+  "bbox_xmin",
+  "bbox_ymin",
+  "bbox_xmax",
+  "bbox_ymax"
+ ],
+ "columns_not_stored": [],
+ "parity": {
+  "rows": [
+   65,
+   65
+  ],
+  "id_set_equal": true,
+  "distinct_ids": [
+   65,
+   65
+  ],
+  "null_geometries": [
+   0,
+   0
+  ],
+  "geometry_types": [
+   {
+    "POLYGON": 65
+   },
+   {
+    "POLYGON": 65
+   }
+  ],
+  "srid_values": [
+   "4326"
+  ],
+  "id_geometry_digest_equal": true,
+  "digest_source": 41834771555879560697,
+  "digest_postgis": 41834771555879560697,
+  "covering_columns": {
+   "xmin": "bbox_xmin",
+   "ymin": "bbox_ymin",
+   "xmax": "bbox_xmax",
+   "ymax": "bbox_ymax"
+  },
+  "covering_digest_equal": true,
+  "covering_digest_source": 40054697788379307962,
+  "covering_digest_postgis": 40054697788379307962
+ },
+ "parity_ok": true,
+ "invalid_geometries_reported_not_repaired": 0,
+ "indexes": [
+  {
+   "name": "fx_buildings_geometry_gix",
+   "definition": "CREATE INDEX fx_buildings_geometry_gix ON geofabric.fx_buildings USING gist (geometry)"
+  },
+  {
+   "name": "fx_buildings_covering_gix",
+   "definition": "CREATE INDEX fx_buildings_covering_gix ON geofabric.fx_buildings USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+  }
+ ],
+ "analyze": {
+  "last_analyze": "2026-10-21 08:41:08.90906+07",
+  "reltuples": 65,
+  "relpages": 2
+ },
+ "sizes_bytes": {
+  "table_with_indexes": 65536,
+  "table_heap": 16384
+ },
+ "seconds": {
+  "copy": 0.3,
+  "index_and_analyze": 0.1
+ }
+}

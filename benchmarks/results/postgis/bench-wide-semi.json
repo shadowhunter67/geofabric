@@ -1,0 +1,86 @@
+[
+  {
+    "case": "semi_join_metric_200m",
+    "duckdb": {
+      "first_ms": 24989.9181,
+      "rows": 534511,
+      "warm_median_ms": 27000.3083,
+      "warm_ms": [
+        27000.3083
+      ]
+    },
+    "postgis": {
+      "first_ms": 21547.1381,
+      "rows": 534511,
+      "warm_median_ms": 25768.9136,
+      "warm_ms": [
+        25768.9136
+      ]
+    }
+  },
+  {
+    "case": "semi_join_metric_50m",
+    "duckdb": {
+      "first_ms": 11754.9483,
+      "rows": 531759,
+      "warm_median_ms": 12181.2021,
+      "warm_ms": [
+        12181.2021
+      ]
+    },
+    "postgis": {
+      "first_ms": 31374.2746,
+      "rows": 531759,
+      "warm_median_ms": 43485.709200000005,
+      "warm_ms": [
+        43485.709200000005
+      ]
+    }
+  },
+  {
+    "case": "demo_b_count_template_shape",
+    "duckdb": {
+      "first_ms": 1879.7741999999998,
+      "rows": 1,
+      "warm_median_ms": 1887.3195,
+      "warm_ms": [
+        1852.0718,
+        1866.5460999999998,
+        1887.3195,
+        1896.6856,
+        1930.9461999999999
+      ]
+    },
+    "postgis": {
+      "first_ms": 17535.9201,
+      "rows": 1,
+      "warm_median_ms": 14444.1758,
+      "warm_ms": [
+        14444.1758
+      ]
+    }
+  },
+  {
+    "case": "demo_b_ids_template_shape",
+    "duckdb": {
+      "first_ms": 1079.5954000000002,
+      "rows": 189772,
+      "warm_median_ms": 1029.9806,
+      "warm_ms": [
+        1024.0637,
+        1024.7062,
+        1029.9806,
+        1030.6957000000002,
+        1055.0339
+      ]
+    },
+    "postgis": {
+      "first_ms": 12308.2207,
+      "rows": 189772,
+      "warm_median_ms": 14216.5396,
+      "warm_ms": [
+        14216.5396
+      ]
+    }
+  }
+]
