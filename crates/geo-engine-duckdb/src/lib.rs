@@ -55,7 +55,19 @@ fn load_spatial(conn: &Connection, allow_install: bool) -> Result<(), String> {
     if !allow_install {
         return Err("spatial extension not installed and install disabled".into());
     }
-    conn.execute_batch("INSTALL spatial; LOAD spatial").map_err(|e| e.to_string())
+    // Separate statements, so a failure says which step failed (the batch form reports an opaque "Error code 1"). On a machine that
+    // has never installed the extension the very first LOAD right after the download was seen to fail on a hosted Windows runner
+    // while the next one succeeded, so the LOAD is retried a few times before giving up.
+    conn.execute_batch("INSTALL spatial").map_err(|e| format!("INSTALL spatial failed: {e}"))?;
+    let mut last = String::new();
+    for attempt in 0..4 {
+        match conn.execute_batch("LOAD spatial") {
+            Ok(()) => return Ok(()),
+            Err(e) => last = format!("LOAD spatial failed after INSTALL (attempt {}): {e}", attempt + 1),
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+    Err(last)
 }
 
 impl DuckDbEngine {
