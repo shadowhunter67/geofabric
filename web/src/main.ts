@@ -19,7 +19,9 @@ import type { LayerState } from "./layers.ts";
 import { inspectorRows } from "./inspector-schema.ts";
 import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
-import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, demoRequests, splitPlaces, topGroup } from "./demos.ts";
+import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, STATIC_DEMOS, demoRequests, splitPlaces, topGroup } from "./demos.ts";
+import { BASE_URL, STATIC_PROFILE } from "./static/profile.ts";
+import { installStaticGateway } from "./static/gateway.ts";
 import type { DemoSpec } from "./demos.ts";
 import { sampleIfCapped } from "./sampling.ts";
 import { runDeviceCheck } from "./devicecheck.ts";
@@ -264,7 +266,8 @@ function dataSourcesSection(): HTMLElement | null {
       el("strong", {}, d.title[getLang()]), " — ", d.provider, " · ",
       safe(d.license.url) ? el("a", { href: safe(d.license.url), target: "_blank", rel: "noopener noreferrer" }, d.license.name) : d.license.name,
       d.license.attribution ? el("div", { class: "note" }, d.license.attribution) : null))),
-    el("div", { class: "note" }, "© OpenFreeMap © OpenMapTiles Data from OpenStreetMap"));
+    el("div", { class: "note" }, "© OpenFreeMap © OpenMapTiles Data from OpenStreetMap"),
+    STATIC_PROFILE ? el("div", { class: "note" }, el("a", { href: `${BASE_URL}attribution.html`, target: "_blank", rel: "noopener noreferrer", "data-testid": "attribution-link" }, t("static.attribution_link"))) : null);
 }
 
 function renderPopover() {
@@ -308,6 +311,8 @@ const css = getComputedStyle(document.documentElement);
 /** OpenFreeMap: vector basemap without an API key. Fetched once; offline or blocked -> the map works on a plain background. */
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const BG_STYLE: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": css.getPropertyValue("--bg").trim() || "#14181c" } }] };
+// static browser profile: the page answers its own /api/* calls (before the first one is made); the full stack talks to the Gateway
+const gatewayReady: Promise<void> = STATIC_PROFILE ? installStaticGateway(BASE_URL) : Promise.resolve();
 const map = new maplibregl.Map({ container: mapDiv, style: BG_STYLE, center: [105, 14], zoom: 5, attributionControl: false });
 map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
@@ -363,6 +368,7 @@ function addResultLayers() {
   add({ id: "res-sel-pt", type: "circle", source: "selected", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 8, "circle-color": "#ffd34a", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
 }
 map.on("load", async () => {
+  await gatewayReady;
   await installBasemap();
   addResultLayers();
   applyMapVisibility();
@@ -1040,9 +1046,14 @@ function demoPanel(): HTMLElement | null {
   if (!S.catalog || !S.catalog.datasets.some((d) => d.id === BUILDINGS && d.present)) return null;
   return el("section", { class: "demos", "data-testid": "demos", "aria-label": t("demo.title") },
     el("h3", {}, t("demo.title")),
-    ...DEMOS.map((d) => el("div", { class: `demo${S.demo.id === d.id ? " on" : ""}`, "data-testid": `demo-${d.id}` },
-      el("div", { class: "demo-text" }, el("strong", {}, t(d.title)), el("span", { class: "meta" }, t(d.desc))),
-      el("button", { type: "button", "data-testid": `demo-run-${d.id}`, disabled: S.busy, onclick: () => void runDemo(d) }, t("demo.run")))),
+    ...DEMOS.map((d) => {
+      // a browser-only deployment cannot run what needs the server: the demo stays visible, disabled, with the reason (never an approximation)
+      const needsServer = STATIC_PROFILE && !STATIC_DEMOS.includes(d.id);
+      return el("div", { class: `demo${S.demo.id === d.id ? " on" : ""}${needsServer ? " needs-server" : ""}`, "data-testid": `demo-${d.id}` },
+        el("div", { class: "demo-text" }, el("strong", {}, t(d.title)), el("span", { class: "meta" }, t(d.desc)),
+          needsServer ? el("span", { class: "meta", "data-testid": `demo-needs-server-${d.id}` }, t("static.needs_server")) : null),
+        el("button", { type: "button", "data-testid": `demo-run-${d.id}`, disabled: S.busy || needsServer, title: needsServer ? t("static.needs_server") : undefined, onclick: () => void runDemo(d) }, t("demo.run")));
+    }),
     null);
 }
 
@@ -1053,14 +1064,14 @@ function queryTab(): HTMLElement {
     el("select", { ...extra, onchange: (e: Event) => on((e.target as HTMLSelectElement).value) }, ...opts.map(([v, l]) => el("option", { value: v, selected: v === val }, l)));
   const colOpts: [string, string][] = [["", t("query.none")], ...cols.map((c): [string, string] => [c.name, DEV() ? c.name : fieldLabel(c.name)])];
   const form = el("div", { class: "form" },
-    lab(t("query.kind"), sel([["features", t("query.kind.features")], ["intersects_features", t("query.kind.intersects_features")], ["count_by", t("query.kind.count_by")]], S.kind, (v) => { S.kind = v; renderTab(); }, { "data-testid": "q-kind" })),
+    lab(t("query.kind"), sel([["features", t("query.kind.features")], ...(STATIC_PROFILE ? [] : [["intersects_features", t("query.kind.intersects_features")] as [string, string]]), ["count_by", t("query.kind.count_by")]], S.kind, (v) => { S.kind = v; renderTab(); }, { "data-testid": "q-kind" })),
     lab(t("query.filter_column"), sel(colOpts, S.filter.column, (v) => { S.filter.column = v; }, { "data-testid": "q-filter-col" })),
     lab(t("query.filter_op"), sel((["eq", "ne", "gt", "ge", "lt", "le"] as const).map((o): [string, string] => [o, t(`op.${o}` as Key)]), S.filter.op, (v) => { S.filter.op = v; })),
     lab(t("query.filter_value"), el("input", { value: S.filter.value, oninput: (e: Event) => { S.filter.value = (e.target as HTMLInputElement).value; } })),
     S.kind === "count_by" ? lab(t("query.group_by"), sel(colOpts.slice(1), S.groupBy, (v) => { S.groupBy = v; })) : null,
     el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.representative, "data-testid": "q-representative", onchange: (e: Event) => { S.representative = (e.target as HTMLInputElement).checked; } }), t("query.representative")),
     lab(t("query.limit"), el("input", { type: "number", min: 1, max: 100000, value: S.limit, onchange: (e: Event) => { S.limit = Math.min(100000, Math.max(1, Number((e.target as HTMLInputElement).value) || 20000)); } })),
-    lab(t("query.where"), sel([["auto", t("query.where.auto")], ["duckdb", t("query.where.server")], ["duckdb-wasm", t("query.where.browser")]], S.engine, (v) => { S.engine = v; if (DEV()) renderHeader(); }, { "data-testid": "q-where" })),
+    lab(t("query.where"), sel([["auto", t("query.where.auto")], ...(STATIC_PROFILE ? [] : [["duckdb", t("query.where.server")] as [string, string]]), ["duckdb-wasm", t("query.where.browser")]], S.engine, (v) => { S.engine = v; if (DEV()) renderHeader(); }, { "data-testid": "q-where" })),
     el("label", { class: "check" }, el("input", { type: "checkbox", checked: S.allowBrowser, onchange: (e: Event) => { S.allowBrowser = (e.target as HTMLInputElement).checked; } }), t("query.allow_browser")),
     el("button", { type: "button", class: "primary", "data-testid": "q-run", onclick: () => void run() }, t("query.run")),
   );

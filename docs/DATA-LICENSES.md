@@ -32,3 +32,13 @@ This document does not determine whether a particular downstream product is a pr
 ## PostGIS copies (2026-10-20)
 
 Rows imported into a PostGIS database from Overture-derived GeoParquet files remain ODbL data: the attribution and share-alike obligations above apply to the database copy and anything derived from it (`scripts/postgis/load_data.py` keeps the logical source uri in the source catalog so the origin stays traceable). No data was imported in the phase that added the engine.
+
+## Public demo pack (2026-10-21)
+
+The static public demo bundles a **small derived database** (`data/public-demo/`, ~26 MB, checksums in `pack.json`): one window of central Ho Chi Minh City cut from the Overture release 2026-09-23.1 datasets above (buildings, transportation, places, administrative boundaries, land use). Changes from the originals: spatial cut to the window, rewritten with small row groups for HTTP range requests, and the buildings were flattened to `id, name, subtype, class, height, num_floors, facade_material, roof_material, roof_shape, has_parts, version, geometry, bbox` (the raw nested columns were dropped). No geometry or kept attribute value was altered.
+
+* **Licence:** the pack is a derived database containing ODbL data (OpenStreetMap-derived), so it is **offered under the ODbL 1.0** with the attributions of the table above. A database derived from it must also be offered under the ODbL. The code licence (MIT OR Apache-2.0) does not apply to the pack.
+* **Why bundled, not read from Overture's bucket:** the public bucket keeps only the newest releases (two were listed on 2026-10-21), so a pinned remote URL would stop working; and the app needs the normalized flat schema, not the raw nested one. CORS and Range work on that bucket (`Access-Control-Allow-Origin: *`), which is how a future remote-source pack could be added.
+* **Attribution on screen:** the map corner shows the attribution of the datasets in view; Settings lists them with licence links; `attribution.html` (published with the site) lists everything verbatim.
+* **Places:** per-source licences (CDLA-Permissive-2.0, Apache-2.0 including the Foursquare notice, CC0-1.0) are kept in the attribution text.
+* **Runtime third parties:** the basemap host (OpenFreeMap) sees viewed tiles; DuckDB-Wasm fetches its `parquet` extension (code, not data) from `extensions.duckdb.org`.

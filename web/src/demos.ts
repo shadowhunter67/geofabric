@@ -32,6 +32,9 @@ export const NEAR_DISTANCE_M = 200;
 export const SCHOOL_CATEGORIES = ["elementary_school", "middle_school", "high_school", "preschool", "college_university"];
 export const HOSPITAL_CATEGORIES = ["hospital"];
 
+/** Demos a browser-only deployment can run: single-source scans and aggregates. B (metric distance: Transform + SpatialSemiJoin), C (spatial join) and E (raster) need the server. */
+export const STATIC_DEMOS: DemoId[] = ["a", "d"];
+
 export const DEMOS: DemoSpec[] = [
   { id: "a", title: "demo.a.title", desc: "demo.a.desc", layers: [], view: { center: [106.6985, 10.7765], zoom: 15.2 } },
   { id: "b", title: "demo.b.title", desc: "demo.b.desc", layers: [ROADS], view: { center: [106.70, 10.78], zoom: 15.3 } },

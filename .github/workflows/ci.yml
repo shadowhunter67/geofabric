@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (typecheck, unit tests, production build, static-mode e2e)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Production build (full stack profile)
+        run: npm run build
+      - name: Production build (static browser profile, GitHub Pages base path)
+        run: npm run build:static
+        env:
+          GF_BASE: /geofabric/
+      - name: Static-mode browser tests (no Gateway, no PostGIS)
+        run: |
+          npx playwright install --with-deps chromium
+          PW_CHANNEL=chromium npx playwright test -c playwright.static.config.ts
+
+  architecture:
+    name: Architecture rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tools/arch_check.py
+
+  rust:
+    name: Rust workspace tests (DuckDB server engine, offline PostGIS tests)
+    # Windows: the verified prebuilt libduckdb used for development (ADR-006) is the Windows archive.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Fetch and verify the prebuilt libduckdb (sha256-pinned)
+        shell: bash
+        run: |
+          python tools/duckdb_prebuilt.py
+          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*/\1/')"
+          echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
+          echo "$lib" >> "$GITHUB_PATH"
+      - name: Tests (no database server is started: live PostgreSQL tests skip and are not counted as evidence)
+        run: cargo test --workspace --no-default-features

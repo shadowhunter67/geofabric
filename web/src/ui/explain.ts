@@ -46,6 +46,7 @@ export interface ExecSummary {
 
 function reasonKey(c: Candidate): Key {
   const t = c.rejected_because.join(" ").toLowerCase();
+  if (/not available in this deployment/.test(t)) return "exec.reason.static";
   if (/unsafe|memory|too large|exceeds the engine limit/.test(t)) return "exec.reason.too_large";
   if (/unsupported operation|not supported|covering/.test(t)) return "exec.reason.unsupported";
   if (/disabled/.test(t)) return "exec.reason.disabled";

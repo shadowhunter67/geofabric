@@ -102,3 +102,11 @@ Chi tiết: `docs/claude/postgis.md`, ADR-013 (Accepted), `docs/postgis.md`. Bá
 - Trait `EngineDescriptor` có thêm 2 hàm mặc định: `source_residency`, `calibration` (engine `Unmeasured` không bao giờ thắng engine đã đo theo chi phí: policy R5d).
 - Đã thêm dependency (cargo): `postgres 0.19` (chỉ khi feature `live`), `sqlparser 0.55` (dev-dep của geo-engine-postgis, kiểm cú pháp PostgreSQL). Binary PostgreSQL 16.9 (EnterpriseDB zip) + PostGIS 3.6.2 (osgeo bundle) tải 2026-10-21 qua `tools/postgis_portable.py`, ghim SHA-256 trong `tools/postgis.lock.json`, cài ở `%LOCALAPPDATA%\geofabric-runtime\postgres` (ASCII, NGOÀI repo; initdb hỏng với đường dẫn có dấu), lắng nghe 127.0.0.1:5433, không service/PATH/admin. Gỡ: `python tools/postgis_portable.py stop` rồi xoá thư mục đó. Dữ liệu nạp bằng `scripts/postgis/load_data.py`; kết quả bằng chứng ở `benchmarks/results/postgis/`.
 - arch_check có luật cách ly họ engine (PostGIS ↔ DuckDB/browser, gateway không dùng driver).
+
+## Public release + static browser demo (2026-10-21)
+
+Chi tiết: `docs/claude/public-release.md`, ADR-014, `docs/deployment-profiles.md`, báo cáo `REPORT-GEOFABRIC-PUBLIC-RELEASE.md`.
+- Profile **static browser** = cùng UI/PlanGraph/DuckDB-Wasm, chỉ thay biên HTTP: `web/src/static/{profile,ir,gateway}.ts` tự trả `/api/*` trong trang (build `--mode static`, `GF_BASE=/geofabric/`). Không có Gateway/DuckDB server/PostGIS; thứ cần server (near, join, intersects) bị TỪ CHỐI "requires GeoFabric Server", không xấp xỉ.
+- Gói dữ liệu demo công khai `data/public-demo/` (26 MB, ODbL derived, cắt bằng `data/scripts/make_public_demo.py`); KHÔNG đọc Overture S3 trực tiếp (bucket chỉ giữ 2 release mới nhất + app cần schema phẳng). Trang ghi công: `web/public/attribution.html` (sinh bởi `data/scripts/make_attribution_page.py`).
+- Playwright static: `web/playwright.static.config.ts`, spec ở `web/e2e-static/` (PUBLIC_URL=... chạy thẳng trên site thật). Build base path: `GF_BASE` + `MSYS_NO_PATHCONV=1` trong Git Bash.
+- Giấy phép mã nguồn: MIT OR Apache-2.0 (user chọn 2026-10-21). Lịch sử công khai viết lại sang noreply (user chọn); bản local gốc giữ ở nhánh sao lưu.

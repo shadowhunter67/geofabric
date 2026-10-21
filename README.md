@@ -1,95 +1,114 @@
 # GeoFabric
 
-> A spatial runtime for cloud-native geospatial computing: a logical Spatial IR, a planner, and replaceable execution engines.
+**An experimental, browser-first spatial runtime for cloud-native geospatial data.** A logical plan (the *PlanGraph*, a versioned Spatial IR) is planned once and runs on interchangeable engines: **DuckDB-Wasm in your browser**, DuckDB on a server, or PostGIS. The server is optional. PostGIS is optional.
 
-Status: **planner hardening done (2026-10-15, report: REPORT-GEOFABRIC-PLANNER-HARDENING.md)** · multi-engine architecture validation done (PlanGraph DAG, planner v1 choosing between DuckDB on the server and DuckDB-Wasm in the browser, validated on a real 1.45 GB Overture subset). Reports: [core MVP](REPORT-GEOFABRIC-CORE-MVP.md) · [hardening](REPORT-GEOFABRIC-HARDENING.md) · [multi-engine](REPORT-GEOFABRIC-MULTI-ENGINE.md). See [REPORT-GEOFABRIC-CORE-MVP.md](REPORT-GEOFABRIC-CORE-MVP.md) and [REPORT-GEOFABRIC-HARDENING.md](REPORT-GEOFABRIC-HARDENING.md) for what works, what does not, and the measurements. The real execution pipeline (and what is *not* claimed) is in [docs/pipeline.md](docs/pipeline.md).
+<!-- LIVE-DEMO -->
 
-Read first: [CONSTITUTION.md](CONSTITUTION.md) · [AGENTS.md](AGENTS.md) · [docs/vision.md](docs/vision.md) · [rfcs/](rfcs/) · [adr/](adr/)
+> Status: **alpha / experimental.** It is a research-grade runtime with real correctness evidence (cross-engine result equality, an independent oracle for the metric-distance demo), not a production product. See [Known limits](#known-limits).
 
-## Layout
+## What can I try right now?
+
+Open the **public demo** (no install, no account, nothing runs on a server): a real map of central Ho Chi Minh City with **real Overture buildings, roads, places and boundaries**, queried by **DuckDB-Wasm in your own browser** straight from GeoParquet files by HTTP range requests.
+
+- pan/zoom: the visible buildings are queried live (a spatially representative sample is drawn when a view holds more than the draw budget; counts are always the full logical count),
+- click a feature to inspect it, filter by an attribute, count by a category,
+- switch Vietnamese / English; switch to **Developer** mode to see the PlanGraph, the generated SQL, the planner's view and which engines this deployment has.
+
+Analyses that need a server (metric distance such as "buildings within 200 m of main roads", spatial joins, exact intersection) are shown as disabled with the reason: *"This analysis requires GeoFabric Server."* They are never approximated.
+
+| Explorer (Vietnamese) | Developer (English) |
+|---|---|
+| ![Explorer](docs/static-demo-explorer-vi.png) | ![Developer](docs/static-demo-developer.png) |
+
+## How it fits together
 
 ```
-crates/geo-types            CRS, units, bbox, schema (no defaults: CRS/unit always explicit)
-crates/geo-ir               logical Spatial IR, schema derivation, validation, JSON (versioned)
-crates/geo-executor         ExecutionEngine contract + metrics types (RFC-002)
-crates/geo-source-geoparquet  footer metadata, CRS, row-group stats, bbox pruning, Arrow reads
-crates/geo-planner          rule-based planner v0 + decision log (RFC-003)
-crates/geo-engine-duckdb    DuckDB adapter (IR -> SQL lives only here)
-crates/geo-runtime          composition root: validate -> plan -> execute
-crates/geo-gateway          HTTP API + static web UI (GeoJSON only at this boundary)
-crates/geo-bench            benchmark runner
-web/                        TypeScript + MapLibre UI (talks to the gateway only)
-benchmarks/                 synthetic GeoParquet generator, results
-tools/arch_check.py         architecture fitness check (dependency graph)
+                       GeoFabric UI  (MapLibre, Explorer / Developer, vi / en)
+                              |
+                          PlanGraph        versioned Spatial IR (0.3): the same plan everywhere
+                              |
+                           Planner         observable decisions: capabilities, cost, risk, health
+                  /           |            \
+          DuckDB-Wasm      DuckDB         PostGIS             <- execution engines (replaceable adapters)
+           (browser)      (server)        (server)
+              |              |               |
+     GeoParquet / PMTiles    files        database            <- data
+        by range request
 ```
 
-(Target tree in the brief uses `engines/`, `formats/`; the MVP keeps everything under `crates/` — see the report, "Architecture deviations".)
+* **Static public demo** = the browser branch only: UI + MapLibre + DuckDB-Wasm + public GeoParquet. No gateway, no database, no tunnel.
+* **Full stack** = the optional server branches behind the same plan and planner.
 
-## Setup (Windows, one-time)
+Three supported deployment profiles (details in [docs/deployment-profiles.md](docs/deployment-profiles.md)):
+
+| Profile | What runs | Needs |
+|---|---|---|
+| **A. Static browser** (the public demo) | UI + MapLibre + DuckDB-Wasm + cloud-native data | any static host (GitHub Pages) |
+| **B. Local full stack** | UI + Gateway + DuckDB server (+ optional PostGIS) | Rust, Node, Python on your machine |
+| **C. Self-hosted server** | Gateway + server engines + your storage (+ optional PostGIS) | your infrastructure (not packaged here) |
+
+## Run it yourself
+
+### Static browser profile (what is deployed)
+
+```
+cd web
+npm ci
+npm run build:static            # GF_BASE=/geofabric/ for a sub-path host such as GitHub Pages
+npx vite preview --outDir dist  # then open the printed URL
+```
+
+The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
+
+### Local full stack (Windows, one-time setup)
 
 Prerequisites: Rust ≥ 1.99, Node ≥ 24, Python ≥ 3.12.
 
 ```
-# synthetic data + Python tooling (venv is git-ignored)
-python -m venv benchmarks/.venv
-benchmarks/.venv/Scripts/python -m pip install pyarrow duckdb numpy
-benchmarks/.venv/Scripts/python benchmarks/gen_synthetic.py --size 10mb  --out benchmarks/data
-benchmarks/.venv/Scripts/python benchmarks/gen_synthetic.py --size 100mb --out benchmarks/data
-# independent expected results (pyarrow + numpy only) for the benchmark correctness gate
-benchmarks/.venv/Scripts/python benchmarks/oracle.py --size 10mb  --data benchmarks/data --out benchmarks/results
-benchmarks/.venv/Scripts/python benchmarks/oracle.py --size 100mb --data benchmarks/data --out benchmarks/results
-
-# web UI
-cd web && npm install && npm run build && cd ..
-```
-
-**Development (default): verified prebuilt DuckDB** — fast and small (ADR-006):
-
-```
-python tools/duckdb_prebuilt.py        # downloads libduckdb v1.5.6, checks sha256 (GitHub digest + lock file)
+python tools/duckdb_prebuilt.py     # downloads libduckdb, checks the sha256 pinned in tools/duckdb-prebuilt.lock.json
 export DUCKDB_LIB_DIR="<printed dir>"; export PATH="$DUCKDB_LIB_DIR:$PATH"
-cargo test --workspace --no-default-features        # ~1 min clean
+cd web && npm ci && npm run build && cd ..
+cargo run -p geo-gateway --no-default-features -- --data benchmarks/data --port 8787   # then open http://127.0.0.1:8787
 ```
 
-`--no-default-features` selects the prebuilt library; the **default features compile DuckDB from source** (bundled: 10 min, tens of GB — intended for CI/release, not exercised in the last round).
-The first run of the DuckDB adapter downloads the `spatial` extension (needs network once, ~1 min).
+`start-ui.bat` does the same on Windows. Real data (optional, ~1.5 GB, public Overture release, never committed): see [data/README.md](data/README.md). The first run of the DuckDB adapter downloads DuckDB's `spatial` extension once.
 
-Real data (optional, ~1.5 GB, public Overture release, not committed): `benchmarks/.venv/Scripts/python benchmarks/overture_fetch.py --name vn_south --bbox 105 8.5 108 12 --out benchmarks/data` then `oracle_overture.py` for the independent expected results.
+### Optional: PostGIS
 
-## Quick start (Windows)
-
-Double-click **`start-ui.bat`** (or run it in a terminal): it prepares the DuckDB library on first use, builds the UI/gateway if missing, starts the gateway on http://127.0.0.1:8787 in its own window (close that window to stop) and opens the browser. Options: `start-ui.bat rebuild`, `start-ui.bat nobrowser`.
-
-## Demo (exact steps)
-
-```
-cargo run -p geo-gateway -- --data benchmarks/data --port 8787     # serves API + web/dist
-# open http://127.0.0.1:8787
-```
-
-1. The first source (`clustered_10mb_spatial`) is selected; its extent (orange) and row-group outlines (dashed) appear immediately.
-2. Zoom the map into a cluster and press **Run** (Query tab = "Features in viewport").
-3. **Execution Plan** tab: metadata read → spatial prune (row groups skipped, green = read, grey = pruned on the map) → planner decision log → generated DuckDB SQL → Arrow result → render, with metrics.
-4. Click a feature: **Inspector** shows properties, source, CRS, approximate spherical area/perimeter and the lineage chain.
-5. Compare `clustered_10mb_shuffled`: same answer, but nothing is pruned (0 / 26 row groups skipped).
-
-UI development: `cargo run -p geo-gateway` + `cd web && npm run dev` (proxy to :8787).
+PostGIS is an *optional* engine, verified live against PostgreSQL 16.9 / PostGIS 3.6.2 (strict data parity, 17 plans identical to DuckDB, an independent oracle for the 200 m metric demo): [docs/postgis.md](docs/postgis.md), [ADR-013](adr/ADR-013-postgis-engine.md). Nothing in the static demo or the default stack needs it; it is off unless you configure it.
 
 ## Checks
 
 ```
-cargo test --workspace --no-default-features   # needs benchmarks/data (tests skip with a message if absent)
-python tools/arch_check.py             # dependency-boundary rules from the Constitution
-cd web && npm run typecheck && npm test        # TS unit tests (sqlgen, digest, wkb) via node --test
-cd web && npm run build && npx playwright test   # browser smoke (uses the installed Chrome, starts the gateway)
-cargo build --release -p geo-bench
-target/release/geo-bench.exe --data benchmarks/data --out benchmarks/results --sizes 10mb,100mb --reps 3 --tag run
+cargo test --workspace --no-default-features          # Rust (live PostgreSQL tests skip without a server: a skip is not evidence)
+python tools/arch_check.py                            # dependency-boundary rules from the Constitution
+cd web && npm run typecheck && npm test               # TypeScript unit tests
+cd web && npx playwright test -c playwright.static.config.ts   # static-mode browser tests (no gateway, no PostGIS)
 ```
 
-## Trust model (v0)
+## Principles
 
-The gateway binds to 127.0.0.1, has no authentication, and accepts **only logical IR or structured query templates — never SQL**. Source files must live under `--data`; remote URLs are refused; result rows, request size and concurrency are capped. Every query has an execution timeout (default 30 s, `--timeout-secs`) enforced *inside* DuckDB via `interrupt()`, and a client disconnect cancels the running query. Sources are authorized by a `SourceAccessGuard` before any file I/O; denials are opaque.
+[CONSTITUTION.md](CONSTITUTION.md) (the invariants), [AGENTS.md](AGENTS.md), [docs/vision.md](docs/vision.md), [rfcs/](rfcs/), [adr/](adr/). Highlights: CRS and units are never implicit; GeoJSON is only a boundary format; the IR does not depend on any engine; every optimization needs benchmark evidence; the planner's decisions are observable; AI never executes unvalidated SQL.
 
-## Disk / editor tips
+## Data, licences and privacy
 
-`target/` gets large (DuckDB bundled). Dev profile has no debug info (`debug = 0`). Optionally put it outside the workspace with `CARGO_TARGET_DIR=<dir outside the repo>` (not committed). `.vscode/settings.json` excludes `target/`, `node_modules/`, benchmark data from the watcher/search.
+* **Code:** MIT OR Apache-2.0 ([LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE)).
+* **Data:** the demo pack is a small **derived database of [Overture Maps](https://overturemaps.org) data**, which includes OpenStreetMap-derived data under the **ODbL** (share-alike). It carries the required attributions, shown on the map and in [docs/DATA-LICENSES.md](docs/DATA-LICENSES.md). The pack is offered under the ODbL; the code licence does not apply to it.
+* **Basemap:** OpenFreeMap / OpenMapTiles / OpenStreetMap, attribution shown on the map. The basemap host can see which map tiles you view.
+* **Third-party code at runtime:** DuckDB-Wasm downloads its `parquet` extension (code, not data) from DuckDB's official extension CDN, `extensions.duckdb.org`, on first use.
+* **No analytics, no cookies, no tracking.** Your queries run in your browser; nothing about them is sent anywhere. See [SECURITY.md](SECURITY.md).
+
+## Known limits
+
+* The browser engine runs a subset of the plan (scan, filter, bbox, aggregate, project, sort, limit). Metric distance, spatial joins and exact intersection need a server engine.
+* The planner's cost model is calibrated for DuckDB; PostGIS has no calibrated cost model (the planner never picks it on predicted cost).
+* One development machine produced all measurements; the public demo's pack is a single roughly 9 km × 8 km window of central Ho Chi Minh City.
+* Not production-ready, not a distributed system, not a universal GIS: it is a runtime for studying one plan on several engines with evidence.
+
+## Contributing and security
+
+[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)
+
+---
+
+*Tiếng Việt:* GeoFabric là lớp chạy GIS thử nghiệm, ưu tiên trình duyệt: cùng một kế hoạch truy vấn (PlanGraph) chạy trên DuckDB-Wasm ngay trong trình duyệt, trên DuckDB máy chủ hoặc PostGIS. Bản demo công khai chạy hoàn toàn trên trình duyệt, không cần cài đặt; máy chủ và PostGIS chỉ là tuỳ chọn.
