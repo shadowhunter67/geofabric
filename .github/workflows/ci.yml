@@ -83,3 +83,70 @@ jobs:
         run: |
           cargo run -q -p geo-engine-duckdb --example probe --no-default-features || true
           for i in 1 2 3; do cargo test -q -p geo-runtime --test semi_join --no-default-features -- --nocapture --test-threads=1 2>&1 | tail -25 || true; done
+
+  duckdb-repro:
+    # CI flake investigation: DuckDB start-up alone (no GeoFabric code beyond the crate build), many connections, with and without threads and a
+    # pre-installed extension. If this never fails while the test suite does, the problem is not DuckDB start-up.
+    name: "DuckDB start-up repro (threads=${{ matrix.threads }}, extension=${{ matrix.ext }})"
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { threads: 1, ext: fresh, flags: "" }
+          - { threads: 4, ext: fresh, flags: "--arrow-first" }
+          - { threads: 4, ext: pre, flags: "--arrow-first" }
+          - { threads: 4, ext: pre, flags: "--arrow-first --lock" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Fetch and verify the prebuilt libduckdb (sha256-pinned)
+        shell: bash
+        run: |
+          python tools/duckdb_prebuilt.py
+          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*//')"
+          echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
+          echo "$lib" >> "$GITHUB_PATH"
+      - name: Pre-install the spatial extension
+        if: matrix.ext == 'pre'
+        run: |
+          python -m pip install "duckdb==1.5.6"
+          python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')"
+      - name: Repro (200 iterations per thread)
+        run: cargo run -q -p geo-engine-duckdb --example duckdb_repro --no-default-features -- --iters 200 --threads ${{ matrix.threads }} ${{ matrix.flags }}
+
+  rust-parallel-experiment:
+    # NOT a gate (continue-on-error): the Rust suite with parallel test threads, to collect the engine's failure diagnostics from the hosted runner.
+    name: "Rust tests, parallel (experiment: failures here print diagnostics, they do not fail CI)"
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Synthetic test data
+        run: |
+          python -m pip install pyarrow "duckdb==1.5.6" numpy
+          python benchmarks/gen_synthetic.py --size 10mb --out benchmarks/data
+      - name: Fetch and verify the prebuilt libduckdb (sha256-pinned)
+        shell: bash
+        run: |
+          python tools/duckdb_prebuilt.py
+          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*//')"
+          echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
+          echo "$lib" >> "$GITHUB_PATH"
+      - name: Tests with 4 threads, three attempts
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "=== attempt $i"
+            cargo test --workspace --no-default-features -- --test-threads=4 2>&1 | grep -E "^test result: FAILED|FAILED|panicked|\[diag " | cut -c1-900 || true
+          done
+

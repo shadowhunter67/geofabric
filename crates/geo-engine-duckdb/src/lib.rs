@@ -45,6 +45,27 @@ pub struct DuckDbEngine {
 
 /// Serializes the extension load/install inside this process: on a machine that has never installed `spatial`, several engines
 /// created at once would all run `INSTALL` against the same extension directory and one of them fails with an opaque error.
+/// Number of queries this process has started (1 = the very first one): an opaque first-query failure is a different problem from a later one.
+static QUERY_SEQ: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Environment that matters when a DuckDB statement fails opaquely (CI flake investigation). No secrets: paths, ids and versions only.
+fn failure_context(stage: &str, threads: usize, query_no: usize, sql: &str) -> String {
+    let env = |k: &str| std::env::var(k).unwrap_or_else(|_| "<unset>".into());
+    format!(
+        "[diag stage={stage} query_no={query_no} ({}) thread={:?} test_threads={} pid={} ts_ms={} engine_threads={threads} TEMP={} TMP={} cwd={:?} DUCKDB_LIB_DIR={} sql_head={:?}]",
+        if query_no <= 1 { "FIRST query of this process" } else { "later query" },
+        std::thread::current().name().unwrap_or("?"),
+        env("RUST_TEST_THREADS"),
+        std::process::id(),
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0),
+        env("TEMP"),
+        env("TMP"),
+        std::env::current_dir().ok(),
+        env("DUCKDB_LIB_DIR"),
+        sql.chars().take(120).collect::<String>(),
+    )
+}
+
 static EXTENSION_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 fn load_spatial(conn: &Connection, allow_install: bool) -> Result<(), String> {
@@ -293,7 +314,8 @@ impl ExecutionEngine for DuckDbEngine {
             };
             let start = Instant::now();
             let run = (|| {
-                let mut stmt = conn.prepare(&compiled.sql).map_err(|x| EngineError::Engine(format!("prepare: {x}")))?;
+                let query_no = QUERY_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
+                let mut stmt = conn.prepare(&compiled.sql).map_err(|x| EngineError::Engine(format!("prepare: {x} {}", failure_context("prepare", ctx.threads, query_no, &compiled.sql))))?;
                 let batches: Vec<_> = match stmt.query_arrow([]) {
                     Ok(arrow) => arrow.collect(),
                     Err(first) => {
@@ -301,8 +323,8 @@ impl ExecutionEngine for DuckDbEngine {
                         // keeps the message, so re-run the failing statement through it purely to say what actually went wrong
                         let detail = conn.prepare(&compiled.sql).and_then(|mut s| s.query([]).map(|_| ())).err().map(|d| d.to_string());
                         return Err(match detail {
-                            Some(d) if d != first.to_string() => EngineError::Engine(format!("{first} ({d})")),
-                            _ => e(first),
+                            Some(d) if d != first.to_string() => EngineError::Engine(format!("{first} ({d}) {}", failure_context("execute", ctx.threads, query_no, &compiled.sql))),
+                            _ => EngineError::Engine(format!("{first} {}", failure_context("execute", ctx.threads, query_no, &compiled.sql))),
                         });
                     }
                 };
