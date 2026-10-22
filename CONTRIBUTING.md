@@ -30,7 +30,7 @@ Live PostgreSQL/PostGIS tests (`--features live`) need a server and skip otherwi
 
 ## Run it
 
-* Static: `cd web && npm run build:static && npx vite preview --outDir dist`.
+* Static: `cd web && npm run build:static && node scripts/pages-like-server.mjs dist 4190` (a tiny server that behaves like GitHub Pages; open `http://127.0.0.1:4190/geofabric/` after building with `GF_BASE=/geofabric/`).
 * Local full stack: `cargo run -p geo-gateway --no-default-features -- --data benchmarks/data --port 8787` (or `start-ui.bat`), UI development with `cd web && npm run dev`.
 
 ## Invariants (a PR that breaks one will not be merged)

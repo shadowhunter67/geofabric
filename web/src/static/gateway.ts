@@ -14,8 +14,12 @@ import type { QueryReq, StaticSource } from "./ir.ts";
 
 export const NOT_IN_DEPLOYMENT = "not available in this deployment (static browser profile: no GeoFabric Server)";
 const COVERING = { xmin: "bbox.xmin", ymin: "bbox.ymin", xmax: "bbox.xmax", ymax: "bbox.ymax", declared: false };
-/** Files at most this big are fetched whole (one request); bigger ones by HTTP range, like the gateway's planner decides. */
-const FULL_FETCH_MAX = 4 * 1024 * 1024;
+/**
+ * Files at most this big are fetched whole, once (the engine's "full" mode); bigger ones by HTTP range. GitHub Pages answers the ranged HEAD
+ * that DuckDB-Wasm needs with 200 instead of 206, so range reads cannot work there (ADR-014): the demo pack files (largest 14 MB) are fetched whole.
+ * Raise/lower this for a host that supports ranges.
+ */
+const FULL_FETCH_MAX = 32 * 1024 * 1024;
 
 export interface StaticPack { sources: StaticSource[]; catalog: unknown }
 export interface GatewayDeps {
@@ -75,7 +79,7 @@ function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayS
     engine: "duckdb-wasm", kind: "browser", feasible: browserOk, score_ms: null, cost: null,
     reasons: [
       "supports all required operation kinds",
-      "runs next to the user: DuckDB-Wasm in this page, reading the published GeoParquet by HTTP range requests",
+      "runs next to the user: DuckDB-Wasm in this page, reading the published GeoParquet",
       "the only engine in this deployment, so no cost comparison is made (no estimate is invented)",
     ],
     rejected_because: browserOk ? [] : ["runtime probe failed"], confidence: null, risk: null,
@@ -116,7 +120,9 @@ function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayS
     ],
     steps: [
       { label: "Planner selected the browser engine", detail: "the only engine in a static deployment" },
-      { label: "Fetch GeoParquet byte ranges", detail: "HTTP range requests to the published file; DuckDB-Wasm reads the row groups it needs" },
+      strategy === "full"
+        ? { label: "Fetch the GeoParquet file", detail: "the published file is downloaded once, on first use (this host cannot serve range reads); DuckDB-Wasm then reads only the row groups it needs from memory" }
+        : { label: "Fetch GeoParquet byte ranges", detail: "HTTP range requests to the published file; DuckDB-Wasm reads the row groups it needs" },
       { label: "Compile logical plan -> DuckDB-Wasm SQL (client side)", detail: "the client translates the same PlanGraph; bbox filters use the bbox covering column" },
     ],
     assessment, candidates, input_bytes_upper_bound: fetchEst, result_rows_estimate: rows, scans: [scan],

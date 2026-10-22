@@ -30,11 +30,11 @@ BUILDINGS_FLAT = (
     "id, names.primary AS name, subtype, class, height, num_floors, facade_material, roof_material, roof_shape, has_parts, version, geometry, bbox"
 )
 SOURCES = {
-    "overture_buildings_vn_south": ("benchmarks/data/overture_buildings_vn_south.parquet", 4_000, "demo_buildings.parquet.zip", BUILDINGS_FLAT),
-    "overture_transport_hcm": ("data/local/overture_transport_hcm.parquet", 4_000, "demo_transport.parquet.zip", "*"),
-    "overture_places_hcm": ("data/local/overture_places_hcm.parquet", 4_000, "demo_places.parquet.zip", "*"),
-    "overture_admin_hcm": ("data/local/overture_admin_hcm.parquet", 500, "demo_admin.parquet.zip", "*"),
-    "overture_landuse_hcm": ("data/local/overture_landuse_hcm.parquet", 1_000, "demo_landuse.parquet.zip", "*"),
+    "overture_buildings_vn_south": ("benchmarks/data/overture_buildings_vn_south.parquet", 4_000, "demo_buildings.parquet", BUILDINGS_FLAT),
+    "overture_transport_hcm": ("data/local/overture_transport_hcm.parquet", 4_000, "demo_transport.parquet", "*"),
+    "overture_places_hcm": ("data/local/overture_places_hcm.parquet", 4_000, "demo_places.parquet", "*"),
+    "overture_admin_hcm": ("data/local/overture_admin_hcm.parquet", 500, "demo_admin.parquet", "*"),
+    "overture_landuse_hcm": ("data/local/overture_landuse_hcm.parquet", 1_000, "demo_landuse.parquet", "*"),
 }
 
 
@@ -171,7 +171,7 @@ def main() -> int:
         "bbox_crs84": args.bbox,
         "overture_release": RELEASE,
         "license": "ODbL-1.0 (derived database; attribution required, see docs/DATA-LICENSES.md)",
-        "note": "The files are plain GeoParquet. They are published with a .zip suffix only so that GitHub Pages does not apply transfer compression (it gzips application/octet-stream and then serves byte ranges of the compressed bytes, which breaks HTTP range reads).",
+        "note": "Plain GeoParquet. On GitHub Pages the static site downloads each file whole on first use (Pages answers a ranged HEAD with 200, which DuckDB-Wasm cannot use for range reads); a host that answers it with 206 could be read by range.",
         "files": files,
         "metadata": ["sources.json", "catalog.json"],
         "total_bytes": sum(f["bytes"] for f in files.values()),

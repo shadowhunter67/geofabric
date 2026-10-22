@@ -11,7 +11,7 @@
   "license": "ODbL-1.0 (derived database; attribution required, see docs/DATA-LICENSES.md)",
   "files": {
     "overture_buildings_vn_south": {
-      "file": "demo_buildings.parquet.zip",
+      "file": "demo_buildings.parquet",
       "rows": 153507,
       "row_groups": 37,
       "bytes": 13696286,
@@ -19,7 +19,7 @@
       "derived_from": "benchmarks/data/overture_buildings_vn_south.parquet"
     },
     "overture_transport_hcm": {
-      "file": "demo_transport.parquet.zip",
+      "file": "demo_transport.parquet",
       "rows": 27086,
       "row_groups": 7,
       "bytes": 2200617,
@@ -27,7 +27,7 @@
       "derived_from": "data/local/overture_transport_hcm.parquet"
     },
     "overture_places_hcm": {
-      "file": "demo_places.parquet.zip",
+      "file": "demo_places.parquet",
       "rows": 132643,
       "row_groups": 32,
       "bytes": 9290619,
@@ -35,7 +35,7 @@
       "derived_from": "data/local/overture_places_hcm.parquet"
     },
     "overture_admin_hcm": {
-      "file": "demo_admin.parquet.zip",
+      "file": "demo_admin.parquet",
       "rows": 55,
       "row_groups": 1,
       "bytes": 2159012,
@@ -43,7 +43,7 @@
       "derived_from": "data/local/overture_admin_hcm.parquet"
     },
     "overture_landuse_hcm": {
-      "file": "demo_landuse.parquet.zip",
+      "file": "demo_landuse.parquet",
       "rows": 1617,
       "row_groups": 1,
       "bytes": 312271,
@@ -56,5 +56,5 @@
     "catalog.json"
   ],
   "total_bytes": 27658805,
-  "note": "The files are plain GeoParquet. They are published with a .zip suffix only so that GitHub Pages does not apply transfer compression (it gzips application/octet-stream and then serves byte ranges of the compressed bytes, which breaks HTTP range reads)."
+  "note": "Plain GeoParquet. On GitHub Pages the static site downloads each file whole on first use (Pages answers a ranged HEAD with 200, which DuckDB-Wasm cannot use for range reads); a host that answers it with 206 could be read by range."
 }

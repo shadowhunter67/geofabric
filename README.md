@@ -8,7 +8,7 @@
 
 ## What can I try right now?
 
-Open the **public demo** (no install, no account, nothing runs on a server): a real map of central Ho Chi Minh City with **real Overture buildings, roads, places and boundaries**, queried by **DuckDB-Wasm in your own browser** straight from GeoParquet files by HTTP range requests.
+Open the **public demo** (no install, no account, nothing runs on a server): a real map of central Ho Chi Minh City with **real Overture buildings, roads, places and boundaries**, queried by **DuckDB-Wasm in your own browser** from GeoParquet files (downloaded on demand, one layer at a time).
 
 - pan/zoom: the visible buildings are queried live (a spatially representative sample is drawn when a view holds more than the draw budget; counts are always the full logical count),
 - click a feature to inspect it, filter by an attribute, count by a category,
@@ -54,11 +54,11 @@ Three supported deployment profiles (details in [docs/deployment-profiles.md](do
 ```
 cd web
 npm ci
-npm run build:static            # GF_BASE=/geofabric/ for a sub-path host such as GitHub Pages
-npx vite preview --outDir dist  # then open the printed URL
+GF_BASE=/geofabric/ npm run build:static            # a sub-path host such as GitHub Pages
+node scripts/pages-like-server.mjs dist 4190        # then open http://127.0.0.1:4190/geofabric/
 ```
 
-The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. Its files are plain GeoParquet published with a `.zip` suffix: GitHub Pages gzips `application/octet-stream` and then serves byte ranges of the compressed bytes, which breaks range reads; a `.zip` type is left alone. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
+The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. On GitHub Pages each layer file (at most 14 MB) is downloaded whole, once, the first time the layer is used: Pages answers the ranged `HEAD` probe that DuckDB-Wasm needs for range reads with `200` instead of `206`. A host that answers it properly (an object store, for example) could be read by HTTP range requests with no change to the plan. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
 
 ### Local full stack (Windows, one-time setup)
 

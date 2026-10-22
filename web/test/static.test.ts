@@ -133,3 +133,12 @@ test("the browser's reports feed health: a failure degrades, three make it unhea
   await handle("POST", "/api/report", { ok: false, message: "boom" }, deps, st);
   assert.equal(await h(), "unhealthy");
 });
+
+test("pack files are fetched whole (GitHub Pages cannot serve the ranged HEAD DuckDB-Wasm needs): every strategy is 'full' and the step says so", async () => {
+  const st = newState();
+  const r = await handle("POST", "/api/query", req(), deps, st);
+  const b = r.body as { physical: { steps: { label: string }[]; assessment: { browser_access: { strategy: string; fetch_bytes_est: number; file_bytes: number }[] } } };
+  assert.equal(b.physical.assessment.browser_access[0].strategy, "full");
+  assert.equal(b.physical.assessment.browser_access[0].fetch_bytes_est, b.physical.assessment.browser_access[0].file_bytes);
+  assert.ok(b.physical.steps.some((s) => s.label === "Fetch the GeoParquet file"));
+});

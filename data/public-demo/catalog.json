@@ -32,7 +32,7 @@
    "present": true,
    "files": [
     {
-     "path": "demo/demo_buildings.parquet.zip",
+     "path": "demo/demo_buildings.parquet",
      "size_bytes": 13696286,
      "rows": 153507
     }
@@ -75,7 +75,7 @@
    "present": true,
    "files": [
     {
-     "path": "demo/demo_transport.parquet.zip",
+     "path": "demo/demo_transport.parquet",
      "size_bytes": 2200617,
      "rows": 27086
     }
@@ -118,7 +118,7 @@
    "present": true,
    "files": [
     {
-     "path": "demo/demo_places.parquet.zip",
+     "path": "demo/demo_places.parquet",
      "size_bytes": 9290619,
      "rows": 132643
     }
@@ -161,7 +161,7 @@
    "present": true,
    "files": [
     {
-     "path": "demo/demo_admin.parquet.zip",
+     "path": "demo/demo_admin.parquet",
      "size_bytes": 2159012,
      "rows": 55
     }
@@ -204,7 +204,7 @@
    "present": true,
    "files": [
     {
-     "path": "demo/demo_landuse.parquet.zip",
+     "path": "demo/demo_landuse.parquet",
      "size_bytes": 312271,
      "rows": 1617
     }

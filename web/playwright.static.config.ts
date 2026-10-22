@@ -12,10 +12,10 @@ export default defineConfig({
   testDir: "./e2e-static",
   timeout: 120_000,
   workers: 1,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0, // one retry on the hosted runner: one test depends on a public basemap server
   reporter: [["list"]],
   use: { baseURL: BASE, channel: (process.env.PW_CHANNEL ?? "chrome") as "chrome" | "msedge", headless: true, viewport: { width: 1500, height: 900 } },
   webServer: PUBLIC_URL
     ? undefined
-    : { command: `npx vite preview --outDir ${process.env.GF_OUT ?? "dist-static"} --base /geofabric/ --host 127.0.0.1 --port ${PORT} --strictPort`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
+    : { command: `node scripts/pages-like-server.mjs ${process.env.GF_OUT ?? "dist-static"} ${PORT}`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
 });
