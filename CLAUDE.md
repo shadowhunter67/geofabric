@@ -111,3 +111,13 @@ Chi tiết: `docs/claude/public-release.md`, ADR-014, `docs/deployment-profiles.
 - Playwright static: `web/playwright.static.config.ts`, spec ở `web/e2e-static/` (PUBLIC_URL=... chạy thẳng trên site thật). Build base path: `GF_BASE` + `MSYS_NO_PATHCONV=1` trong Git Bash.
 - Giấy phép mã nguồn: MIT OR Apache-2.0 (user chọn 2026-10-21). Lịch sử công khai viết lại sang noreply (user chọn); bản local gốc giữ ở nhánh sao lưu.
 - ĐÃ CÔNG KHAI (2026-10-22): repo https://github.com/shadowhunter67/geofabric + demo https://shadowhunter67.github.io/geofabric/ . GitHub Pages: HEAD+Range trả 200 nên DuckDB-Wasm KHÔNG range-read được → lớp dữ liệu tải nguyên file (FilePool, 1 lần/phiên); `vite preview` che lỗi này, dùng `web/scripts/pages-like-server.mjs`. CI Rust trên windows-latest từng lỗi chập chờn ("Error code 1" ở truy vấn DuckDB đầu tiên) chưa tìm ra gốc; test dùng temp dir canonical (8.3). Lịch sử local gốc ở nhánh `backup/pre-public-history`.
+
+## Public runtime hardening (2026-10-22)
+
+Chi tiết: `REPORT-GEOFABRIC-PUBLIC-RUNTIME-HARDENING.md`, RFC-004 (Accepted), ADR-014 addendum.
+- **CI flake đã tìm ra gốc**: DuckDB profiler (JSON output) làm engine chạy song song trong 1 process lỗi "Error code 1" (bật: 8/40 lỗi, tắt: 0/40). Profiler giờ opt-in (`GEOFABRIC_DUCKDB_PROFILE=1`, geo-bench tự bật); peak memory = Unknown mặc định; Rust CI chạy song song lại.
+- **Lowering dùng chung**: crate `geo-lowering` (thuần, build wasm32) định nghĩa predicate/literal/BboxFilter/sort NULLS LAST/aggregate/semi-join EXISTS/mét/CRS/row cap; DuckDB+PostGIS chỉ là dialect; browser chạy CHÍNH Rust đó dưới dạng WebAssembly (`web/src/engine/lowering.ts`, build bằng `npm run lowering`, cần `rustup target add wasm32-unknown-unknown`); `sqlgen.ts` đã xoá, arch_check cấm quay lại. Còn nợ: request->plan vẫn 2 bản (gateway templates + `web/src/static/ir.ts`).
+- **Data demo**: `data/public-demo/v1/*.parquet.zip` + `pack.json` schema 2; phục vụ qua `gcore.jsdelivr.net` ghim commit (KHÔNG dùng `cdn.jsdelivr.net`: lẫn backend, Fastly trả 200 cho HEAD+Range). `data/scripts/publish_demo_data.py` (validate/pin/verify/ghi manifest) + `verify_range_host.py`; Pages workflow tự verify trước khi deploy. Dữ liệu mới = thư mục `v2/`, không sửa v1.
+- Đừng `git add -A` khi có `web/dist-*` (đã ignore): từng lỡ commit `web/dist-range` rồi gỡ.
+- Heredoc/Python trong bash dễ biến `` thành ký tự điều khiển trong YAML: luôn chạy `yaml.safe_load` trước khi push workflow.
+

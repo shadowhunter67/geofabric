@@ -91,7 +91,7 @@ jobs:
           echo "$lib" >> "$GITHUB_PATH"
       - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
         # Parallel again (default test threads). The earlier mitigation (--test-threads=1) hid a real defect: the DuckDB profiler's JSON output made
-        # concurrent in-process engines fail sporadically; it is now opt-in (see the flake-experiment job: profiler on 8 of 40 runs failed, off 0 of 50).
+        # concurrent in-process engines fail sporadically; it is now opt-in (see the flake-experiment job: profiler on 8 of 40 runs failed, off 0 of 40).
         run: cargo test --workspace --no-default-features
       - name: Diagnostics when the tests failed (DuckDB probe, then the semi-join tests alone, three times)
         if: failure()
