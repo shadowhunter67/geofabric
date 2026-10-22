@@ -9,7 +9,6 @@
 //! the boundary, purely for map display.
 
 pub mod catalog;
-pub mod templates;
 pub mod wkb;
 
 use arrow_array::cast::AsArray;
@@ -37,7 +36,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::{Mutex as AsyncMutex, Semaphore};
 use tower_http::limit::RequestBodyLimitLayer;
 
-pub const MAX_FEATURES: u64 = 100_000;
+pub const MAX_FEATURES: u64 = geo_plan::MAX_FEATURES;
 pub const MAX_TABLE_ROWS: usize = 1_000;
 
 /// Gateway limits, configured in one place.
@@ -273,34 +272,12 @@ async fn row_groups(State(st): State<Shared>, UrlPath(id): UrlPath<String>) -> R
 
 // ---------- query templates -> IR ----------
 
-#[derive(Deserialize)]
-pub struct FilterReq {
-    column: String,
-    /// eq | ne | lt | le | gt | ge (use `value`) or in (use `values`)
-    op: String,
-    #[serde(default)]
-    value: Value,
-    #[serde(default)]
-    values: Vec<Value>,
-}
-
+/// What a client posts to `/api/query`: the request (intent, `geo_plan::PlanRequest`: the ONE model both this gateway and the static browser
+/// build turn into a PlanGraph) plus fields that belong to the planner/transport and never to the plan.
 #[derive(Deserialize)]
 pub struct QueryReq {
-    source: String,
-    /// features | count_by | count | intersects_features | near | near_count | join_count_by
-    kind: String,
-    /// viewport [xmin, ymin, xmax, ymax] in `crs`
-    bbox: [f64; 4],
-    crs: String,
-    filter: Option<FilterReq>,
-    group_by: Option<String>,
-    #[serde(rename = "with")]
-    with_req: Option<WithReq>,
-    limit: Option<u64>,
-    /// RENDERING only: keep the rows whose `md5(id) mod sample_modulus = 0` (a power of two, at most 2^20): a deterministic,
-    /// spatially uniform thinning that nests (the sample at modulus 2m is contained in the one at m). Valid for the
-    /// row-returning kinds, never for counts or aggregates: analytics always see the full logical result (ADR-012).
-    sample_modulus: Option<u32>,
+    #[serde(flatten)]
+    request: geo_plan::PlanRequest,
     /// Engine preference ("duckdb" | "duckdb-wasm"); honored only if feasible.
     engine: Option<String>,
     /// Override `allow_browser` for this request.
@@ -312,15 +289,6 @@ pub struct QueryReq {
     /// Measurement aid: operator memory limit (MB) for the browser engine for this request only (replaces the
     /// risk model's memory rejection, like `--browser-max-mb`). Used to run the browser engine past the planner's guard.
     browser_limit_mb: Option<u64>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct WithReq {
-    source: String,
-    filter: Option<FilterReq>,
-    distance_m: Option<f64>,
-    group_by: Option<String>,
 }
 
 #[derive(Deserialize, Default, Clone)]
@@ -346,142 +314,10 @@ fn opts(browser: Option<bool>, network: &Option<String>, client: &Option<ClientS
     Ok(Opts { browser, network, warm: client.as_ref().and_then(|c| c.warm), browser_limit_mb: limit_mb })
 }
 
-fn json_to_literal(v: &Value) -> Result<Literal, ApiError> {
-    Ok(match v {
-        Value::Bool(b) => Literal::Bool(*b),
-        Value::Number(n) => match n.as_i64() {
-            Some(i) => Literal::Int(i),
-            None => Literal::Float(n.as_f64().unwrap_or(f64::NAN)),
-        },
-        Value::String(s) => Literal::Str(s.clone()),
-        Value::Null => Literal::Null,
-        _ => return Err(err(StatusCode::BAD_REQUEST, "bad_filter", "filter value must be a scalar")),
-    })
-}
-
-fn apply_filter(mut node: Node, filter: Option<&FilterReq>) -> Result<Node, ApiError> {
-    let Some(f) = filter else {
-        return Ok(node);
-    };
-    if f.op == "in" {
-        if f.values.is_empty() {
-            return Err(err(StatusCode::BAD_REQUEST, "bad_request", "filter op 'in' needs a non-empty values list"));
-        }
-        let values = f.values.iter().map(json_to_literal).collect::<Result<Vec<_>, _>>()?;
-        node = Node::Filter { input: Box::new(node), predicate: Expr::In { column: f.column.clone(), values } };
-    } else {
-        let op = match f.op.as_str() {
-            "eq" => CompareOp::Eq,
-            "ne" => CompareOp::Ne,
-            "lt" => CompareOp::Lt,
-            "le" => CompareOp::Le,
-            "gt" => CompareOp::Gt,
-            "ge" => CompareOp::Ge,
-            _ => return Err(err(StatusCode::BAD_REQUEST, "bad_request", "unknown filter op")),
-        };
-        node = Node::Filter {
-            input: Box::new(node),
-            predicate: Expr::Compare { column: f.column.clone(), op, value: json_to_literal(&f.value)? },
-        };
-    }
-    Ok(node)
-}
-
-/// Add the render-thinning filter when the request asks for it (and refuse it where it would change an analysis).
-pub(crate) fn apply_sample(node: Node, q: &QueryReq) -> Result<Node, ApiError> {
-    let Some(m) = q.sample_modulus else { return Ok(node) };
-    let bad = |msg: &str| err(StatusCode::BAD_REQUEST, "bad_request", msg.to_string());
-    if !matches!(q.kind.as_str(), "features" | "intersects_features" | "near") {
-        return Err(bad("sample_modulus is only valid for row-returning kinds (features, intersects_features, near): counts and aggregates always use the full result"));
-    }
-    if m == 0 || !m.is_power_of_two() || m > (1 << 20) {
-        return Err(bad("sample_modulus must be a power of two between 1 and 1048576"));
-    }
-    if m == 1 {
-        return Ok(node);
-    }
-    let schema = node_schema(&node)?;
-    if !schema.fields.iter().any(|f| f.name == "id" && schema.geometry(&f.name).is_none()) {
-        return Err(bad("sampling needs an `id` column in the source"));
-    }
-    Ok(Node::Filter { input: Box::new(node), predicate: Expr::HashBucket { column: "id".into(), modulus: m, remainder: 0 } })
-}
-
-fn build_ir(rt: &Runtime, uri: &str, with_uri: Option<&str>, ctx: &ExecutionContext, q: &QueryReq) -> Result<Plan, ApiError> {
-    if matches!(q.kind.as_str(), "near" | "near_count" | "join_count_by") {
-        return templates::build(rt, uri, with_uri, ctx, q);
-    }
-    let bad = |m: &str| err(StatusCode::BAD_REQUEST, "bad_request", m.to_string());
-    let src = rt.open_source(uri, ctx)?;
-    let (geom_col, crs_src) = match &src {
-        Node::Source { schema, .. } => {
-            let g = schema.geometry_columns.first().ok_or_else(|| bad("source has no geometry column"))?;
-            (g.name.clone(), g.crs.clone())
-        }
-        _ => unreachable!(),
-    };
-    let crs: Crs = q.crs.parse().map_err(|_| bad("bad crs"))?;
-    if crs != crs_src {
-        // never transform silently: the validator would reject the mismatch anyway,
-        // but a clear message beats an IR issue list for the common UI mistake
-        return Err(err(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "crs_mismatch",
-            format!("viewport CRS {crs} differs from source CRS {crs_src}; explicit transform not available in v0"),
-        ));
-    }
-    let bb = BoundingBox::new(q.bbox[0], q.bbox[1], q.bbox[2], q.bbox[3], crs.clone()).map_err(|e| bad(&e.to_string()))?;
-    let mut node = match q.kind.as_str() {
-        "intersects_features" => {
-            let (a, b, c, d) = (bb.min_x(), bb.min_y(), bb.max_x(), bb.max_y());
-            Node::Intersects {
-                input: Box::new(src.clone()),
-                geometry_column: geom_col.clone(),
-                with: GeometryLiteral { wkt: format!("POLYGON(({a} {b}, {c} {b}, {c} {d}, {a} {d}, {a} {b}))"), crs },
-            }
-        }
-        "features" | "count_by" | "count" => Node::BboxFilter { input: Box::new(src.clone()), geometry_column: geom_col.clone(), bbox: bb },
-        _ => return Err(bad("unknown kind")),
-    };
-    node = apply_filter(node, q.filter.as_ref())?;
-    node = apply_sample(node, q)?;
-    let limit = q.limit.unwrap_or(20_000).min(MAX_FEATURES);
-    node = match q.kind.as_str() {
-        "count" => Node::Aggregate {
-            input: Box::new(node),
-            group_by: vec![],
-            aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
-        },
-        "count_by" => {
-            let g = q.group_by.clone().ok_or_else(|| bad("group_by required"))?;
-            Node::Limit {
-                input: Box::new(Node::Sort {
-                    input: Box::new(Node::Aggregate {
-                        input: Box::new(node),
-                        group_by: vec![g.clone()],
-                        aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "count".into() }],
-                    }),
-                    keys: vec![SortKey { column: "count".into(), descending: true }, SortKey { column: g.clone(), descending: false }], // the group key breaks ties: two engines must cut the top 50 at the same place
-                }),
-                n: 50,
-            }
-        }
-        _ => {
-            let s = node_schema(&node)?;
-            let cols: Vec<String> = s
-                .fields
-                .iter()
-                .filter(|f| !matches!(&f.data_type, FieldType::Other(t) if t != "geometry"))
-                .map(|f| f.name.clone())
-                .collect();
-            Node::Limit { input: Box::new(Node::Project { input: Box::new(node), columns: cols }), n: limit }
-        }
-    };
-    Ok(Plan::new(node))
-}
-
-pub(crate) fn node_schema(n: &Node) -> Result<SpatialSchema, ApiError> {
-    n.output_schema().map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, "schema", e.to_string()))
+/// A request the builder refused, as the API answers it (HTTP status and legacy `error` string kept; the structured `code` is added).
+fn plan_error(e: geo_plan::PlanError) -> ApiError {
+    let status = StatusCode::from_u16(e.http_status()).unwrap_or(StatusCode::BAD_REQUEST);
+    err(status, e.legacy_error(), e.message.clone())
 }
 
 // ---------- run ----------
@@ -730,29 +566,24 @@ async fn plan_only(st: Shared, plan: Plan, o: Opts) -> Result<Json<Value>, ApiEr
 }
 
 async fn build_query_plan(st: &Shared, q: QueryReq) -> Result<(Plan, Opts), ApiError> {
-    let with_uri = match q.kind.as_str() {
-        "near" | "near_count" | "join_count_by" => {
-            let with = q
-                .with_req
-                .as_ref()
-                .ok_or_else(|| err(StatusCode::BAD_REQUEST, "bad_request", "with is required for this kind"))?;
-            Some(authorized_source(st, &with.source)?.uri().to_string())
-        }
-        _ => {
-            if q.with_req.is_some() {
-                return Err(err(StatusCode::BAD_REQUEST, "bad_request", "with is only valid for near and join_count_by"));
-            }
-            None
-        }
+    let two_sources = matches!(q.request.kind.as_str(), "near" | "near_count" | "join_count_by");
+    // the dataset(s) the request names, authorized by the access guard before anything is opened; the builder validates the rest
+    let main = authorized_source(st, &q.request.source)?.uri().to_string();
+    let with = match (&q.request.with_request, two_sources) {
+        (Some(w), true) => Some((w.source.clone(), authorized_source(st, &w.source)?.uri().to_string())),
+        _ => None,
     };
-    let a = authorized_source(st, &q.source)?;
-    let st2 = st.clone();
-    let uri = a.uri().to_string();
     let o = opts(q.browser, &q.network, &q.client, q.browser_limit_mb)?;
     let engine = q.engine.clone();
+    let st2 = st.clone();
     let mut plan = tokio::task::spawn_blocking(move || {
         let ctx = st2.ctx();
-        build_ir(&st2.rt, &uri, with_uri.as_deref(), &ctx, &q)
+        let mut sources = geo_plan::Sources::new();
+        sources.insert(q.request.source.clone(), st2.rt.open_source(&main, &ctx)?);
+        if let Some((id, uri)) = with {
+            sources.insert(id, st2.rt.open_source(&uri, &ctx)?);
+        }
+        geo_plan::build_plan(&q.request, &sources).map_err(plan_error)
     })
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, "join", e.to_string()))??;

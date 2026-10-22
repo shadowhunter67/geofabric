@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_FIELD",
+      "legacy": "invalid_field",
+      "status": 422
+    }
+  },
+  "name": "err_group_by_unknown_column",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "no_such",
+    "kind": "count_by",
+    "source": "places"
+  }
+}

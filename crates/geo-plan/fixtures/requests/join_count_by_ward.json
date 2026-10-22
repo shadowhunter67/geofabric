@@ -1,0 +1,29 @@
+{
+  "expected": {
+    "browser_missing_ops": [
+      "spatial_join"
+    ],
+    "plan_json": "{\n  \"ir_version\": \"0.3\",\n  \"nodes\": {\n    \"n_09615216abedec77fa1c\": {\n      \"op\": \"project\",\n      \"input\": \"n_fa5359b5a93cc2e891b2\",\n      \"columns\": [\n        \"geometry\",\n        \"name\"\n      ]\n    },\n    \"n_2a34edc471d0877594cf\": {\n      \"op\": \"aggregate\",\n      \"input\": \"n_7368b4e95702249921d2\",\n      \"group_by\": [\n        \"r_name\"\n      ],\n      \"aggregates\": [\n        {\n          \"func\": \"count\",\n          \"column\": null,\n          \"alias\": \"count\"\n        }\n      ]\n    },\n    \"n_6250d3f0740e93915ca4\": {\n      \"op\": \"project\",\n      \"input\": \"n_c52acd396f9cbfc0d6a6\",\n      \"columns\": [\n        \"geometry\"\n      ]\n    },\n    \"n_665262e790a8fdc3b765\": {\n      \"op\": \"limit\",\n      \"input\": \"n_ef358bc1e04f5e15b09e\",\n      \"n\": 200\n    },\n    \"n_7368b4e95702249921d2\": {\n      \"op\": \"spatial_join\",\n      \"left\": \"n_6250d3f0740e93915ca4\",\n      \"right\": \"n_09615216abedec77fa1c\",\n      \"left_column\": \"geometry\",\n      \"right_column\": \"geometry\",\n      \"predicate\": \"intersects\",\n      \"join_type\": \"inner\",\n      \"right_prefix\": \"r_\"\n    },\n    \"n_a84a0d0f4a7b75d9b4a0\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/admin.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"name\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"subtype\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"polygon\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_c52acd396f9cbfc0d6a6\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_cfc52690de4bbbd26458\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_cfc52690de4bbbd26458\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/buildings.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"height\",\n            \"data_type\": \"float64\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"polygon\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_dc2025dcf0c455bea8a8\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_a84a0d0f4a7b75d9b4a0\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_ef358bc1e04f5e15b09e\": {\n      \"op\": \"sort\",\n      \"input\": \"n_2a34edc471d0877594cf\",\n      \"keys\": [\n        {\n          \"column\": \"count\",\n          \"descending\": true\n        },\n        {\n          \"column\": \"r_name\",\n          \"descending\": false\n        }\n      ]\n    },\n    \"n_fa5359b5a93cc2e891b2\": {\n      \"op\": \"filter\",\n      \"input\": \"n_dc2025dcf0c455bea8a8\",\n      \"predicate\": {\n        \"kind\": \"compare\",\n        \"column\": \"subtype\",\n        \"op\": \"eq\",\n        \"value\": {\n          \"str\": \"locality\"\n        }\n      }\n    }\n  },\n  \"root\": \"n_665262e790a8fdc3b765\",\n  \"hints\": {}\n}"
+  },
+  "name": "join_count_by_ward",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "join_count_by",
+    "source": "buildings",
+    "with": {
+      "filter": {
+        "column": "subtype",
+        "op": "eq",
+        "value": "locality"
+      },
+      "group_by": "name",
+      "source": "admin"
+    }
+  }
+}

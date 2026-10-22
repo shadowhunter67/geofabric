@@ -281,7 +281,7 @@ impl ExecutionEngine for DuckDbEngine {
             // The DuckDB profiler is OPT-IN (GEOFABRIC_DUCKDB_PROFILE=1; the benchmark tool sets it). Root cause of the CI flake (2026-10-22):
             // with the profiler's JSON output on, several engines running in one process failed sporadically with an opaque "Error code 1"
             // (4 of 15 runs on a hosted runner, same tests with it off: 0 of 15). Peak memory is therefore Unknown unless it is enabled.
-            if std::env::var("GEOFABRIC_DUCKDB_PROFILE").map(|v| v == "1").unwrap_or(false) {
+            if profiling_enabled(std::env::var("GEOFABRIC_DUCKDB_PROFILE").ok().as_deref()) {
                 conn.execute_batch(&format!(
                     "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
                     sql::q_str(&sql::sql_path(&profile_file))
@@ -384,6 +384,26 @@ impl ExecutionEngine for DuckDbEngine {
             None => metrics.notes.push("peak_memory_bytes is Unknown: the DuckDB profiler is off by default (it made concurrent in-process engines fail sporadically; GEOFABRIC_DUCKDB_PROFILE=1 enables it)".into()),
         }
         Ok(ExecutionResult { batches, metrics })
+    }
+}
+
+/// The profiling contract: the DuckDB profiler is on ONLY when `GEOFABRIC_DUCKDB_PROFILE` is exactly `"1"` (unset, empty, `0`, `true`... are off).
+/// A pure function so the contract is unit-tested without mutating the process environment (tests run in parallel).
+fn profiling_enabled(value: Option<&str>) -> bool {
+    value == Some("1")
+}
+
+#[cfg(test)]
+mod profiling_contract {
+    use super::profiling_enabled;
+
+    #[test]
+    fn profiler_is_opt_in_and_only_for_exactly_one() {
+        assert!(!profiling_enabled(None), "default must be off: the profiler made concurrent in-process engines fail sporadically");
+        for off in ["", "0", "true", "yes", "on", " 1", "1 "] {
+            assert!(!profiling_enabled(Some(off)), "{off:?} must not enable the profiler");
+        }
+        assert!(profiling_enabled(Some("1")));
     }
 }
 

@@ -117,7 +117,8 @@ async fn execution_error_is_controlled_and_runtime_stays_usable() {
     bad["filter"] = json!({"column": "no_such_column", "op": "eq", "value": 1});
     let (s, j) = call(&st, "POST", "/api/query", Some(bad.to_string()), true).await;
     assert_eq!(s, StatusCode::UNPROCESSABLE_ENTITY, "{j}");
-    assert_eq!(j["error"], "invalid_plan");
+    assert_eq!(j["error"], "invalid_field"); // found by the canonical builder before any plan exists (was a generic "invalid_plan" from the validator)
+    assert_eq!(j["message"].as_str().unwrap().contains("no_such_column"), true, "{j}");
     let (s, _) = call(&st, "POST", "/api/query", Some(q("clustered_10mb_spatial")), true).await;
     assert_eq!(s, StatusCode::OK);
 }

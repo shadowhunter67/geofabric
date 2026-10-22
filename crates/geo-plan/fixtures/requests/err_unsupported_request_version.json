@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_REQUEST",
+      "legacy": "bad_request",
+      "status": 400
+    }
+  },
+  "name": "err_unsupported_request_version",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "features",
+    "request_schema_version": 99,
+    "source": "places"
+  }
+}

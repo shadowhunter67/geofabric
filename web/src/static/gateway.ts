@@ -9,8 +9,8 @@
 import type { Assessment, Candidate, Health, Physical, RunResp, Scan } from "../types.ts";
 import { isFresh, usable } from "../engine/probe-model.ts";
 import type { ProbeReport } from "../engine/probe-model.ts";
-import { StaticError, buildPlan, prune } from "./ir.ts";
-import type { QueryReq, StaticSource } from "./ir.ts";
+import { StaticError, planRequest, prune, serverRequired } from "./adapter.ts";
+import type { QueryReq, StaticSource } from "./adapter.ts";
 
 export const NOT_IN_DEPLOYMENT = "not available in this deployment (static browser profile: no GeoFabric Server)";
 const COVERING = { xmin: "bbox.xmin", ymin: "bbox.ymin", xmax: "bbox.xmax", ymax: "bbox.ymax", declared: false };
@@ -72,7 +72,7 @@ function absentCandidate(engine: string): Candidate {
   return { engine, kind: "server", feasible: false, score_ms: null, cost: null, reasons: [], rejected_because: [NOT_IN_DEPLOYMENT], confidence: null, risk: null, health: health(newState())[engine], probe_status: "not_required" };
 }
 
-function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayState, ir: unknown, rangeHost: boolean): Physical {
+function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayState, nodeCount: number, rangeHost: boolean): Physical {
   const pr = prune(src, q.bbox);
   const scan: Scan = {
     uri, total_bytes: src.size_bytes, has_histogram: false, covering: COVERING,
@@ -122,7 +122,7 @@ function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayS
   return {
     engine: "duckdb-wasm", placement: "browser",
     decisions: [
-      { rule: "validate", subject: "plan", outcome: "info", reason: `IR valid (${Object.keys((ir as { nodes: object }).nodes).length} nodes)` },
+      { rule: "validate", subject: "plan", outcome: "info", reason: `IR valid (${nodeCount} nodes)` },
       { rule: "deployment_profile", subject: "engines", outcome: "info", reason: `static browser profile: DuckDB server and PostGIS are ${NOT_IN_DEPLOYMENT}` },
       { rule: "spatial_prune", subject: uri, outcome: "info", reason: `${pr.kept.length} of ${pr.total_row_groups} row groups can hold rows in the viewport (row-group statistics); ${pr.kept_bytes} of ${src.size_bytes} bytes remain` },
     ],
@@ -147,15 +147,16 @@ const empty = { elapsed_ms: { value: null, source: "unknown" }, rows_returned: {
 async function query(q: QueryReq, deps: GatewayDeps, st: GatewayState): Promise<RunResp> {
   if (q.engine === "duckdb" || q.engine === "postgis") throw new StaticError(422, "server_required", `This analysis requires GeoFabric Server: the ${q.engine} engine is ${NOT_IN_DEPLOYMENT}.`);
   if (q.browser === false) throw new StaticError(422, "server_required", `This analysis requires GeoFabric Server: browser execution was declined and there is no other engine (${NOT_IN_DEPLOYMENT}).`);
-  const src = deps.pack.sources.find((s) => s.id === q.source);
-  if (!src) throw new StaticError(404, "no_such_source", q.source);
-  const uri = `demo/${deps.pack.manifest.files[src.id]?.path ?? src.file}`;
-  const built = buildPlan(q, src, uri);
-  const planId = await sha256Hex(JSON.stringify(built.ir));
-  const physical = buildPhysical(q, src, uri, st, built.ir, deps.pack.manifest.host?.range === true);
+  // request -> PlanGraph by the canonical builder (Rust, as WebAssembly); then the capability verdict: a plan the browser cannot run is refused, not approximated
+  const planned = planRequest(q, deps.pack.sources);
+  if (planned.missingOps.length) throw serverRequired(planned.missingOps);
+  const src = deps.pack.sources.find((s) => s.id === q.source)!;
+  const uri = planned.uri;
+  const planId = await sha256Hex(JSON.stringify(planned.plan));
+  const physical = buildPhysical(q, src, uri, st, Object.keys(planned.plan.nodes).length, deps.pack.manifest.host?.range === true);
   return {
-    placement: "browser", plan_id: planId, ir: built.ir, physical,
-    lineage: Object.entries(built.ir.nodes).map(([id, n]) => ({ id, op: n.op })),
+    placement: "browser", plan_id: planId, ir: planned.plan, physical,
+    lineage: Object.entries(planned.plan.nodes).map(([id, n]) => ({ id, op: n.op })),
     source_urls: { [uri]: deps.fileUrl(src.id) },
     limits: { max_rows: 100_000, timeout_ms: 30_000 },
     columns: [], rows: [], rows_total: 0, geojson: null, metrics: empty as RunResp["metrics"],
@@ -172,7 +173,7 @@ export async function handle(method: string, path: string, body: unknown, deps: 
     if (method === "GET") {
       if (path === "/api/health") return ok({ ok: true, profile: "static-browser" });
       if (path === "/api/catalog") return ok(deps.pack.catalog);
-      if (path === "/api/sources") return ok({ sources: deps.pack.sources.map(({ file: _f, row_group_stats: _r, ...meta }) => ({ format: "GeoParquet", crs_known: true, has_covering: true, covering_inferred: true, modified: null, ...meta })) });
+      if (path === "/api/sources") return ok({ sources: deps.pack.sources.map(({ file: _f, row_group_stats: _r, ir_source: _i, ...meta }) => ({ format: "GeoParquet", crs_known: true, has_covering: true, covering_inferred: true, modified: null, ...meta })) });
       const rg = path.match(/^\/api\/sources\/([^/]+)\/row_groups$/);
       if (rg) {
         const s = deps.pack.sources.find((x) => x.id === decodeURIComponent(rg[1]));
@@ -189,6 +190,11 @@ export async function handle(method: string, path: string, body: unknown, deps: 
     }
     if (method === "POST") {
       if (path === "/api/query") return ok(await query(body as QueryReq, deps, st));
+      if (path === "/api/query/capability") {
+        // "request -> PlanGraph -> capability evaluation": can this deployment run what the request means? (the UI enables or disables from this, it never guesses)
+        const planned = planRequest(body as QueryReq, deps.pack.sources);
+        return ok({ supported: planned.missingOps.length === 0, missing_ops: planned.missingOps });
+      }
       if (path === "/api/probe") {
         st.probe = body as ProbeReport;
         return ok({ accepted: true, usable: usable(st.probe) });
@@ -206,7 +212,7 @@ export async function handle(method: string, path: string, body: unknown, deps: 
     }
     throw new StaticError(404, "not_found", `${method} ${path}`);
   } catch (e) {
-    if (e instanceof StaticError) return { status: e.status, body: { error: e.code, message: e.message } };
+    if (e instanceof StaticError) return { status: e.status, body: { error: e.code, message: e.message, ...(e.planCode ? { code: e.planCode } : {}) } };
     return { status: 500, body: { error: "internal", message: e instanceof Error ? e.message : String(e) } };
   }
 }

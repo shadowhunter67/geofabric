@@ -1,0 +1,25 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_FIELD",
+      "legacy": "invalid_field",
+      "status": 422
+    }
+  },
+  "name": "err_join_group_not_a_column",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "join_count_by",
+    "source": "buildings",
+    "with": {
+      "group_by": "confidence",
+      "source": "admin"
+    }
+  }
+}

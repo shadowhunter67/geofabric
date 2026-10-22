@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_LIMIT",
+      "legacy": "bad_request",
+      "status": 400
+    }
+  },
+  "name": "err_limit_zero",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "features",
+    "limit": 0,
+    "source": "places"
+  }
+}

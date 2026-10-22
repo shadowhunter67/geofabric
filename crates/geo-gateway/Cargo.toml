@@ -16,6 +16,7 @@ geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-planner = { path = "../geo-planner" }
+geo-plan = { path = "../geo-plan" }
 geo-runtime = { path = "../geo-runtime", default-features = false }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
 serde.workspace = true

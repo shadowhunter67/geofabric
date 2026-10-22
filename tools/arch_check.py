@@ -25,6 +25,8 @@ RULES = {
     "geo-engine-browser": ["geo-planner", "geo-runtime", "geo-engine-postgis", "postgres", "tokio-postgres", "sqlx*"] + UI,
     # the canonical lowering is PURE (RFC-004): semantics only, no engine, no file format, no planner, no UI; it must also build for wasm32
     "geo-lowering": ["geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
+    # the canonical request -> PlanGraph builder is PURE too (RFC-004): no engine, no lowering, no planner, no source reader, no UI, no cloud
+    "geo-plan": ["geo-lowering", "geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-types": ["geo-ir", "geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-ir": ["geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-executor": ["geo-planner", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
@@ -37,7 +39,9 @@ DIRECT_RULES = {"geo-gateway": ["geo-engine-*", "duckdb", "libduckdb-sys", "post
                 # only the composition root wires engine adapters; the planner and executor contract know none
                 "geo-planner": ["geo-engine-*"]}
 # every engine adapter must build its SQL on the canonical lowering (RFC-004), not carry its own copy of the semantics
-REQUIRED_DIRECT = {"geo-engine-duckdb": "geo-lowering", "geo-engine-postgis": "geo-lowering", "geo-engine-browser": "geo-lowering"}
+REQUIRED_DIRECT = {"geo-engine-duckdb": "geo-lowering", "geo-engine-postgis": "geo-lowering", "geo-engine-browser": "geo-lowering",
+                   # the gateway builds plans from requests ONLY through the canonical builder; geo-lowering (wasm host) re-exports it to the page
+                   "geo-gateway": "geo-plan", "geo-lowering": "geo-plan"}
 # semantic building blocks that only geo-lowering may spell: an engine crate that writes one of these itself is re-implementing semantics
 ENGINE_FORBIDDEN_TEXT = {
     "NULLS LAST": "sort null placement is canonical (geo_lowering::order_by)",
@@ -46,6 +50,10 @@ ENGINE_FORBIDDEN_TEXT = {
 }
 # the web client must not compile plans: the browser runs the Rust lowering as WebAssembly (web/src/engine/lowering.ts)
 WEB_FORBIDDEN_TEXT = ["NULLS LAST", "read_parquet(", "ORDER BY", "NOT MATERIALIZED"]
+# ... and must not construct PlanGraph nodes either: `op: "bbox_filter"` etc. A request becomes a plan only through the Rust builder (geo-plan, via wasm).
+# Allowed: the type declarations (engine/contract.ts) and the runtime probe's self-test plans (engine/probe.ts), which are test inputs, not request semantics.
+WEB_PLAN_NODE_ALLOWED = {"contract.ts", "probe.ts"}
+WEB_PLAN_NODE_RE = r'op:\s*"(source|filter|bbox_filter|intersects|buffer|transform|spatial_semi_join|spatial_join|aggregate|project|limit|sort)"\s*,' 
 WEB_FORBIDDEN_NPM = ["duckdb", "duckdb-async", "pg", "postgres", "better-sqlite3"]
 
 
@@ -135,6 +143,12 @@ def main() -> int:
         for token, why in ENGINE_FORBIDDEN_TEXT.items():
             if token in code:
                 violations.append(f"{crate}: {f.name} spells {token!r}: {why}")
+    # request -> plan lives in geo-plan only: no other crate may construct Node::BboxFilter/Aggregate/... from a request (the gateway's old templates)
+    for f in sorted((ROOT / "crates").glob("geo-gateway/src/**/*.rs")):
+        code = re.sub(r"//.*", "", f.read_text(encoding="utf-8", errors="ignore"))
+        # construction (`Node::X { input: Box::new(..` / `left: Box::new(..`), not a pattern match over an existing plan (`PlanNode::X { .. }`)
+        if re.search(r"(?<![A-Za-z])Node::\w+\s*\{\s*(input|left)\s*:\s*Box::new", code):
+            violations.append(f"geo-gateway: {f.name} constructs plan nodes: requests become plans only through geo-plan (RFC-004)")
     web_src = ROOT / "web" / "src"
     if (web_src / "engine" / "sqlgen.ts").exists():
         violations.append("web: src/engine/sqlgen.ts exists: the browser must use the Rust lowering (WebAssembly), not a TypeScript compiler")
@@ -143,6 +157,8 @@ def main() -> int:
         for token in WEB_FORBIDDEN_TEXT:
             if token in code and f.name != "i18n.ts":
                 violations.append(f"web: {f.relative_to(ROOT).as_posix()} contains {token!r}: SQL is produced only by the Rust lowering")
+        if f.name not in WEB_PLAN_NODE_ALLOWED and re.search(WEB_PLAN_NODE_RE, code):
+            violations.append(f"web: {f.relative_to(ROOT).as_posix()} constructs PlanGraph nodes: requests become plans only through the Rust builder (geo-plan, via wasm)")
     # web package.json
     pj = ROOT / "web" / "package.json"
     if pj.exists():

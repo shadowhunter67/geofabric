@@ -1,0 +1,21 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_BBOX",
+      "legacy": "bad_request",
+      "status": 400
+    }
+  },
+  "name": "err_bbox_order",
+  "request": {
+    "bbox": [
+      106.71,
+      10.77,
+      106.69,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "features",
+    "source": "places"
+  }
+}

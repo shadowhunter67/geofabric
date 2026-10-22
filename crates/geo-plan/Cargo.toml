@@ -1,0 +1,13 @@
+[package]
+name = "geo-plan"
+description = "Canonical request -> PlanGraph builder (RFC-004). One definition of what a viewport query, an attribute filter, a count/group, a metric neighbour query ... MEAN as a PlanGraph, used by the gateway natively and by the static browser build as WebAssembly. Pure: no engine, no I/O, no file format, no SQL."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

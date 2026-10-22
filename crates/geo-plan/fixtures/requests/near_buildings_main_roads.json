@@ -1,0 +1,34 @@
+{
+  "expected": {
+    "browser_missing_ops": [
+      "spatial_semi_join",
+      "transform"
+    ],
+    "plan_json": "{\n  \"ir_version\": \"0.3\",\n  \"nodes\": {\n    \"n_004cae13ef3c3bedaafe\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_ce326ea8208115320893\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.68813445116137,\n        \"min_y\": 10.768155081664768,\n        \"max_x\": 106.71186554883862,\n        \"max_y\": 10.791844918335231,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_3f3e3a504b9707503a5d\": {\n      \"op\": \"transform\",\n      \"input\": \"n_c52acd396f9cbfc0d6a6\",\n      \"geometry_column\": \"geometry\",\n      \"input_crs\": \"ogc_crs84\",\n      \"output_crs\": {\n        \"epsg\": 32648\n      },\n      \"output_column\": \"geometry_metric\"\n    },\n    \"n_445c1413f3ee0fd9b325\": {\n      \"op\": \"limit\",\n      \"input\": \"n_71a3c5bf0057628e93c4\",\n      \"n\": 20000\n    },\n    \"n_4bf4aaf1c4329def48d8\": {\n      \"op\": \"transform\",\n      \"input\": \"n_52942c87fa52e9831922\",\n      \"geometry_column\": \"geometry\",\n      \"input_crs\": \"ogc_crs84\",\n      \"output_crs\": {\n        \"epsg\": 32648\n      },\n      \"output_column\": \"geometry\"\n    },\n    \"n_52942c87fa52e9831922\": {\n      \"op\": \"project\",\n      \"input\": \"n_f7c42ec2fb0e1b840c63\",\n      \"columns\": [\n        \"geometry\"\n      ]\n    },\n    \"n_71a3c5bf0057628e93c4\": {\n      \"op\": \"project\",\n      \"input\": \"n_b206e53cecf4827b35b9\",\n      \"columns\": [\n        \"id\",\n        \"class\",\n        \"height\",\n        \"geometry\"\n      ]\n    },\n    \"n_b206e53cecf4827b35b9\": {\n      \"op\": \"spatial_semi_join\",\n      \"left\": \"n_3f3e3a504b9707503a5d\",\n      \"right\": \"n_4bf4aaf1c4329def48d8\",\n      \"left_column\": \"geometry_metric\",\n      \"right_column\": \"geometry\",\n      \"predicate\": {\n        \"within_distance\": {\n          \"distance\": {\n            \"value\": 200.0,\n            \"unit\": \"meter\"\n          }\n        }\n      }\n    },\n    \"n_c52acd396f9cbfc0d6a6\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_cfc52690de4bbbd26458\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_ce326ea8208115320893\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/roads.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"line_string\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_cfc52690de4bbbd26458\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/buildings.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"height\",\n            \"data_type\": \"float64\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"polygon\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_f7c42ec2fb0e1b840c63\": {\n      \"op\": \"filter\",\n      \"input\": \"n_004cae13ef3c3bedaafe\",\n      \"predicate\": {\n        \"kind\": \"in\",\n        \"column\": \"class\",\n        \"values\": [\n          {\n            \"str\": \"motorway\"\n          },\n          {\n            \"str\": \"trunk\"\n          },\n          {\n            \"str\": \"primary\"\n          }\n        ]\n      }\n    }\n  },\n  \"root\": \"n_445c1413f3ee0fd9b325\",\n  \"hints\": {}\n}"
+  },
+  "name": "near_buildings_main_roads",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "near",
+    "source": "buildings",
+    "with": {
+      "distance_m": 200,
+      "filter": {
+        "column": "class",
+        "op": "in",
+        "values": [
+          "motorway",
+          "trunk",
+          "primary"
+        ]
+      },
+      "source": "roads"
+    }
+  }
+}

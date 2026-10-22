@@ -1,0 +1,210 @@
+{
+  "admin": {
+    "format": "geo_parquet",
+    "op": "source",
+    "schema": {
+      "fields": [
+        {
+          "data_type": "utf8",
+          "name": "id"
+        },
+        {
+          "data_type": "utf8",
+          "name": "name"
+        },
+        {
+          "data_type": "utf8",
+          "name": "subtype"
+        },
+        {
+          "data_type": {
+            "other": "geometry"
+          },
+          "name": "geometry"
+        },
+        {
+          "data_type": {
+            "other": "struct"
+          },
+          "name": "bbox"
+        }
+      ],
+      "geometry_columns": [
+        {
+          "crs": "ogc_crs84",
+          "geometry_type": "polygon",
+          "name": "geometry"
+        }
+      ]
+    },
+    "statistics": {
+      "bbox": {
+        "crs": "ogc_crs84",
+        "max_x": 107.0,
+        "max_y": 11.0,
+        "min_x": 106.0,
+        "min_y": 10.0
+      },
+      "row_count": 1000,
+      "row_groups": 4,
+      "total_bytes": 123456
+    },
+    "uri": "demo/admin.parquet"
+  },
+  "buildings": {
+    "format": "geo_parquet",
+    "op": "source",
+    "schema": {
+      "fields": [
+        {
+          "data_type": "utf8",
+          "name": "id"
+        },
+        {
+          "data_type": "utf8",
+          "name": "class"
+        },
+        {
+          "data_type": "float64",
+          "name": "height"
+        },
+        {
+          "data_type": {
+            "other": "geometry"
+          },
+          "name": "geometry"
+        },
+        {
+          "data_type": {
+            "other": "struct"
+          },
+          "name": "bbox"
+        }
+      ],
+      "geometry_columns": [
+        {
+          "crs": "ogc_crs84",
+          "geometry_type": "polygon",
+          "name": "geometry"
+        }
+      ]
+    },
+    "statistics": {
+      "bbox": {
+        "crs": "ogc_crs84",
+        "max_x": 107.0,
+        "max_y": 11.0,
+        "min_x": 106.0,
+        "min_y": 10.0
+      },
+      "row_count": 1000,
+      "row_groups": 4,
+      "total_bytes": 123456
+    },
+    "uri": "demo/buildings.parquet"
+  },
+  "places": {
+    "format": "geo_parquet",
+    "op": "source",
+    "schema": {
+      "fields": [
+        {
+          "data_type": "utf8",
+          "name": "id"
+        },
+        {
+          "data_type": "utf8",
+          "name": "name"
+        },
+        {
+          "data_type": "utf8",
+          "name": "category"
+        },
+        {
+          "data_type": "float64",
+          "name": "confidence"
+        },
+        {
+          "data_type": {
+            "other": "geometry"
+          },
+          "name": "geometry"
+        },
+        {
+          "data_type": {
+            "other": "struct"
+          },
+          "name": "bbox"
+        }
+      ],
+      "geometry_columns": [
+        {
+          "crs": "ogc_crs84",
+          "geometry_type": "point",
+          "name": "geometry"
+        }
+      ]
+    },
+    "statistics": {
+      "bbox": {
+        "crs": "ogc_crs84",
+        "max_x": 107.0,
+        "max_y": 11.0,
+        "min_x": 106.0,
+        "min_y": 10.0
+      },
+      "row_count": 1000,
+      "row_groups": 4,
+      "total_bytes": 123456
+    },
+    "uri": "demo/places.parquet"
+  },
+  "roads": {
+    "format": "geo_parquet",
+    "op": "source",
+    "schema": {
+      "fields": [
+        {
+          "data_type": "utf8",
+          "name": "id"
+        },
+        {
+          "data_type": "utf8",
+          "name": "class"
+        },
+        {
+          "data_type": {
+            "other": "geometry"
+          },
+          "name": "geometry"
+        },
+        {
+          "data_type": {
+            "other": "struct"
+          },
+          "name": "bbox"
+        }
+      ],
+      "geometry_columns": [
+        {
+          "crs": "ogc_crs84",
+          "geometry_type": "line_string",
+          "name": "geometry"
+        }
+      ]
+    },
+    "statistics": {
+      "bbox": {
+        "crs": "ogc_crs84",
+        "max_x": 107.0,
+        "max_y": 11.0,
+        "min_x": 106.0,
+        "min_y": 10.0
+      },
+      "row_count": 1000,
+      "row_groups": 4,
+      "total_bytes": 123456
+    },
+    "uri": "demo/roads.parquet"
+  }
+}

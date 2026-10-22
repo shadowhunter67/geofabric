@@ -1,0 +1,26 @@
+{
+  "expected": {
+    "browser_missing_ops": [
+      "spatial_semi_join",
+      "transform"
+    ],
+    "plan_json": "{\n  \"ir_version\": \"0.3\",\n  \"nodes\": {\n    \"n_0d447c960429051ae6c8\": {\n      \"op\": \"transform\",\n      \"input\": \"n_b7877391bfb2b1825d62\",\n      \"geometry_column\": \"geometry\",\n      \"input_crs\": \"ogc_crs84\",\n      \"output_crs\": {\n        \"epsg\": 32648\n      },\n      \"output_column\": \"geometry\"\n    },\n    \"n_1befbd7861b38bdaf1a6\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_ce326ea8208115320893\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.68953361489501,\n        \"min_y\": 10.769538770416192,\n        \"max_x\": 106.71046638510498,\n        \"max_y\": 10.790461229583807,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_3f3e3a504b9707503a5d\": {\n      \"op\": \"transform\",\n      \"input\": \"n_c52acd396f9cbfc0d6a6\",\n      \"geometry_column\": \"geometry\",\n      \"input_crs\": \"ogc_crs84\",\n      \"output_crs\": {\n        \"epsg\": 32648\n      },\n      \"output_column\": \"geometry_metric\"\n    },\n    \"n_616a364c35408ad26d11\": {\n      \"op\": \"spatial_semi_join\",\n      \"left\": \"n_3f3e3a504b9707503a5d\",\n      \"right\": \"n_0d447c960429051ae6c8\",\n      \"left_column\": \"geometry_metric\",\n      \"right_column\": \"geometry\",\n      \"predicate\": {\n        \"within_distance\": {\n          \"distance\": {\n            \"value\": 50.0,\n            \"unit\": \"meter\"\n          }\n        }\n      }\n    },\n    \"n_8c2b05ec0e62811236e5\": {\n      \"op\": \"project\",\n      \"input\": \"n_616a364c35408ad26d11\",\n      \"columns\": [\n        \"id\",\n        \"class\",\n        \"height\",\n        \"geometry\"\n      ]\n    },\n    \"n_b6f312c2711d01163475\": {\n      \"op\": \"limit\",\n      \"input\": \"n_8c2b05ec0e62811236e5\",\n      \"n\": 100\n    },\n    \"n_b7877391bfb2b1825d62\": {\n      \"op\": \"project\",\n      \"input\": \"n_1befbd7861b38bdaf1a6\",\n      \"columns\": [\n        \"geometry\"\n      ]\n    },\n    \"n_c52acd396f9cbfc0d6a6\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_cfc52690de4bbbd26458\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_ce326ea8208115320893\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/roads.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"line_string\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_cfc52690de4bbbd26458\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/buildings.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"height\",\n            \"data_type\": \"float64\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"polygon\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    }\n  },\n  \"root\": \"n_b6f312c2711d01163475\",\n  \"hints\": {}\n}"
+  },
+  "name": "near_with_limit",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "near",
+    "limit": 100,
+    "source": "buildings",
+    "with": {
+      "distance_m": 50,
+      "source": "roads"
+    }
+  }
+}

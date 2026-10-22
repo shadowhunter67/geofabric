@@ -49,6 +49,8 @@ impl EngineDescriptor for DuckDbWasmDescriptor {
             [OpKind::Source, OpKind::Filter, OpKind::BboxFilter, OpKind::Aggregate, OpKind::Project, OpKind::Limit, OpKind::Sort]
                 .into_iter()
                 .collect();
+        // the page's capability list (geo-lowering, shipped as WebAssembly) and this descriptor must never disagree
+        debug_assert_eq!(ops.iter().map(|o| o.name()).collect::<BTreeSet<_>>(), geo_lowering::browser::SUPPORTED_OPS.iter().copied().collect::<BTreeSet<_>>());
         Capabilities {
             kind: EngineKind::Browser,
             ops,

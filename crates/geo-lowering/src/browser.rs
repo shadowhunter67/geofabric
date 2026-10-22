@@ -16,6 +16,24 @@ use geo_ir::{NodeId, Plan, PlanNode};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 
+/// The operations the browser dialect can run: the ONE capability list of the browser engine (the planner-side descriptor in `geo-engine-browser`
+/// and the page both derive from it; a test pins them together). Names are `OpKind::name()`.
+pub const SUPPORTED_OPS: [&str; 7] = ["source", "filter", "bbox_filter", "aggregate", "project", "limit", "sort"];
+
+/// The operations of `plan` the browser cannot run, in plan order without repeats (empty = the whole plan is supported). The capability layer
+/// uses this to turn a valid plan into "enabled" or "server required": nothing is dropped or approximated.
+pub fn missing_ops(plan: &Plan) -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = Vec::new();
+    for node in plan.nodes.values() {
+        let name = node.kind().name();
+        if !SUPPORTED_OPS.contains(&name) && !out.contains(&name) {
+            out.push(name);
+        }
+    }
+    out.sort_unstable();
+    out
+}
+
 /// What the client knows about one source: its bbox covering columns (dotted paths: `bbox.xmin`). File names are assigned by the
 /// lowering (`gf_src_0.parquet`, ... in order of first use); the client may rename them.
 #[derive(Debug, Clone, Deserialize)]

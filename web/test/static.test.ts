@@ -2,14 +2,19 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { compile, initLowering } from "../src/engine/lowering.ts";
-import { buildPlan, prune, StaticError } from "../src/static/ir.ts";
-import type { QueryReq, StaticSource } from "../src/static/ir.ts";
+import { planRequest, prune, StaticError } from "../src/static/adapter.ts";
+import type { QueryReq, StaticSource } from "../src/static/adapter.ts";
 import { handle, newState, NOT_IN_DEPLOYMENT } from "../src/static/gateway.ts";
 import type { GatewayDeps } from "../src/static/gateway.ts";
 
 await initLowering(readFileSync(new URL("../src/engine/generated/geo_lowering.wasm", import.meta.url)));
 
+// the Source nodes of the golden request fixtures (the same ones the Rust tests build plans from)
+const fixtureSources = JSON.parse(readFileSync(new URL("../../crates/geo-plan/fixtures/requests/_sources.json", import.meta.url), "utf8")) as Record<string, { uri: string }>;
+const node = (id: string) => ({ ...fixtureSources[id], uri: `demo/v1/${id}.parquet.zip` });
+
 const places: StaticSource = {
+  ir_source: node("places"),
   id: "places", size_bytes: 9_000_000, rows: 300, row_groups: 3, crs: "OGC:CRS84", geometry_column: "geometry", geometry_type: "point",
   bbox: [106.6, 10.7, 106.8, 10.9], file: "demo_places.parquet",
   columns: [{ name: "id", type: "utf8" }, { name: "category", type: "utf8" }, { name: "geometry", type: { other: "geometry" } }, { name: "bbox", type: { other: "struct" } }],
@@ -30,51 +35,37 @@ const remoteManifest = { ...bundled, host: { kind: "jsdelivr-github", base_url: 
 const remoteDeps: GatewayDeps = { pack: { ...deps.pack, manifest: remoteManifest }, fileUrl: (id) => remoteManifest.files[id as "places"].url };
 const req = (over: Partial<QueryReq> = {}): QueryReq => ({ source: "places", kind: "features", bbox: [106.68, 10.76, 106.73, 10.81], crs: "OGC:CRS84", ...over });
 
-test("a features request becomes the gateway's plan: source, bbox filter, project (no struct columns), limit", () => {
-  const { ir } = buildPlan(req({ limit: 500 }), places, "demo/demo_places.parquet");
-  assert.equal(ir.ir_version, "0.3");
-  const ops = Object.values(ir.nodes).map((n) => n.op).sort();
-  assert.deepEqual(ops, ["bbox_filter", "limit", "project", "source"]);
-  const proj = Object.values(ir.nodes).find((n) => n.op === "project");
-  assert.deepEqual(proj && proj.op === "project" ? proj.columns : null, ["id", "category", "geometry"]);
-  const lim = Object.values(ir.nodes).find((n) => n.op === "limit");
-  assert.equal(lim && lim.op === "limit" ? lim.n : null, 500);
+test("the adapter hands the request to the canonical builder and returns its plan, the capability verdict and the dataset's uri", () => {
+  const r = planRequest(req({ limit: 500 }), [places]);
+  assert.equal(r.plan.ir_version, "0.3");
+  assert.deepEqual(Object.values(r.plan.nodes).map((n) => n.op).sort(), ["bbox_filter", "limit", "project", "source"]);
+  assert.deepEqual(r.missingOps, []);
+  assert.equal(r.uri, "demo/v1/places.parquet.zip");
+  // the engine hint is a planner input attached afterwards, not part of the request or the plan semantics
+  assert.deepEqual(planRequest(req({ engine: "duckdb-wasm" }), [places]).plan.hints, { preferred_engine: "duckdb-wasm" });
+  assert.equal(planRequest(req(), [places]).planJson, planRequest(req({ engine: "duckdb-wasm" }), [places]).planJson, "an engine hint never changes the plan's nodes");
 });
 
-test("the limit is capped at the gateway's maximum", () => {
-  const { ir } = buildPlan(req({ limit: 5_000_000 }), places, "u");
-  const lim = Object.values(ir.nodes).find((n) => n.op === "limit");
-  assert.equal(lim && lim.op === "limit" ? lim.n : null, 100_000);
+test("the built plan compiles with the real browser lowering (the SQL carries the covering-column bbox test)", () => {
+  const { plan } = planRequest(req({ filter: { column: "category", op: "eq", value: "cafe" } }), [places]);
+  const sql = compile(plan, { "demo/v1/places.parquet.zip": { url: "https://example.test/p.parquet", covering: { xmin: "bbox.xmin", ymin: "bbox.ymin", xmax: "bbox.xmax", ymax: "bbox.ymax", declared: false }, access: "range" } }, 1000);
+  assert.match(sql.sql, /"bbox"\."xmin"/);
 });
 
-test("count_by sorts by count then by the group key, and keeps the top 50", () => {
-  const { ir } = buildPlan(req({ kind: "count_by", group_by: "category" }), places, "u");
-  const sort = Object.values(ir.nodes).find((n) => n.op === "sort");
-  assert.deepEqual(sort && sort.op === "sort" ? sort.keys : null, [{ column: "count", descending: true }, { column: "category", descending: false }]);
-  const lim = Object.values(ir.nodes).find((n) => n.op === "limit");
-  assert.equal(lim && lim.op === "limit" ? lim.n : null, 50);
+test("refused requests carry the builder's structured code and the legacy error string", () => {
+  const refuse = (q: QueryReq) => { try { planRequest(q, [places]); } catch (e) { return e as StaticError; } throw new Error("expected a refusal"); };
+  assert.deepEqual([refuse(req({ crs: "EPSG:32648" })).code, refuse(req({ crs: "EPSG:32648" })).planCode], ["crs_mismatch", "INVALID_CRS"]);
+  assert.equal(refuse(req({ filter: { column: "no_such", op: "eq", value: "x" } })).planCode, "INVALID_FIELD");
+  assert.equal(refuse(req({ source: "ghost" })).planCode, "UNKNOWN_DATASET");
+  assert.equal(refuse(req({ kind: "teleport" })).planCode, "UNSUPPORTED_REQUEST");
 });
 
-test("filters: compare, in, and typed literals", () => {
-  const eq = buildPlan(req({ filter: { column: "category", op: "eq", value: "restaurant" } }), places, "u").ir;
-  assert.ok(Object.values(eq.nodes).some((n) => n.op === "filter" && n.predicate.kind === "compare" && JSON.stringify(n.predicate.value) === '{"str":"restaurant"}'));
-  const inn = buildPlan(req({ filter: { column: "category", op: "in", values: ["a", "b"] } }), places, "u").ir;
-  assert.ok(Object.values(inn.nodes).some((n) => n.op === "filter" && n.predicate.kind === "in" && n.predicate.values.length === 2));
-  assert.throws(() => buildPlan(req({ filter: { column: "category", op: "in", values: [] } }), places, "u"), StaticError);
-  assert.throws(() => buildPlan(req({ filter: { column: "category", op: "like", value: "x" } }), places, "u"), StaticError);
-});
-
-test("the plan compiles with the real browser lowering (the SQL carries the covering-column bbox test)", () => {
-  const { ir } = buildPlan(req({ filter: { column: "category", op: "eq", value: "cafe" } }), places, "demo/p.parquet");
-  const sql = compile(ir, { "demo/p.parquet": { url: "https://example.test/p.parquet", covering: { xmin: "bbox.xmin", ymin: "bbox.ymin", xmax: "bbox.xmax", ymax: "bbox.ymax", declared: false }, access: "range" } }, 1000);
-  assert.match(sql.sql ?? String(sql), /bbox\.xmin|"bbox"\."xmin"/);
-});
-
-test("what needs the server is refused with its reason, never approximated", () => {
-  for (const kind of ["near", "near_count", "join_count_by", "intersects_features"]) {
-    assert.throws(() => buildPlan(req({ kind }), places, "u"), (e: unknown) => e instanceof StaticError && e.code === "server_required" && /GeoFabric Server/.test(e.message));
-  }
-  assert.throws(() => buildPlan(req({ crs: "EPSG:32648" }), places, "u"), (e: unknown) => e instanceof StaticError && e.code === "crs_mismatch");
+test("what the browser cannot run is a valid plan with a capability verdict, never an approximation and never silently dropped", () => {
+  const roads: StaticSource = { ...places, id: "roads", ir_source: node("roads") };
+  const near = planRequest(req({ source: "places", kind: "near_count", with: { source: "roads", distance_m: 200 } }), [places, roads]);
+  assert.ok(near.missingOps.includes("transform") && near.missingOps.includes("spatial_semi_join"), String(near.missingOps));
+  assert.ok(Object.values(near.plan.nodes).some((n) => n.op === "spatial_semi_join"), "the semi join is in the plan, exactly as built");
+  assert.deepEqual(planRequest(req({ kind: "intersects_features" }), [places]).missingOps, ["intersects"]);
 });
 
 test("row groups are pruned by their boxes; a group without a box is always kept", () => {
@@ -110,9 +101,9 @@ test("a server engine hint or declining the browser is an explicit 'requires Geo
     assert.equal(r.status, 422);
     assert.equal((r.body as { error: string }).error, "server_required");
   }
-  const near = await handle("POST", "/api/query", req({ kind: "near" }), deps, st);
+  const near = await handle("POST", "/api/query", req({ kind: "near", with: { source: "places", distance_m: 200 } }), deps, st);
   assert.equal(near.status, 422);
-  assert.match((near.body as { message: string }).message, /requires GeoFabric Server/);
+  assert.match((near.body as { message: string }).message, /requires GeoFabric Server \(the browser engine cannot run: .*transform.*\)/);
 });
 
 test("catalog, sources, row groups and state come from the published pack; PostGIS is 'not configured'", async () => {

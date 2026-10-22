@@ -1,0 +1,21 @@
+{
+  "expected": {
+    "error": {
+      "code": "INVALID_CRS",
+      "legacy": "crs_mismatch",
+      "status": 422
+    }
+  },
+  "name": "err_crs_mismatch",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "EPSG:32648",
+    "kind": "features",
+    "source": "places"
+  }
+}

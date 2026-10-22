@@ -20,7 +20,7 @@ import type { LayerState } from "./layers.ts";
 import { inspectorRows } from "./inspector-schema.ts";
 import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
-import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, STATIC_DEMOS, demoRequests, splitPlaces, topGroup } from "./demos.ts";
+import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, demoRequests, splitPlaces, topGroup } from "./demos.ts";
 import { BASE_URL, STATIC_PROFILE, STATIC_START_VIEW } from "./static/profile.ts";
 import { installStaticGateway } from "./static/gateway.ts";
 import { LayerUnavailable } from "./static/errors.ts";
@@ -80,6 +80,8 @@ const S = {
   catalog: null as Catalog | null,
   /** The optional PostGIS engine as /api/state reports it (never credentials). null until asked. */
   postgis: null as PostgisInfo | null,
+  /** Static deployment only: which demos this deployment can run, decided by request -> PlanGraph -> capability evaluation (null until evaluated). */
+  demoCaps: null as Map<string, boolean> | null,
   cur: null as SourceMeta | null,
   layers: loadLayerStates() as Record<string, LayerState>,
   demo: { id: null as string | null, summary: "" },
@@ -434,6 +436,7 @@ async function loadSources() {
     S.sources = sources.sources;
     S.catalog = catalog;
     if (DEV()) void loadPostgis();
+    if (STATIC_PROFILE) void evaluateDemoCapabilities();
     renderLeft();
     // real buildings over the real basemap when the Overture subset is present; else the small synthetic file
     const first = S.sources.find((s) => s.id === params.get("source") && !s.error) ?? S.sources.find((s) => s.id === "overture_buildings_vn_south" && !s.error) ?? S.sources.find((s) => s.id === "clustered_10mb_spatial") ?? S.sources.find((s) => !s.error);
@@ -1052,13 +1055,33 @@ function renderDemoCard() {
     el("button", { type: "button", "aria-label": t("demo.close"), title: t("demo.close"), onclick: () => { S.demo = { id: null, summary: "" }; renderDemoCard(); } }, "×"));
 }
 
+/** Static deployment: ask the canonical builder what each demo's request means as a plan and whether this deployment can run all of it. */
+async function evaluateDemoCapabilities(): Promise<void> {
+  const caps = new Map<string, boolean>();
+  const bbox = [106.69, 10.77, 106.71, 10.79];
+  for (const d of DEMOS) {
+    const reqs = demoRequests(d.id);
+    let ok = reqs.length > 0; // no data request (a raster layer): nothing in this deployment's data can serve it
+    for (const r of reqs) {
+      try {
+        const v = await api<{ supported: boolean }>("/api/query/capability", { ...r, bbox, crs: "OGC:CRS84" });
+        ok = ok && v.supported;
+      } catch { ok = false; }
+    }
+    caps.set(d.id, ok);
+  }
+  S.demoCaps = caps;
+  renderTab();
+}
+
 function demoPanel(): HTMLElement | null {
   if (!S.catalog || !S.catalog.datasets.some((d) => d.id === BUILDINGS && d.present)) return null;
   return el("section", { class: "demos", "data-testid": "demos", "aria-label": t("demo.title") },
     el("h3", {}, t("demo.title")),
     ...DEMOS.map((d) => {
-      // a browser-only deployment cannot run what needs the server: the demo stays visible, disabled, with the reason (never an approximation)
-      const needsServer = STATIC_PROFILE && !STATIC_DEMOS.includes(d.id);
+      // a browser-only deployment cannot run what needs the server: the demo stays visible, disabled, with the reason (never an approximation).
+      // Which demos those are is not a list kept here: it is the capability verdict of the plan each demo's request builds (evaluated once).
+      const needsServer = STATIC_PROFILE && S.demoCaps?.get(d.id) !== true;
       return el("div", { class: `demo${S.demo.id === d.id ? " on" : ""}${needsServer ? " needs-server" : ""}`, "data-testid": `demo-${d.id}` },
         el("div", { class: "demo-text" }, el("strong", {}, t(d.title)), el("span", { class: "meta" }, t(d.desc)),
           needsServer ? el("span", { class: "meta", "data-testid": `demo-needs-server-${d.id}` }, t("static.needs_server")) : null),

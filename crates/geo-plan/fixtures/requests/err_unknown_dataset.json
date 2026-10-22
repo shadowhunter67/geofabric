@@ -1,0 +1,21 @@
+{
+  "expected": {
+    "error": {
+      "code": "UNKNOWN_DATASET",
+      "legacy": "no_such_source",
+      "status": 404
+    }
+  },
+  "name": "err_unknown_dataset",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "features",
+    "source": "nope"
+  }
+}

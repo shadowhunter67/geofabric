@@ -1,0 +1,18 @@
+{
+  "expected": {
+    "browser_missing_ops": [],
+    "plan_json": "{\n  \"ir_version\": \"0.3\",\n  \"nodes\": {\n    \"n_b098139634ed3b7e06b0\": {\n      \"op\": \"limit\",\n      \"input\": \"n_fada9fde03d8871177e5\",\n      \"n\": 20000\n    },\n    \"n_c52acd396f9cbfc0d6a6\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_cfc52690de4bbbd26458\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_cfc52690de4bbbd26458\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/buildings.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"class\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"height\",\n            \"data_type\": \"float64\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"polygon\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    },\n    \"n_fada9fde03d8871177e5\": {\n      \"op\": \"project\",\n      \"input\": \"n_c52acd396f9cbfc0d6a6\",\n      \"columns\": [\n        \"id\",\n        \"class\",\n        \"height\",\n        \"geometry\"\n      ]\n    }\n  },\n  \"root\": \"n_b098139634ed3b7e06b0\",\n  \"hints\": {}\n}"
+  },
+  "name": "viewport_buildings",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "crs": "OGC:CRS84",
+    "kind": "features",
+    "source": "buildings"
+  }
+}

@@ -820,6 +820,7 @@ dependencies = [
  "axum",
  "geo-executor",
  "geo-ir",
+ "geo-plan",
  "geo-planner",
  "geo-runtime",
  "geo-source-geoparquet",
@@ -847,6 +848,18 @@ dependencies = [
 
 [[package]]
 name = "geo-lowering"
+version = "0.1.0"
+dependencies = [
+ "geo-ir",
+ "geo-plan",
+ "geo-types",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "geo-plan"
 version = "0.1.0"
 dependencies = [
  "geo-ir",

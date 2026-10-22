@@ -1,0 +1,23 @@
+{
+  "expected": {
+    "browser_missing_ops": [],
+    "plan_json": "{\n  \"ir_version\": \"0.3\",\n  \"nodes\": {\n    \"n_3766848a9728c535fc4f\": {\n      \"op\": \"bbox_filter\",\n      \"input\": \"n_843f125068ad8abc3d49\",\n      \"geometry_column\": \"geometry\",\n      \"bbox\": {\n        \"min_x\": 106.69,\n        \"min_y\": 10.77,\n        \"max_x\": 106.71,\n        \"max_y\": 10.79,\n        \"crs\": \"ogc_crs84\"\n      }\n    },\n    \"n_42c64513658656f743e6\": {\n      \"op\": \"project\",\n      \"input\": \"n_3766848a9728c535fc4f\",\n      \"columns\": [\n        \"id\",\n        \"name\",\n        \"category\",\n        \"confidence\",\n        \"geometry\"\n      ]\n    },\n    \"n_6f6072870d34907ed9bb\": {\n      \"op\": \"limit\",\n      \"input\": \"n_42c64513658656f743e6\",\n      \"n\": 20000\n    },\n    \"n_843f125068ad8abc3d49\": {\n      \"op\": \"source\",\n      \"uri\": \"demo/places.parquet\",\n      \"format\": \"geo_parquet\",\n      \"schema\": {\n        \"fields\": [\n          {\n            \"name\": \"id\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"name\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"category\",\n            \"data_type\": \"utf8\"\n          },\n          {\n            \"name\": \"confidence\",\n            \"data_type\": \"float64\"\n          },\n          {\n            \"name\": \"geometry\",\n            \"data_type\": {\n              \"other\": \"geometry\"\n            }\n          },\n          {\n            \"name\": \"bbox\",\n            \"data_type\": {\n              \"other\": \"struct\"\n            }\n          }\n        ],\n        \"geometry_columns\": [\n          {\n            \"name\": \"geometry\",\n            \"geometry_type\": \"point\",\n            \"crs\": \"ogc_crs84\"\n          }\n        ]\n      },\n      \"statistics\": {\n        \"row_count\": 1000,\n        \"total_bytes\": 123456,\n        \"row_groups\": 4,\n        \"bbox\": {\n          \"min_x\": 106.0,\n          \"min_y\": 10.0,\n          \"max_x\": 107.0,\n          \"max_y\": 11.0,\n          \"crs\": \"ogc_crs84\"\n        }\n      }\n    }\n  },\n  \"root\": \"n_6f6072870d34907ed9bb\",\n  \"hints\": {}\n}"
+  },
+  "name": "engine_fields_are_not_part_of_the_plan",
+  "request": {
+    "bbox": [
+      106.69,
+      10.77,
+      106.71,
+      10.79
+    ],
+    "browser": true,
+    "client": {
+      "warm": true
+    },
+    "crs": "OGC:CRS84",
+    "engine": "duckdb-wasm",
+    "kind": "features",
+    "source": "places"
+  }
+}
