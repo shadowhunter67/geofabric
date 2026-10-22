@@ -90,9 +90,9 @@ jobs:
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
       - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
-        # serial: with 2+ test threads the first DuckDB query of a test process failed sporadically on the hosted runner ("Error code 1", not
-        # reproduced locally, not root-caused); serial runs are the mitigation, not an explanation
-        run: cargo test --workspace --no-default-features -- --test-threads=1
+        # Parallel again (default test threads). The earlier mitigation (--test-threads=1) hid a real defect: the DuckDB profiler's JSON output made
+        # concurrent in-process engines fail sporadically; it is now opt-in (see the flake-experiment job: profiler on 8 of 40 runs failed, off 0 of 50).
+        run: cargo test --workspace --no-default-features
       - name: Diagnostics when the tests failed (DuckDB probe, then the semi-join tests alone, three times)
         if: failure()
         shell: bash
