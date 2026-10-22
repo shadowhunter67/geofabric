@@ -2,7 +2,7 @@
 
 **An experimental, browser-first spatial runtime for cloud-native geospatial data.** A logical plan (the *PlanGraph*, a versioned Spatial IR) is planned once and runs on interchangeable engines: **DuckDB-Wasm in your browser**, DuckDB on a server, or PostGIS. The server is optional. PostGIS is optional.
 
-<!-- LIVE-DEMO -->
+**▶ Live demo: <https://shadowhunter67.github.io/geofabric/>** — runs entirely in your browser (DuckDB-Wasm), nothing to install.
 
 > Status: **alpha / experimental.** It is a research-grade runtime with real correctness evidence (cross-engine result equality, an independent oracle for the metric-distance demo), not a production product. See [Known limits](#known-limits).
 
