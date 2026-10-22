@@ -44,3 +44,7 @@ web/dist-static/
 
 # the browser lowering: Rust compiled to WebAssembly by web/scripts/build-lowering-wasm.mjs
 web/src/engine/generated/
+
+# local build outputs of the static profile (never commit: they contain the bundled wasm and a copy of the data)
+web/dist-range/
+web/dist-*/
