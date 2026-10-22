@@ -54,7 +54,7 @@ test("network audit: only the app, its published data and the basemap host are c
   const external = [...hosts].filter((h) => h !== new URL(origin).host && !/^(data|blob):/.test(h) && h !== "");
   // openfreemap.org = basemap tiles; extensions.duckdb.org = DuckDB-Wasm loads its `parquet` extension (code, not data) from the official CDN on first use;
   // cdn.jsdelivr.net = the verified, commit-pinned data host (only when the manifest names it)
-  for (const h of external) expect(h, `unexpected external host ${h}`).toMatch(/(^|\.)openfreemap\.org$|^extensions\.duckdb\.org$|^cdn\.jsdelivr\.net$/);
+  for (const h of external) expect(h, `unexpected external host ${h}`).toMatch(/(^|\.)openfreemap\.org$|^extensions\.duckdb\.org$|^(cdn|gcore)\.jsdelivr\.net$/);
   const joined = requests.join("\n");
   expect(joined).not.toMatch(/:8787|:8798|localhost:(?!4180)|192\.168\.|\b10\.\d+\.\d+\.\d+|:5433|postgres/i);
   // no /api request ever reached the network: the page answered them itself

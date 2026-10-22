@@ -79,6 +79,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="write pack.json when everything passed")
     ap.add_argument("--origin", default="https://shadowhunter67.github.io")
+    # NOT cdn.jsdelivr.net: that name load-balances over several CDNs and one of them (Fastly, also fastly.jsdelivr.net) answers a ranged HEAD with
+    # 200, which DuckDB-Wasm cannot use (measured 2026-10-22: a GitHub runner got that backend while a laptop got Cloudflare). gcore.jsdelivr.net is
+    # one backend that answers 206 every time (12 of 12 requests); testingcf.jsdelivr.net (Cloudflare) did too but is documented as a test name.
+    ap.add_argument("--cdn-host", default="gcore.jsdelivr.net", help="jsDelivr host to serve from (must be a single-backend alias that answers ranged HEAD with 206)")
     ap.add_argument("--wait", type=int, default=600, help="seconds to wait for a fresh commit to reach the CDN")
     args = ap.parse_args()
 
@@ -98,7 +102,7 @@ def main() -> int:
         print(f"commit {commit[:10]} is not on origin/main: push it first (a commit on a deleted branch may disappear from the CDN)")
         return 1
     slug = repo_slug()
-    base = f"https://cdn.jsdelivr.net/gh/{slug}@{commit}/data/public-demo/"
+    base = f"https://{args.cdn_host}/gh/{slug}@{commit}/data/public-demo/"
     print(f"pinned to commit {commit[:10]}  ->  {base}")
 
     report = ROOT / "data" / "public-demo" / ".verify-report.json"
@@ -110,6 +114,7 @@ def main() -> int:
 
     manifest["host"] = {
         "kind": "jsdelivr-github",
+        "cdn_host": args.cdn_host,
         "base_url": base,
         "commit": commit,
         "range": True,
