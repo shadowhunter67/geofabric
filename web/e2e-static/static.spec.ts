@@ -36,7 +36,8 @@ test("opens from the base path, shows real building polygons from DuckDB-Wasm, w
   expect(last.n).toBeGreaterThan(100);
   expect(last.types).toContain("Polygon");
   // the data came from the published pack, by HTTP (range) requests, next to the app
-  expect(requests.some((u) => /\/geofabric\/demo\/v1\/demo_buildings\.parquet\.zip$/.test(u))).toBe(true);
+  // the data came from where the manifest says (the verified remote host, or next to the app when bundled), by HTTP requests
+  expect(requests.some((u) => /\/v1\/demo_buildings\.parquet\.zip$/.test(u))).toBe(true);
 });
 
 test("the DuckDB-Wasm runtime probe passes on this origin (wasm + worker + range reads + a real query)", async ({ page }) => {

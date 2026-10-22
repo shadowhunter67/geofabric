@@ -278,11 +278,15 @@ impl ExecutionEngine for DuckDbEngine {
 
         let result = (|| {
             let conn = self.open(ctx, &compiled.sources, &profile_dir)?;
-            conn.execute_batch(&format!(
-                "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
-                sql::q_str(&sql::sql_path(&profile_file))
-            ))
-            .map_err(|x| EngineError::Engine(format!("profiling setup: {x}")))?;
+            // GEOFABRIC_DUCKDB_PROFILE=0 turns the profiler off (peak memory is then reported as unavailable). It exists for the CI-flake
+            // experiment (is the profiler's output file involved in the sporadic first-statement failure?); the default is unchanged.
+            if std::env::var("GEOFABRIC_DUCKDB_PROFILE").map(|v| v != "0").unwrap_or(true) {
+                conn.execute_batch(&format!(
+                    "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
+                    sql::q_str(&sql::sql_path(&profile_file))
+                ))
+                .map_err(|x| EngineError::Engine(format!("profiling setup: {x}")))?;
+            }
 
             // Watchdog: really interrupts the running query.
             let handle = conn.interrupt_handle();
