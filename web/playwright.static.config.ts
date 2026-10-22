@@ -17,5 +17,5 @@ export default defineConfig({
   use: { baseURL: BASE, channel: (process.env.PW_CHANNEL ?? "chrome") as "chrome" | "msedge", headless: true, viewport: { width: 1500, height: 900 } },
   webServer: PUBLIC_URL
     ? undefined
-    : { command: `node scripts/pages-like-server.mjs ${process.env.GF_OUT ?? "dist-static"} ${PORT}`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
+    : { command: `node scripts/pages-like-server.mjs ${process.env.GF_OUT ?? "dist-static"} ${PORT} ${process.env.GF_SERVER_ARGS ?? ""}`, url: BASE, reuseExistingServer: false, timeout: 60_000 },
 });

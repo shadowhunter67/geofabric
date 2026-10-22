@@ -8,7 +8,7 @@
 
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { wkbToGeoJSON } from "./wkb.ts";
-import { SUPPORTED_OPS } from "./sqlgen.ts";
+import { SUPPORTED_OPS } from "./lowering.ts";
 import type { DuckDbWasmEngine } from "./wasm.ts";
 import { ENGINE_ID } from "./wasm.ts";
 import { deviceProfileFrom, memoryClassFor } from "./probe-model.ts";

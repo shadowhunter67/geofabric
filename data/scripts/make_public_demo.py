@@ -24,17 +24,18 @@ import pyarrow.parquet as pq
 # Saigon River, District 1 and Thu Thiem: buildings, a street grid, POIs and wards within ~8 km.
 DEFAULT_BBOX = [106.660, 10.740, 106.740, 10.810]
 RELEASE = "2026-09-23.1"
+VERSION = "v1"  # bump (never edit in place) when the data changes: published URLs are content-addressed
 
 # source id (the id the app and the data manifests use) -> (file relative to the repo, row group size, public file name, projection)
 BUILDINGS_FLAT = (
     "id, names.primary AS name, subtype, class, height, num_floors, facade_material, roof_material, roof_shape, has_parts, version, geometry, bbox"
 )
 SOURCES = {
-    "overture_buildings_vn_south": ("benchmarks/data/overture_buildings_vn_south.parquet", 4_000, "demo_buildings.parquet", BUILDINGS_FLAT),
-    "overture_transport_hcm": ("data/local/overture_transport_hcm.parquet", 4_000, "demo_transport.parquet", "*"),
-    "overture_places_hcm": ("data/local/overture_places_hcm.parquet", 4_000, "demo_places.parquet", "*"),
-    "overture_admin_hcm": ("data/local/overture_admin_hcm.parquet", 500, "demo_admin.parquet", "*"),
-    "overture_landuse_hcm": ("data/local/overture_landuse_hcm.parquet", 1_000, "demo_landuse.parquet", "*"),
+    "overture_buildings_vn_south": ("benchmarks/data/overture_buildings_vn_south.parquet", 4_000, "demo_buildings.parquet.zip", BUILDINGS_FLAT),
+    "overture_transport_hcm": ("data/local/overture_transport_hcm.parquet", 4_000, "demo_transport.parquet.zip", "*"),
+    "overture_places_hcm": ("data/local/overture_places_hcm.parquet", 4_000, "demo_places.parquet.zip", "*"),
+    "overture_admin_hcm": ("data/local/overture_admin_hcm.parquet", 500, "demo_admin.parquet.zip", "*"),
+    "overture_landuse_hcm": ("data/local/overture_landuse_hcm.parquet", 1_000, "demo_landuse.parquet.zip", "*"),
 }
 
 
@@ -118,7 +119,7 @@ def catalog_entry(name: str, repo: Path, info: dict, bbox: list[float]) -> dict:
         "coverage": {"name": "Central Ho Chi Minh City (demo window)", "bbox": bbox},
         "crs": m["crs"], "geometry_type": m["geometry_type"], "format_normalized": m["format_normalized"],
         "source_ids": [name], "present": True,
-        "files": [{"path": f"demo/{info['file']}", "size_bytes": info["size_bytes"], "rows": info["rows"]}],
+        "files": [{"path": f"demo/v1/{info['file']}", "size_bytes": info["size_bytes"], "rows": info["rows"]}],
         "raster": None, "quality": {"rows": info["rows"]}, "notes": (m.get("notes") or "") + " " + note,
     }
 
@@ -131,6 +132,8 @@ def main() -> int:
     args = ap.parse_args()
     x0, y0, x1, y1 = args.bbox
     args.out.mkdir(parents=True, exist_ok=True)
+    data_dir = args.out / VERSION  # versioned, immutable layout: v1/<name>.parquet.zip
+    data_dir.mkdir(exist_ok=True)
 
     con = duckdb.connect()
     con.execute("INSTALL spatial")
@@ -138,7 +141,7 @@ def main() -> int:
     files = {}
     for name, (src, rg, public, projection) in SOURCES.items():
         source = (args.repo / src).as_posix()
-        out = args.out / public
+        out = data_dir / public
         tmp = Path(f"{out}.part")
         if tmp.exists():
             tmp.unlink()
@@ -160,21 +163,32 @@ def main() -> int:
             "derived_from": src,
         }
         print(name, files[name]["rows"], "rows", files[name]["bytes"] // 1024, "KiB")
-    infos = {name: describe(name, args.out / SOURCES[name][2], SOURCES[name][2]) for name in SOURCES}
+    infos = {name: describe(name, data_dir / SOURCES[name][2], SOURCES[name][2]) for name in SOURCES}
     (args.out / "sources.json").write_text(json.dumps({"sources": list(infos.values())}, ensure_ascii=False, separators=(",", ":")) + chr(10), encoding="utf-8")
     datasets = [catalog_entry(name, args.repo, infos[name], args.bbox) for name in SOURCES]
     attributions = sorted({d["license"]["attribution"] for d in datasets if d["license"].get("attribution")})
     (args.out / "catalog.json").write_text(json.dumps({"datasets": datasets, "attributions": attributions, "errors": []}, ensure_ascii=False, indent=1) + chr(10), encoding="utf-8")
     manifest = {
+        "schema": 2,
         "pack": "geofabric-public-demo-hcm-center",
+        "version": VERSION,
         "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "bbox_crs84": args.bbox,
         "overture_release": RELEASE,
         "license": "ODbL-1.0 (derived database; attribution required, see docs/DATA-LICENSES.md)",
-        "note": "Plain GeoParquet. On GitHub Pages the static site downloads each file whole on first use (Pages answers a ranged HEAD with 200, which DuckDB-Wasm cannot use for range reads); a host that answers it with 206 could be read by range.",
-        "files": files,
+        "attribution": "attribution.html",
+        "host": None,
+        "files": {
+            sid: {
+                "file": f["file"], "path": f"{VERSION}/{f['file']}", "format": "GeoParquet", "crs": "OGC:CRS84", "rows": f["rows"], "row_groups": f["row_groups"],
+                "bytes": f["bytes"], "sha256": f["sha256"], "license": json.loads((args.repo / "data" / "manifests" / f"{sid}.json").read_text(encoding="utf-8"))["license"]["name"],
+                "source_release": RELEASE, "derived_from": f["derived_from"],
+            }
+            for sid, f in files.items()
+        },
         "metadata": ["sources.json", "catalog.json"],
         "total_bytes": sum(f["bytes"] for f in files.values()),
+        "note": "Plain GeoParquet. The files carry a .zip suffix so that CDNs and static hosts do not transfer-compress them: a compressed representation breaks HTTP byte ranges. `host` is filled in by data/scripts/publish_demo_data.py after the host was verified.",
     }
     (args.out / "pack.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print("total", manifest["total_bytes"] // 1024, "KiB")

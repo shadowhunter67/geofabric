@@ -759,6 +759,7 @@ version = "0.1.0"
 dependencies = [
  "geo-executor",
  "geo-ir",
+ "geo-lowering",
  "geo-source-geoparquet",
  "geo-types",
  "serde",
@@ -772,6 +773,7 @@ dependencies = [
  "duckdb",
  "geo-executor",
  "geo-ir",
+ "geo-lowering",
  "geo-source-geoparquet",
  "geo-types",
  "serde_json",
@@ -785,6 +787,7 @@ dependencies = [
  "arrow-schema",
  "geo-executor",
  "geo-ir",
+ "geo-lowering",
  "geo-types",
  "postgres",
  "serde",
@@ -839,6 +842,17 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
+ "thiserror",
+]
+
+[[package]]
+name = "geo-lowering"
+version = "0.1.0"
+dependencies = [
+ "geo-ir",
+ "geo-types",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 

@@ -16,5 +16,6 @@ geo-types = { path = "../geo-types" }
 geo-ir = { path = "../geo-ir" }
 geo-executor = { path = "../geo-executor" }
 geo-source-geoparquet = { path = "../geo-source-geoparquet" }
+geo-lowering = { path = "../geo-lowering" }
 duckdb = { version = "1", default-features = false }
 serde_json.workspace = true

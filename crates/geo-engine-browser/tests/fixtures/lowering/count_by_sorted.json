@@ -3,7 +3,7 @@
     "files": [
       "a.parquet"
     ],
-    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE \"bbox\".\"xmin\" <= 105.5 AND \"bbox\".\"xmax\" >= 104.0 AND \"bbox\".\"ymin\" <= 13.25 AND \"bbox\".\"ymax\" >= 12.0),\n\"n2\" AS NOT MATERIALIZED (SELECT \"category\", COUNT(*) AS \"n\" FROM \"n1\" GROUP BY \"category\"),\n\"n3\" AS NOT MATERIALIZED (SELECT * FROM \"n2\" ORDER BY \"n\" DESC, \"category\"),\n\"n4\" AS NOT MATERIALIZED (SELECT * FROM \"n3\" LIMIT 50)\nSELECT * FROM \"n4\" LIMIT 1001"
+    "sql": "WITH \"n0\" AS NOT MATERIALIZED (SELECT * REPLACE (ST_AsWKB(\"geometry\") AS \"geometry\") FROM read_parquet('gf_src_0.parquet')),\n\"n1\" AS NOT MATERIALIZED (SELECT * FROM \"n0\" WHERE \"bbox\".\"xmin\" <= 105.5 AND \"bbox\".\"xmax\" >= 104.0 AND \"bbox\".\"ymin\" <= 13.25 AND \"bbox\".\"ymax\" >= 12.0),\n\"n2\" AS NOT MATERIALIZED (SELECT \"category\", COUNT(*) AS \"n\" FROM \"n1\" GROUP BY \"category\"),\n\"n3\" AS NOT MATERIALIZED (SELECT * FROM \"n2\" ORDER BY \"n\" DESC NULLS LAST, \"category\" ASC NULLS LAST),\n\"n4\" AS NOT MATERIALIZED (SELECT * FROM \"n3\" LIMIT 50)\nSELECT * FROM \"n4\" LIMIT 1001"
   },
   "max_rows": 1000,
   "name": "count_by_sorted",

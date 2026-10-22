@@ -15,17 +15,25 @@ import type { QueryReq, StaticSource } from "./ir.ts";
 export const NOT_IN_DEPLOYMENT = "not available in this deployment (static browser profile: no GeoFabric Server)";
 const COVERING = { xmin: "bbox.xmin", ymin: "bbox.ymin", xmax: "bbox.xmax", ymax: "bbox.ymax", declared: false };
 /**
- * Files at most this big are fetched whole, once (the engine's "full" mode); bigger ones by HTTP range. GitHub Pages answers the ranged HEAD
- * that DuckDB-Wasm needs with 200 instead of 206, so range reads cannot work there (ADR-014): the demo pack files (largest 14 MB) are fetched whole.
- * Raise/lower this for a host that supports ranges.
+ * Whole-file ("full") vs HTTP range access is decided by what the DATA HOST was verified to support (the manifest's `host.range`, written by
+ * data/scripts/publish_demo_data.py after real HEAD/GET Range checks). On a host that answers ranged requests correctly, layers bigger than
+ * RANGE_MIN are read by range (only the row groups a query needs cross the network); tiny files are cheaper whole. On a host that does not
+ * (GitHub Pages answers the ranged HEAD with 200, ADR-014) every layer is fetched whole, once.
  */
-const FULL_FETCH_MAX = 32 * 1024 * 1024;
+const RANGE_MIN = 1024 * 1024;
+const WHOLE_FILE_MAX = 32 * 1024 * 1024;
 
-export interface StaticPack { sources: StaticSource[]; catalog: unknown }
+/** The public data manifest (data/public-demo/pack.json, schema 2): where each layer lives, what it is, and what the host was verified to do. */
+export interface DataManifest {
+  version: string;
+  host: { kind: string; base_url: string; range: boolean; commit?: string } | null;
+  files: Record<string, { file: string; path: string; url?: string; bytes: number; sha256: string }>;
+}
+export interface StaticPack { sources: StaticSource[]; catalog: unknown; manifest: DataManifest }
 export interface GatewayDeps {
   pack: StaticPack;
-  /** absolute URL of a published pack file (resolved against the page, so a non-root base path works) */
-  fileUrl(file: string): string;
+  /** absolute URL of a layer's file (from the manifest; a bundled pack resolves against the page, so a non-root base path works) */
+  fileUrl(sourceId: string): string;
 }
 
 export interface GatewayState {
@@ -64,13 +72,13 @@ function absentCandidate(engine: string): Candidate {
   return { engine, kind: "server", feasible: false, score_ms: null, cost: null, reasons: [], rejected_because: [NOT_IN_DEPLOYMENT], confidence: null, risk: null, health: health(newState())[engine], probe_status: "not_required" };
 }
 
-function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayState, ir: unknown): Physical {
+function buildPhysical(q: QueryReq, src: StaticSource, uri: string, st: GatewayState, ir: unknown, rangeHost: boolean): Physical {
   const pr = prune(src, q.bbox);
   const scan: Scan = {
     uri, total_bytes: src.size_bytes, has_histogram: false, covering: COVERING,
     prune: pr,
   };
-  const strategy: "full" | "range" = src.size_bytes <= FULL_FETCH_MAX ? "full" : "range";
+  const strategy: "full" | "range" = rangeHost ? (src.size_bytes > RANGE_MIN ? "range" : "full") : src.size_bytes <= WHOLE_FILE_MAX ? "full" : "range";
   const footer = 64 * 1024;
   const fetchEst = strategy === "full" ? src.size_bytes : pr.kept_bytes + footer;
   const probe = probeInfo(st);
@@ -141,14 +149,14 @@ async function query(q: QueryReq, deps: GatewayDeps, st: GatewayState): Promise<
   if (q.browser === false) throw new StaticError(422, "server_required", `This analysis requires GeoFabric Server: browser execution was declined and there is no other engine (${NOT_IN_DEPLOYMENT}).`);
   const src = deps.pack.sources.find((s) => s.id === q.source);
   if (!src) throw new StaticError(404, "no_such_source", q.source);
-  const uri = `demo/${src.file}`;
+  const uri = `demo/${deps.pack.manifest.files[src.id]?.path ?? src.file}`;
   const built = buildPlan(q, src, uri);
   const planId = await sha256Hex(JSON.stringify(built.ir));
-  const physical = buildPhysical(q, src, uri, st, built.ir);
+  const physical = buildPhysical(q, src, uri, st, built.ir, deps.pack.manifest.host?.range === true);
   return {
     placement: "browser", plan_id: planId, ir: built.ir, physical,
     lineage: Object.entries(built.ir.nodes).map(([id, n]) => ({ id, op: n.op })),
-    source_urls: { [uri]: deps.fileUrl(src.file) },
+    source_urls: { [uri]: deps.fileUrl(src.id) },
     limits: { max_rows: 100_000, timeout_ms: 30_000 },
     columns: [], rows: [], rows_total: 0, geojson: null, metrics: empty as RunResp["metrics"],
     timing: { plan_and_overhead_ms: { value: 0, source: "derived" }, total_ms: { value: 0, source: "derived" }, boundary_conversion_ms: { value: 0, source: "derived" } },
@@ -209,12 +217,17 @@ export async function handle(method: string, path: string, body: unknown, deps: 
  */
 export async function installStaticGateway(baseUrl: string): Promise<void> {
   const origin = new URL(baseUrl, location.href);
-  const fileUrl = (file: string) => new URL(`demo/${file}`, origin).href;
-  const [sources, catalog] = await Promise.all([
+  const [sources, catalog, manifest] = await Promise.all([
     fetch(new URL("demo/sources.json", origin).href).then((r) => r.json() as Promise<{ sources: StaticSource[] }>),
     fetch(new URL("demo/catalog.json", origin).href).then((r) => r.json()),
+    fetch(new URL("demo/pack.json", origin).href).then((r) => r.json() as Promise<DataManifest>),
   ]);
-  const deps: GatewayDeps = { pack: { sources: sources.sources, catalog }, fileUrl };
+  // one place resolves data URLs: the manifest (a remote, verified host gives absolute URLs; a bundled pack is relative to the page)
+  const fileUrl = (id: string) => {
+    const f = manifest.files[id];
+    return f.url ?? new URL(`demo/${f.path}`, origin).href;
+  };
+  const deps: GatewayDeps = { pack: { sources: sources.sources, catalog, manifest }, fileUrl };
   const st = newState();
   const real = window.fetch.bind(window);
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {

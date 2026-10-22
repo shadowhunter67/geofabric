@@ -9,6 +9,7 @@ import type { PlanGraph, SourceBinding } from "./engine/contract.ts";
 import { isFresh, runProbe, sessionId, usable } from "./engine/probe.ts";
 import type { ProbeReport } from "./engine/probe.ts";
 import { classifyFailure, fallbackAllowed } from "./engine/failure.ts";
+import { LayerUnavailable } from "./static/errors.ts";
 import type { Metric, Metrics, RunResp, Scan } from "./types.ts";
 
 export interface PlacementDeps {
@@ -133,7 +134,7 @@ export function createPlacement(deps: PlacementDeps) {
    * classified, reported (health, known incompatibilities), and the same request is re-planned with the browser disabled
    * (at most ONE fallback, none after a cancellation, no retry on the same engine); the response carries `fallback`.
    */
-  async function placeWithFallback(first: RunResp, retry: () => Promise<RunResp>): Promise<RunResp> {
+  async function placeWithFallback(first: RunResp, retry: (() => Promise<RunResp>) | null): Promise<RunResp> {
     const t0 = performance.now();
     try {
       const res = await resolvePlacement(first);
@@ -144,8 +145,14 @@ export function createPlacement(deps: PlacementDeps) {
       const cls = classifyFailure(reason);
       reportRun(first, false, reason, performance.now() - t0);
       if (!fallbackAllowed(cls)) throw e; // cancelled by the user: no fallback
-      deps.log(`browser engine failed (${cls}), falling back once to the server engine: ${reason}`, true);
       await wasm.recycle();
+      if (!retry) {
+        // browser-only deployment: there is no other engine. The failure is reported as what it is; nothing is retried or faked.
+        deps.log(`browser engine failed (${cls}); this deployment has no other engine: ${reason}`, true);
+        if (cls === "ENGINE_CRASH" || cls === "MEMORY") { st.probe = null; void probeRuntime(`after ${cls}`); }
+        throw new LayerUnavailable(reason);
+      }
+      deps.log(`browser engine failed (${cls}), falling back once to the server engine: ${reason}`, true);
       // a crash/out-of-memory means the runtime we probed is gone: probe the new instance (in the background)
       if (cls === "ENGINE_CRASH" || cls === "MEMORY") { st.probe = null; void probeRuntime(`after ${cls}`); }
       const second = await retry();

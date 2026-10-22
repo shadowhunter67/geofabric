@@ -10,6 +10,9 @@ type GF = {
   select: (f: GeoJSON.Feature) => void;
   resolvePlacement: (r: unknown) => Promise<{ rows: Record<string, unknown>[]; rows_total: number; geojson: GeoJSON.FeatureCollection | null }>;
   basemapLoaded: () => boolean;
+  layers: Record<string, { visible: boolean; opacity: number }>;
+  applyMapVisibility: () => Promise<void>;
+  contextInfo: () => Record<string, { features: number; loading: boolean }>;
 };
 declare global { interface Window { __gf: GF } }
 
@@ -33,7 +36,7 @@ test("opens from the base path, shows real building polygons from DuckDB-Wasm, w
   expect(last.n).toBeGreaterThan(100);
   expect(last.types).toContain("Polygon");
   // the data came from the published pack, by HTTP (range) requests, next to the app
-  expect(requests.some((u) => /\/geofabric\/demo\/demo_buildings\.parquet$/.test(u))).toBe(true);
+  expect(requests.some((u) => /\/geofabric\/demo\/v1\/demo_buildings\.parquet\.zip$/.test(u))).toBe(true);
 });
 
 test("the DuckDB-Wasm runtime probe passes on this origin (wasm + worker + range reads + a real query)", async ({ page }) => {
@@ -49,8 +52,9 @@ test("network audit: only the app, its published data and the basemap host are c
   const origin = new URL(page.url()).origin;
   const hosts = new Set(requests.map((u) => new URL(u).host));
   const external = [...hosts].filter((h) => h !== new URL(origin).host && !/^(data|blob):/.test(h) && h !== "");
-  // openfreemap.org = basemap tiles; extensions.duckdb.org = DuckDB-Wasm loads its `parquet` extension (code, not data) from the official CDN on first use
-  for (const h of external) expect(h, `unexpected external host ${h}`).toMatch(/(^|\.)openfreemap\.org$|^extensions\.duckdb\.org$/);
+  // openfreemap.org = basemap tiles; extensions.duckdb.org = DuckDB-Wasm loads its `parquet` extension (code, not data) from the official CDN on first use;
+  // cdn.jsdelivr.net = the verified, commit-pinned data host (only when the manifest names it)
+  for (const h of external) expect(h, `unexpected external host ${h}`).toMatch(/(^|\.)openfreemap\.org$|^extensions\.duckdb\.org$|^cdn\.jsdelivr\.net$/);
   const joined = requests.join("\n");
   expect(joined).not.toMatch(/:8787|:8798|localhost:(?!4180)|192\.168\.|\b10\.\d+\.\d+\.\d+|:5433|postgres/i);
   // no /api request ever reached the network: the page answered them itself
@@ -132,4 +136,56 @@ test("the basemap and its attribution load from the public origin", async ({ pag
   await open(page, { tiles: "network" });
   await page.waitForFunction(() => window.__gf.basemapLoaded(), undefined, { timeout: 30_000 });
   await expect(page.locator("body")).toContainText(/OpenStreetMap/);
+});
+
+// ---- another layer, a layer that cannot be loaded, and what crosses the network ----
+// The layers are turned on the way a user does it: the visibility checkbox of the data panel (English names: these tests run in English).
+const showLayer = (page: Page, name: string) => page.getByLabel(`Show layer ${name}`).check();
+
+test("a second layer (roads) is queried in the browser and drawn, with no server involved", async ({ page }) => {
+  await open(page, { lang: "en" });
+  await showLayer(page, "Roads");
+  await page.waitForFunction(() => (window.__gf.contextInfo().overture_transport_hcm?.features ?? 0) > 0, undefined, { timeout: 90_000 });
+  const n = await page.evaluate(() => window.__gf.contextInfo().overture_transport_hcm.features);
+  expect(n).toBeGreaterThan(10);
+});
+
+test("a layer whose data cannot be loaded says so plainly; the map and the other layer keep working", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.route(/demo\/v1\/demo_places\.parquet/, (r) => r.abort());
+  await open(page, { lang: "en" });
+  await showLayer(page, "Places");
+  await expect(page.getByTestId("status")).toContainText("could not be loaded", { timeout: 90_000 });
+  expect(errors, "an unreachable layer is not an uncaught error").toEqual([]);
+  // the building layer that is already on screen is untouched, and another layer still loads
+  const still = await page.evaluate(() => window.__gf.state.last!.geojson!.features.length);
+  expect(still).toBeGreaterThan(100);
+  await showLayer(page, "Roads");
+  await page.waitForFunction(() => (window.__gf.contextInfo().overture_transport_hcm?.features ?? 0) > 0, undefined, { timeout: 90_000 });
+});
+
+test("range reads: when the data host was verified for ranges, a query reads a small part of the file", async ({ page }) => {
+  const pack = await (await page.request.get("demo/pack.json")).json() as { host: { range: boolean } | null; files: Record<string, { path: string; bytes: number }> };
+  test.skip(!pack.host?.range, "this deployment serves whole files (host.range is false): range reads do not apply");
+  const f = pack.files.overture_buildings_vn_south;
+  const marker = f.path.split("/").pop()!;
+  const seen: { method: string; range: boolean; status: number; bytes: number }[] = [];
+  const pending: Promise<void>[] = [];
+  page.on("response", (res) => {
+    if (!res.url().includes(marker)) return;
+    pending.push((async () => {
+      const req = res.request();
+      const sz = await req.sizes().catch(() => ({ responseBodySize: 0, responseHeadersSize: 0 }));
+      seen.push({ method: req.method(), range: !!req.headers()["range"], status: res.status(), bytes: sz.responseBodySize + sz.responseHeadersSize });
+    })());
+  });
+  await open(page);
+  await new Promise((r) => setTimeout(r, 500));
+  await Promise.all(pending);
+  const gets = seen.filter((r) => r.method === "GET");
+  const bytes = seen.reduce((a, r) => a + r.bytes, 0);
+  expect(gets.length, "the layer was requested").toBeGreaterThan(0);
+  expect(gets.every((r) => r.range && r.status === 206), `every data GET is a ranged 206: ${JSON.stringify(gets)}`).toBe(true);
+  expect(bytes, `transferred ${bytes} of ${f.bytes} bytes`).toBeLessThan(f.bytes * 0.25);
 });

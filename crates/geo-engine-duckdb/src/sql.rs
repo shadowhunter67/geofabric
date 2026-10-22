@@ -5,84 +5,38 @@
 //! restricted to a safe character set. No user string is concatenated raw.
 
 use geo_executor::{EngineError, ExecutionContext};
-use geo_ir::{AggFunc, CompareOp, Expr, JoinType, Literal, NodeId, Plan, PlanNode, SpatialPredicate};
+use geo_ir::{Expr, JoinType, NodeId, Plan, PlanNode, SpatialPredicate};
 use geo_source_geoparquet::{wkt_envelope, GeoParquetSource};
 use geo_types::{AuthorizedSource, Crs, SpatialSchema};
 use std::path::Path;
 
 pub(crate) fn q_ident(s: &str) -> String {
-    format!("\"{}\"", s.replace('"', "\"\""))
+    geo_lowering::quote_ident(s)
 }
 
 pub(crate) fn q_str(s: &str) -> String {
-    format!("'{}'", s.replace('\'', "''"))
+    geo_lowering::quote_string(s)
+}
+
+/// Canonical lowering errors become this engine's taxonomy.
+fn lowered<T>(r: Result<T, geo_lowering::LowerError>) -> Result<T, EngineError> {
+    r.map_err(|e| match e {
+        geo_lowering::LowerError::Invalid(m) => EngineError::InvalidPlan(m),
+        geo_lowering::LowerError::Unsupported(m) => EngineError::Unsupported(m),
+    })
 }
 
 fn num(v: f64) -> Result<String, EngineError> {
-    if v.is_finite() {
-        Ok(format!("{v:?}"))
-    } else {
-        Err(EngineError::InvalidPlan(format!("non-finite number {v}")))
-    }
+    lowered(geo_lowering::format_float(v))
 }
 
-fn lit(l: &Literal) -> Result<String, EngineError> {
-    Ok(match l {
-        Literal::Int(i) => i.to_string(),
-        Literal::Float(f) => num(*f)?,
-        Literal::Str(s) => q_str(s),
-        Literal::Bool(b) => if *b { "TRUE" } else { "FALSE" }.to_string(),
-        Literal::Null => "NULL".to_string(),
-    })
-}
-
+/// The server dialect keeps 64-bit integers exact (no JavaScript limit); everything else about a predicate is the canonical tree.
 fn expr(e: &Expr) -> Result<String, EngineError> {
-    Ok(match e {
-        Expr::Compare { column, op, value } => {
-            let o = match op {
-                CompareOp::Eq => "=",
-                CompareOp::Ne => "<>",
-                CompareOp::Lt => "<",
-                CompareOp::Le => "<=",
-                CompareOp::Gt => ">",
-                CompareOp::Ge => ">=",
-            };
-            format!("{} {o} {}", q_ident(column), lit(value)?)
-        }
-        Expr::In { column, values } => {
-            if values.is_empty() {
-                return Err(EngineError::InvalidPlan("empty IN list".into()));
-            }
-            let v: Result<Vec<_>, _> = values.iter().map(lit).collect();
-            format!("{} IN ({})", q_ident(column), v?.join(", "))
-        }
-        Expr::IsNull { column } => format!("{} IS NULL", q_ident(column)),
-        // md5 is the same on every DuckDB build (unlike hash()), so a thinned sample is identical on the server and in the browser
-        Expr::HashBucket { column, modulus, remainder } => {
-            if *modulus == 0 || remainder >= modulus {
-                return Err(EngineError::InvalidPlan("hash_bucket needs modulus >= 1 and remainder < modulus".into()));
-            }
-            format!("(md5_number_lower(CAST({} AS VARCHAR)) % {modulus}) = {remainder}", q_ident(column))
-        }
-        Expr::And { exprs } | Expr::Or { exprs } => {
-            if exprs.is_empty() {
-                return Err(EngineError::InvalidPlan("empty AND/OR".into()));
-            }
-            let sep = if matches!(e, Expr::And { .. }) { " AND " } else { " OR " };
-            let parts: Result<Vec<_>, _> = exprs.iter().map(|x| expr(x).map(|s| format!("({s})"))).collect();
-            parts?.join(sep)
-        }
-        Expr::Not { expr: inner } => format!("NOT ({})", expr(inner)?),
-    })
+    lowered(geo_lowering::predicate(e, &mut geo_lowering::DuckDbPredicates { safe_int_only: false }))
 }
 
-/// PROJ name of a CRS for ST_Transform. Only known CRSs: an undefined or unknown CRS is never guessed.
 fn proj_name(c: &Crs) -> Result<String, EngineError> {
-    match c {
-        Crs::OgcCrs84 => Ok("OGC:CRS84".into()),
-        Crs::Epsg(code) => Ok(format!("EPSG:{code}")),
-        other => Err(EngineError::InvalidPlan(format!("cannot transform {other}: CRS is not known"))),
-    }
+    lowered(geo_lowering::proj_name(c))
 }
 
 fn safe_wkt(w: &str) -> Result<(), EngineError> {
@@ -150,7 +104,7 @@ pub(crate) fn compile(plan: &Plan, ctx: &ExecutionContext, spatial: bool) -> Res
             .join(", ");
         format!("* REPLACE ({r})")
     };
-    let sql = format!("WITH {with}\nSELECT {select} FROM {} LIMIT {}", q_ident(&out.name), ctx.max_rows.saturating_add(1));
+    let sql = format!("WITH {with}\nSELECT {select} FROM {} LIMIT {}", q_ident(&out.name), geo_lowering::row_cap(ctx.max_rows));
     Ok(Compiled { sql, sources: t.sources, geometry_columns })
 }
 
@@ -224,10 +178,7 @@ impl Translator<'_> {
                 let (x0, y0, x1, y1) =
                     (num(bbox.min_x())?, num(bbox.min_y())?, num(bbox.max_x())?, num(bbox.max_y())?);
                 let pred = match i.covering.as_ref().filter(|c| c.geom == *geometry_column && c.crs == *bbox.crs()) {
-                    Some(c) => format!(
-                        "{} <= {x1} AND {} >= {x0} AND {} <= {y1} AND {} >= {y0}",
-                        c.cols[0], c.cols[2], c.cols[1], c.cols[3]
-                    ),
+                    Some(c) => geo_lowering::bbox_covering_overlap(&c.cols, &[x0.clone(), y0.clone(), x1.clone(), y1.clone()]),
                     None => {
                         self.need_spatial("bbox filter without a bbox covering column")?;
                         format!(
@@ -319,19 +270,12 @@ impl Translator<'_> {
                     SpatialPredicate::Intersects => format!("ST_Intersects(l.{lc}, r.{rc})"),
                     SpatialPredicate::WithinDistance { distance } => {
                         // metres in the plane of a local metric CRS (the validator guarantees both); never degrees
-                        if distance.unit().is_angular() {
-                            return Err(EngineError::InvalidPlan("within_distance with an angular distance".into()));
-                        }
-                        let d = distance.to_meters().map_err(|e| EngineError::InvalidPlan(e.to_string()))?;
+                        let d = lowered(geo_lowering::within_distance_meters(distance))?;
                         format!("ST_DWithin(l.{lc}, r.{rc}, {})", num(d)?)
                     }
                 };
-                // EXISTS: each left row at most once, and no pair table is materialised (a join + DISTINCT would build one)
-                let sql = format!(
-                    "SELECT l.* FROM {} AS l WHERE EXISTS (SELECT 1 FROM {} AS r WHERE {pred})",
-                    q_ident(&l.name),
-                    q_ident(&r.name)
-                );
+                // canonical form: EXISTS, each left row at most once, no pair table
+                let sql = geo_lowering::semi_join_exists("l.*", &q_ident(&l.name), &q_ident(&r.name), &pred);
                 let name = self.push(sql);
                 Ok(Out { name, covering: None, schema: self.schema_of(id)? })
             }
@@ -363,22 +307,7 @@ impl Translator<'_> {
                 let i = self.node(input)?;
                 let mut sel: Vec<String> = group_by.iter().map(|g| q_ident(g)).collect();
                 for a in aggregates {
-                    let f = match (a.func, &a.column) {
-                        (AggFunc::Count, None) => "COUNT(*)".to_string(),
-                        (AggFunc::Count, Some(c)) => format!("COUNT({})", q_ident(c)),
-                        (func, Some(c)) => {
-                            let fname = match func {
-                                AggFunc::Sum => "SUM",
-                                AggFunc::Min => "MIN",
-                                AggFunc::Max => "MAX",
-                                AggFunc::Avg => "AVG",
-                                AggFunc::Count => unreachable!(),
-                            };
-                            format!("{fname}({})", q_ident(c))
-                        }
-                        (_, None) => return Err(EngineError::InvalidPlan("aggregate needs a column".into())),
-                    };
-                    sel.push(format!("{f} AS {}", q_ident(&a.alias)));
+                    sel.push(format!("{} AS {}", lowered(geo_lowering::aggregate_call(a.func, a.column.as_deref()))?, q_ident(&a.alias)));
                 }
                 let mut sql = format!("SELECT {} FROM {}", sel.join(", "), q_ident(&i.name));
                 if !group_by.is_empty() {
@@ -402,14 +331,8 @@ impl Translator<'_> {
             }
             PlanNode::Sort { input, keys } => {
                 let i = self.node(input)?;
-                if keys.is_empty() {
-                    return Err(EngineError::InvalidPlan("sort without keys".into()));
-                }
-                let ob = keys
-                    .iter()
-                    .map(|k| format!("{}{}", q_ident(&k.column), if k.descending { " DESC" } else { "" }))
-                    .collect::<Vec<_>>()
-                    .join(", ");
+                // canonical: explicit direction, NULLS LAST both ways; DuckDB compares VARCHAR byte-wise, so no collation clause
+                let ob = lowered(geo_lowering::order_by(keys, &|_| None))?;
                 let name = self.push(format!("SELECT * FROM {} ORDER BY {ob}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }

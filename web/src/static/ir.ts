@@ -4,7 +4,7 @@
 // No DOM, no fetch: unit-tested under node.
 
 import type { Expr, Literal, PlanGraph, PlanNode, Schema } from "../engine/contract.ts";
-import { SUPPORTED_OPS } from "../engine/sqlgen.ts";
+import { SUPPORTED_OPS } from "../engine/lowering.ts";
 
 /** Same cap as the gateway (`MAX_FEATURES`). */
 export const MAX_FEATURES = 100_000;

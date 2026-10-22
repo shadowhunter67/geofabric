@@ -1,0 +1,16 @@
+[package]
+name = "geo-lowering"
+description = "Canonical lowering (RFC-004): the one place that defines what a PlanGraph's predicates, sorts, bbox windows, semi joins and aggregates MEAN. Engine adapters (DuckDB, DuckDB-Wasm, PostGIS) only choose a dialect. Pure: no engine, no I/O, no file formats; builds for wasm32."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+geo-types = { path = "../geo-types" }
+geo-ir = { path = "../geo-ir" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

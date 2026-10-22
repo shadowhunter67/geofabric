@@ -27,6 +27,10 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/configure-pages@v5
       - name: Install
         working-directory: web
@@ -36,6 +40,15 @@ jobs:
         run: npm run build:static
         env:
           GF_BASE: /${{ github.event.repository.name }}/
+      - name: Verify the public data host (real HEAD/GET Range, Content-Range, CORS, SHA-256 of the served bytes)
+        # the deployed demo reads its data from the host named by data/public-demo/pack.json; refuse to deploy a site whose data host is not
+        # range-capable. (No manifest host = the data is bundled and nothing remote is checked.)
+        run: |
+          if python -c "import json,sys; sys.exit(0 if json.load(open('data/public-demo/pack.json')).get('host') else 1)"; then
+            python data/scripts/verify_range_host.py --origin "https://${{ github.repository_owner }}.github.io"
+          else
+            echo "no remote data host in the manifest: data is bundled"
+          fi
       - name: Verify the bundle needs nothing private
         run: |
           if grep -rEl "127\.0\.0\.1|localhost:|192\.168\.|:8787|:5433" web/dist --include=*.js --include=*.html --include=*.css | grep -v "node_modules" ; then

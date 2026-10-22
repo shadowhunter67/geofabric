@@ -1,10 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compile } from "../src/engine/sqlgen.ts";
+import { readFileSync } from "node:fs";
+import { compile, initLowering } from "../src/engine/lowering.ts";
 import { buildPlan, prune, StaticError } from "../src/static/ir.ts";
 import type { QueryReq, StaticSource } from "../src/static/ir.ts";
 import { handle, newState, NOT_IN_DEPLOYMENT } from "../src/static/gateway.ts";
 import type { GatewayDeps } from "../src/static/gateway.ts";
+
+await initLowering(readFileSync(new URL("../src/engine/generated/geo_lowering.wasm", import.meta.url)));
 
 const places: StaticSource = {
   id: "places", size_bytes: 9_000_000, rows: 300, row_groups: 3, crs: "OGC:CRS84", geometry_column: "geometry", geometry_type: "point",
@@ -16,10 +19,15 @@ const places: StaticSource = {
     { index: 2, rows: 100, bytes: 3_000_000, bbox: [106.75, 10.85, 106.8, 10.9] },
   ],
 };
+const bundled = { version: "v1", host: null, files: { places: { file: "demo_places.parquet.zip", path: "v1/demo_places.parquet.zip", bytes: 9_000_000, sha256: "x" } } };
 const deps: GatewayDeps = {
-  pack: { sources: [places], catalog: { datasets: [], attributions: [], errors: [] } },
-  fileUrl: (f) => `https://example.test/geofabric/demo/${f}`,
+  pack: { sources: [places], catalog: { datasets: [], attributions: [], errors: [] }, manifest: bundled },
+  fileUrl: (id) => `https://example.test/geofabric/demo/${bundled.files[id as "places"].path}`,
 };
+// the same pack on a host that was VERIFIED to answer ranged requests (the manifest says so: data/scripts/publish_demo_data.py)
+const remoteManifest = { ...bundled, host: { kind: "jsdelivr-github", base_url: "https://cdn.example.test/gh/o/r@abc/data/public-demo/", range: true, commit: "abc" },
+  files: { places: { ...bundled.files.places, url: "https://cdn.example.test/gh/o/r@abc/data/public-demo/v1/demo_places.parquet.zip" } } };
+const remoteDeps: GatewayDeps = { pack: { ...deps.pack, manifest: remoteManifest }, fileUrl: (id) => remoteManifest.files[id as "places"].url };
 const req = (over: Partial<QueryReq> = {}): QueryReq => ({ source: "places", kind: "features", bbox: [106.68, 10.76, 106.73, 10.81], crs: "OGC:CRS84", ...over });
 
 test("a features request becomes the gateway's plan: source, bbox filter, project (no struct columns), limit", () => {
@@ -85,7 +93,7 @@ test("/api/query answers a browser placement bound to the published file, and re
   const b = r.body as { placement: string; source_urls: Record<string, string>; physical: { engine: string; candidates: { engine: string; feasible: boolean; rejected_because: string[] }[]; scans: { prune: { kept: number[] } }[] } };
   assert.equal(b.placement, "browser");
   assert.equal(b.physical.engine, "duckdb-wasm");
-  assert.deepEqual(Object.values(b.source_urls), ["https://example.test/geofabric/demo/demo_places.parquet"]);
+  assert.deepEqual(Object.values(b.source_urls), ["https://example.test/geofabric/demo/v1/demo_places.parquet.zip"]);
   assert.deepEqual(b.physical.scans[0].prune.kept, [1]);
   const byEngine = Object.fromEntries(b.physical.candidates.map((c) => [c.engine, c]));
   assert.equal(byEngine["duckdb-wasm"].feasible, true);
@@ -132,6 +140,24 @@ test("the browser's reports feed health: a failure degrades, three make it unhea
   await handle("POST", "/api/report", { ok: false, message: "boom" }, deps, st);
   await handle("POST", "/api/report", { ok: false, message: "boom" }, deps, st);
   assert.equal(await h(), "unhealthy");
+});
+
+test("on a host verified for ranges the layer is read by range, from the manifest's absolute URL; only the pruned bytes are estimated", async () => {
+  const st = newState();
+  const r = await handle("POST", "/api/query", req(), remoteDeps, st);
+  const b = r.body as { source_urls: Record<string, string>; physical: { steps: { label: string }[]; assessment: { browser_access: { strategy: string; fetch_bytes_est: number; file_bytes: number; requests_est: number }[] } } };
+  assert.deepEqual(Object.values(b.source_urls), ["https://cdn.example.test/gh/o/r@abc/data/public-demo/v1/demo_places.parquet.zip"]);
+  const acc = b.physical.assessment.browser_access[0];
+  assert.equal(acc.strategy, "range");
+  assert.ok(acc.fetch_bytes_est < acc.file_bytes / 2, `estimated ${acc.fetch_bytes_est} of ${acc.file_bytes}`);
+  assert.ok(b.physical.steps.some((x) => x.label === "Fetch GeoParquet byte ranges"));
+});
+
+test("a tiny layer is cheaper whole even on a range host", async () => {
+  const tiny = { ...places, size_bytes: 200_000, row_group_stats: [{ index: 0, rows: 5, bytes: 200_000, bbox: [106.6, 10.7, 106.8, 10.9] as [number, number, number, number] }] };
+  const d: GatewayDeps = { ...remoteDeps, pack: { ...remoteDeps.pack, sources: [tiny] } };
+  const b = (await handle("POST", "/api/query", req(), d, newState())).body as { physical: { assessment: { browser_access: { strategy: string }[] } } };
+  assert.equal(b.physical.assessment.browser_access[0].strategy, "full");
 });
 
 test("pack files are fetched whole (GitHub Pages cannot serve the ranged HEAD DuckDB-Wasm needs): every strategy is 'full' and the step says so", async () => {

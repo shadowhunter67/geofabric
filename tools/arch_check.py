@@ -23,6 +23,8 @@ RULES = {
     "geo-engine-postgis": ["geo-planner", "geo-runtime", "geo-engine-duckdb", "geo-engine-browser", "geo-source-*", "duckdb", "libduckdb-sys"] + UI,
     "geo-engine-duckdb": ["geo-planner", "geo-runtime", "geo-engine-postgis", "postgres", "tokio-postgres", "sqlx*"] + UI,
     "geo-engine-browser": ["geo-planner", "geo-runtime", "geo-engine-postgis", "postgres", "tokio-postgres", "sqlx*"] + UI,
+    # the canonical lowering is PURE (RFC-004): semantics only, no engine, no file format, no planner, no UI; it must also build for wasm32
+    "geo-lowering": ["geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-types": ["geo-ir", "geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-ir": ["geo-planner", "geo-executor", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
     "geo-executor": ["geo-planner", "geo-runtime", "geo-source-*"] + ENGINES + UI + CLOUD,
@@ -34,6 +36,16 @@ RULES = {
 DIRECT_RULES = {"geo-gateway": ["geo-engine-*", "duckdb", "libduckdb-sys", "postgres", "tokio-postgres", "sqlx*"],
                 # only the composition root wires engine adapters; the planner and executor contract know none
                 "geo-planner": ["geo-engine-*"]}
+# every engine adapter must build its SQL on the canonical lowering (RFC-004), not carry its own copy of the semantics
+REQUIRED_DIRECT = {"geo-engine-duckdb": "geo-lowering", "geo-engine-postgis": "geo-lowering", "geo-engine-browser": "geo-lowering"}
+# semantic building blocks that only geo-lowering may spell: an engine crate that writes one of these itself is re-implementing semantics
+ENGINE_FORBIDDEN_TEXT = {
+    "NULLS LAST": "sort null placement is canonical (geo_lowering::order_by)",
+    "COUNT(*)": "aggregate calls are canonical (geo_lowering::aggregate_call)",
+    "EXISTS (SELECT 1": "the semi-join form is canonical (geo_lowering::semi_join_exists)",
+}
+# the web client must not compile plans: the browser runs the Rust lowering as WebAssembly (web/src/engine/lowering.ts)
+WEB_FORBIDDEN_TEXT = ["NULLS LAST", "read_parquet(", "ORDER BY", "NOT MATERIALIZED"]
 WEB_FORBIDDEN_NPM = ["duckdb", "duckdb-async", "pg", "postgres", "better-sqlite3"]
 
 
@@ -111,6 +123,26 @@ def main() -> int:
             violations.append(f"{crate}: {f.name} uses GeoParquetSource::open (unchecked); use open_authorized with an AuthorizedSource")
         if crate in ("geo-planner", "geo-ir", "geo-executor") and re.search(r"(duckdb|DuckDb|ST_[A-Z][A-Za-z]+)", re.sub(r"//.*", "", text)):
             violations.append(f"{crate}: {f.name} names DuckDB/SQL spatial functions outside comments")
+    # canonical-lowering rules (RFC-004)
+    for mid in members:
+        name = pkgs[mid]["name"]
+        need = REQUIRED_DIRECT.get(name)
+        if need and not any(pkgs[d]["name"] == need for d in graph[mid]):
+            violations.append(f"{name} must depend on {need}: engine adapters lower through the canonical lowering")
+    for f in sorted((ROOT / "crates").glob("geo-engine-*/src/**/*.rs")):
+        crate = f.relative_to(ROOT / "crates").parts[0]
+        code = re.sub(r"//.*", "", f.read_text(encoding="utf-8", errors="ignore"))
+        for token, why in ENGINE_FORBIDDEN_TEXT.items():
+            if token in code:
+                violations.append(f"{crate}: {f.name} spells {token!r}: {why}")
+    web_src = ROOT / "web" / "src"
+    if (web_src / "engine" / "sqlgen.ts").exists():
+        violations.append("web: src/engine/sqlgen.ts exists: the browser must use the Rust lowering (WebAssembly), not a TypeScript compiler")
+    for f in sorted(web_src.glob("**/*.ts")) if web_src.exists() else []:
+        code = re.sub(r"//.*", "", f.read_text(encoding="utf-8", errors="ignore"))
+        for token in WEB_FORBIDDEN_TEXT:
+            if token in code and f.name != "i18n.ts":
+                violations.append(f"web: {f.relative_to(ROOT).as_posix()} contains {token!r}: SQL is produced only by the Rust lowering")
     # web package.json
     pj = ROOT / "web" / "package.json"
     if pj.exists():

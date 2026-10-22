@@ -2,7 +2,8 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
-import { compile } from "./engine/sqlgen.ts";
+import { compile } from "./engine/lowering.ts";
+import { ensureLowering } from "./engine/lowering-loader.ts";
 import type { PlanGraph } from "./engine/contract.ts";
 import { usable } from "./engine/probe.ts";
 import { createPlacement } from "./placement.ts";
@@ -20,8 +21,9 @@ import { inspectorRows } from "./inspector-schema.ts";
 import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
 import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, STATIC_DEMOS, demoRequests, splitPlaces, topGroup } from "./demos.ts";
-import { BASE_URL, STATIC_PROFILE } from "./static/profile.ts";
+import { BASE_URL, STATIC_PROFILE, STATIC_START_VIEW } from "./static/profile.ts";
 import { installStaticGateway } from "./static/gateway.ts";
+import { LayerUnavailable } from "./static/errors.ts";
 import type { DemoSpec } from "./demos.ts";
 import { sampleIfCapped } from "./sampling.ts";
 import { runDeviceCheck } from "./devicecheck.ts";
@@ -454,7 +456,8 @@ async function openSource(s: SourceMeta) {
   if (s.bbox) {
     const [x0, y0, x1, y1] = s.bbox;
     setData("extent", { type: "FeatureCollection", features: [rect(x0, y0, x1, y1, {})] }); // debug overlay only
-    map.fitBounds([[x0, y0], [x1, y1]], { padding: 40, duration: 0 });
+    if (STATIC_PROFILE) map.jumpTo(STATIC_START_VIEW);
+    else map.fitBounds([[x0, y0], [x1, y1]], { padding: 40, duration: 0 });
   }
   try {
     const rg = await api<{ row_groups: { index: number; bbox: number[] | null }[] }>(`/api/sources/${encodeURIComponent(s.id)}/row_groups`);
@@ -503,7 +506,8 @@ function currentRequest() {
 async function placedQuery(req: Record<string, unknown>): Promise<RunResp> {
   return placement.placeWithFallback(
     await apiRetryBusy<RunResp>("/api/query", req),
-    () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false }),
+    // a browser-only deployment has no server engine to fall back to: the failure is reported as an unreachable layer
+    STATIC_PROFILE ? null : () => apiRetryBusy<RunResp>("/api/query", { ...req, engine: "duckdb", browser: false }),
   );
 }
 /** The request that returns the FULL logical count of a row-returning request (no limit, no thinning, no engine hint). */
@@ -545,8 +549,10 @@ async function run() {
     S.sampling = sampling;
     await handle(result, `${S.kind} @ ${S.cur.id}`);
   } catch (e) {
-    log(String(e), true); setStatus("status.error");
-    setTab("logs");
+    log(String(e), true);
+    // an unreachable layer is not a crash: say what happened; the other layers and the map keep working
+    setStatus(e instanceof LayerUnavailable ? "status.layer_failed" : "status.error");
+    if (!(e instanceof LayerUnavailable)) setTab("logs");
   } finally { S.busy = false; setRunDisabled(false); }
 }
 function setRunDisabled(v: boolean) {
@@ -885,7 +891,7 @@ async function refreshContextOnce(): Promise<void> {
     try {
       const b = map.getBounds();
       const filter = d.group === "transport" ? classFilter(map.getZoom()) : null;
-      const req = { source: sourceIdOf(d), kind: "features", bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], crs: d.crs, limit: policy.limit, filter: filter ? { column: "class", op: "in", values: filter } : undefined, browser: false, client: { warm: wasm.isWarm() } };
+      const req = { source: sourceIdOf(d), kind: "features", bbox: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], crs: d.crs, limit: policy.limit, filter: filter ? { column: "class", op: "in", values: filter } : undefined, browser: STATIC_PROFILE, client: { warm: wasm.isWarm() } };
       const { result: response, sampling } = await placedRepresentative(req, policy.limit);
       const current = S.context.get(d.id);
       if (!current || current.seq !== seq) continue;
@@ -896,7 +902,11 @@ async function refreshContextOnce(): Promise<void> {
       map.addSource(`ctx-${d.id}`, { type: "geojson", data: fc });
       for (const spec of layerSpecs(d, `ctx-${d.id}`, S.layers[d.id]?.opacity ?? 1)) map.addLayer(spec, stackAnchor(d.group));
       S.context.set(d.id, { ...current, features: fc.features.length, limitHit: !sampling && fc.features.length >= policy.limit, loading: false, sampling });
-    } catch (e) { log(String(e), true); S.context.set(d.id, { ...old, loading: false, seq }); }
+    } catch (e) {
+      log(String(e), true);
+      if (e instanceof LayerUnavailable) setStatus("status.layer_failed");
+      S.context.set(d.id, { ...old, loading: false, seq });
+    }
     renderLeft();
   }
   const visible = candidates.map((d) => d.id);
@@ -948,7 +958,7 @@ async function queryPlaced(req: Record<string, unknown>): Promise<RunResp> {
   const full = { crs: "OGC:CRS84", bbox: viewportBBox(), browser: true, client: { warm: wasm.isWarm() }, ...req };
   return placement.placeWithFallback(
     await apiRetryBusy<RunResp>("/api/query", full),
-    () => apiRetryBusy<RunResp>("/api/query", { ...full, engine: "duckdb", browser: false }),
+    STATIC_PROFILE ? null : () => apiRetryBusy<RunResp>("/api/query", { ...full, engine: "duckdb", browser: false }),
   );
 }
 /** Demo queries draw through the same representative-sample path as the Run button. */
@@ -1337,7 +1347,7 @@ if (params.has("devicecheck")) void startDeviceCheck();
 if (params.has("e2e")) {
   const gf = {
     map, state: S, select, setTab, setMode, setLang: changeLang, wasm, resolvePlacement: placement.resolvePlacement, bindSources: placement.bindSources,
-    probeRuntime: placement.probeRuntime, placeWithFallback: placement.placeWithFallback, reportRun: placement.reportRun, compile, placement, run,
+    probeRuntime: placement.probeRuntime, placeWithFallback: placement.placeWithFallback, reportRun: placement.reportRun, compile, ensureLowering, placement, run,
     focusOnResult, applyMapVisibility,
     /** What the result layer really holds: feature count, distinct geometries, and the largest feature relative to the dataset extent. */
     async resultInfo() {

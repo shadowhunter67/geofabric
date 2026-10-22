@@ -18,6 +18,7 @@ use crate::catalog::{PgColType, PostGisCatalog, PostGisSource};
 use crate::connector::Param;
 use crate::crs::srid_for;
 use geo_ir::{AggFunc, CompareOp, Expr, Literal, NodeId, Plan, PlanNode, SpatialPredicate, SourceFormat};
+use geo_lowering::{LowerError as Canon, PredicateDialect};
 use geo_types::{Crs, SpatialSchema};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -31,6 +32,22 @@ pub enum LowerError {
     /// The plan names a source that is not resident in the database.
     #[error("source not resident in PostGIS: {0}")]
     NotResident(String),
+}
+
+impl From<Canon> for LowerError {
+    fn from(e: Canon) -> Self {
+        match e {
+            Canon::Invalid(m) => LowerError::Invalid(m),
+            Canon::Unsupported(m) => LowerError::Unsupported(m),
+        }
+    }
+}
+
+fn canon(e: LowerError) -> Canon {
+    match e {
+        LowerError::Invalid(m) => Canon::Invalid(m),
+        LowerError::Unsupported(m) | LowerError::NotResident(m) => Canon::Unsupported(m),
+    }
 }
 
 /// A lowered statement.
@@ -48,7 +65,7 @@ pub struct Lowered {
 }
 
 pub(crate) fn q_ident(s: &str) -> String {
-    format!("\"{}\"", s.replace('"', "\"\""))
+    geo_lowering::quote_ident(s)
 }
 
 #[derive(Clone, Debug)]
@@ -121,9 +138,40 @@ pub fn lower(plan: &Plan, catalog: &PostGisCatalog, max_rows: u64) -> Result<Low
     if select.is_empty() {
         return Err(LowerError::Invalid("the plan produces no column that the relation stores".into()));
     }
-    let limit = l.bind(Param::Int(i64::try_from(max_rows.saturating_add(1)).unwrap_or(i64::MAX)), "bigint");
+    let limit = l.bind(Param::Int(i64::try_from(geo_lowering::row_cap(max_rows)).unwrap_or(i64::MAX)), "bigint");
     let sql = format!("WITH {with}\nSELECT {select} FROM {} LIMIT {limit}", q_ident(&out.name));
     Ok(Lowered { sql, params: l.params, geometry_outputs, sources: l.sources.into_iter().collect(), dropped_columns: l.dropped.into_iter().collect() })
+}
+
+/// PostgreSQL's spelling of predicate leaves: every literal is a bind parameter with an explicit cast, against the column's catalog type.
+struct PgPredicates<'x, 'a> {
+    low: &'x mut Lower<'a>,
+    out: &'x Out,
+}
+
+impl PredicateDialect for PgPredicates<'_, '_> {
+    fn compare(&mut self, column: &str, op: CompareOp, value: &Literal) -> Result<String, Canon> {
+        let ty = Lower::plain_type(self.out, column).map_err(canon)?;
+        let lit = self.low.literal(column, ty, value).map_err(canon)?;
+        Ok(format!("{} {} {lit}", q_ident(column), geo_lowering::cmp_symbol(op)))
+    }
+    fn in_list(&mut self, column: &str, values: &[Literal]) -> Result<String, Canon> {
+        let ty = Lower::plain_type(self.out, column).map_err(canon)?;
+        let mut items = Vec::new();
+        for v in values {
+            items.push(self.low.literal(column, ty, v).map_err(canon)?);
+        }
+        Ok(format!("{} IN ({})", q_ident(column), items.join(", ")))
+    }
+    fn is_null(&mut self, column: &str) -> Result<String, Canon> {
+        Lower::need_col(self.out, column, "filter").map_err(canon)?;
+        Ok(format!("{} IS NULL", q_ident(column)))
+    }
+    fn hash_bucket(&mut self, _column: &str, _modulus: u32, _remainder: u32) -> Result<String, Canon> {
+        Err(Canon::Unsupported(
+            "hash_bucket (render sampling): DuckDB's md5_number_lower has no byte-exact PostgreSQL equivalent that is also portable; sampling stays on the other engines".into(),
+        ))
+    }
 }
 
 impl<'a> Lower<'a> {
@@ -133,9 +181,8 @@ impl<'a> Lower<'a> {
     }
 
     fn float(&mut self, v: f64) -> Result<String, LowerError> {
-        if !v.is_finite() {
-            return Err(LowerError::Invalid(format!("non-finite number {v}")));
-        }
+        // the canonical literal rules (finite, inside the portable range) apply to a bound number as well as to an inline one
+        geo_lowering::format_float(v)?;
         Ok(self.bind(Param::Float(v), "double precision"))
     }
 
@@ -221,53 +268,10 @@ impl<'a> Lower<'a> {
         }
     }
 
+    /// The predicate tree is canonical (`geo_lowering::predicate`); this dialect binds the leaves and refuses what PostgreSQL would
+    /// coerce differently from DuckDB.
     fn expr(&mut self, out: &Out, e: &Expr) -> Result<String, LowerError> {
-        Ok(match e {
-            Expr::Compare { column, op, value } => {
-                let ty = Self::plain_type(out, column)?;
-                let o = match op {
-                    CompareOp::Eq => "=",
-                    CompareOp::Ne => "<>",
-                    CompareOp::Lt => "<",
-                    CompareOp::Le => "<=",
-                    CompareOp::Gt => ">",
-                    CompareOp::Ge => ">=",
-                };
-                format!("{} {o} {}", q_ident(column), self.literal(column, ty, value)?)
-            }
-            Expr::In { column, values } => {
-                if values.is_empty() {
-                    return Err(LowerError::Invalid("empty IN list".into()));
-                }
-                let ty = Self::plain_type(out, column)?;
-                let mut items = Vec::new();
-                for v in values {
-                    items.push(self.literal(column, ty, v)?);
-                }
-                format!("{} IN ({})", q_ident(column), items.join(", "))
-            }
-            Expr::IsNull { column } => {
-                Self::need_col(out, column, "filter")?;
-                format!("{} IS NULL", q_ident(column))
-            }
-            Expr::HashBucket { .. } => {
-                return Err(LowerError::Unsupported(
-                    "hash_bucket (render sampling): DuckDB's md5_number_lower has no byte-exact PostgreSQL equivalent that is also portable; sampling stays on the other engines".into(),
-                ))
-            }
-            Expr::And { exprs } | Expr::Or { exprs } => {
-                if exprs.is_empty() {
-                    return Err(LowerError::Invalid("empty AND/OR".into()));
-                }
-                let sep = if matches!(e, Expr::And { .. }) { " AND " } else { " OR " };
-                let mut parts = Vec::new();
-                for x in exprs {
-                    parts.push(format!("({})", self.expr(out, x)?));
-                }
-                parts.join(sep)
-            }
-            Expr::Not { expr } => format!("NOT ({})", self.expr(out, expr)?),
-        })
+        Ok(geo_lowering::predicate(e, &mut PgPredicates { low: self, out })?)
     }
 
     fn node(&mut self, id: &NodeId) -> Result<Out, LowerError> {
@@ -377,7 +381,9 @@ impl<'a> Lower<'a> {
                     // 41,165 rows where DuckDB and the browser give 41,150 - found by the first live cross-check.) The envelope
                     // overlap first lets a functional GiST index on the covering envelope prune; the four comparisons decide.
                     let env = format!("ST_MakeEnvelope({}, {}, {}, {}, {srid})", q_ident(COV[0]), q_ident(COV[1]), q_ident(COV[2]), q_ident(COV[3]));
-                    let exact = format!("{} <= {x1} AND {} >= {x0} AND {} <= {y1} AND {} >= {y0}", q_ident(COV[0]), q_ident(COV[2]), q_ident(COV[1]), q_ident(COV[3]));
+                    // the canonical BboxFilter: the covering box overlaps the window (geo_lowering::bbox_covering_overlap)
+                    let cov_cols = [q_ident(COV[0]), q_ident(COV[1]), q_ident(COV[2]), q_ident(COV[3])];
+                    let exact = geo_lowering::bbox_covering_overlap(&cov_cols, &[x0.clone(), y0.clone(), x1.clone(), y1.clone()]);
                     if assist { format!("{env} && ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}, {srid}) AND {exact}") } else { exact }
                 } else {
                     // No covering (or it was lost on the way): exact envelope overlap like DuckDB fallback; `&&` is the index-assisted,
@@ -440,25 +446,19 @@ impl<'a> Lower<'a> {
                 let pred = match predicate {
                     SpatialPredicate::Intersects => format!("ST_Intersects(l.{}, r.{})", q_ident(left_column), q_ident(right_column)),
                     SpatialPredicate::WithinDistance { distance } => {
-                        // a distance with a linear unit is only evaluated in the plane of a local metric CRS - never in degrees
-                        if distance.unit().is_angular() {
-                            return Err(LowerError::Invalid("within_distance with an angular distance".into()));
-                        }
+                        // metres, never degrees (canonical rule), and only in the plane of a local metric CRS
+                        let d = geo_lowering::within_distance_meters(distance)?;
                         if !lc.is_local_metric() {
                             return Err(LowerError::Invalid(format!("metric within_distance on {lc}, which is not a local metric CRS (transform first)")));
                         }
-                        let d = distance.to_meters().map_err(|e| LowerError::Invalid(e.to_string()))?;
                         let d = self.float(d)?;
                         format!("ST_DWithin(l.{}, r.{}, {d})", q_ident(left_column), q_ident(right_column))
                     }
                 };
                 // EXISTS: each left row at most once and no pair table (a join + DISTINCT would build one)
                 let list = Self::select_list(&l.schema, &l.cols, "l.", &BTreeMap::new());
-                let name = self.push(format!(
-                    "SELECT {list} FROM {} AS l WHERE EXISTS (SELECT 1 FROM {} AS r WHERE {pred})",
-                    q_ident(&l.name),
-                    q_ident(&r.name)
-                ));
+                // canonical form: EXISTS, each left row at most once
+                let name = self.push(geo_lowering::semi_join_exists(&list, &q_ident(&l.name), &q_ident(&r.name), &pred));
                 Ok(Out { name, schema: self.schema_of(id)?, cols: l.cols, cov: None })
             }
             PlanNode::Buffer { .. } => Err(LowerError::Unsupported("buffer (not needed since SpatialSemiJoin; not implemented for PostGIS)".into())),
@@ -484,14 +484,14 @@ impl<'a> Lower<'a> {
                         },
                         None => None,
                     };
+                    let call = || geo_lowering::aggregate_call(a.func, a.column.as_deref()).map_err(LowerError::from);
+                    // the canonical call, plus the result cast PostgreSQL needs to give the same type as DuckDB (SUM of bigint is numeric)
                     let (expr, ty) = match (a.func, &a.column, col_ty) {
-                        (AggFunc::Count, None, _) => ("COUNT(*)".to_string(), PgColType::Int),
-                        (AggFunc::Count, Some(c), _) => (format!("COUNT({})", q_ident(c)), PgColType::Int),
-                        (AggFunc::Sum, Some(c), Some(PgColType::Int)) => (format!("SUM({})::bigint", q_ident(c)), PgColType::Int),
-                        (AggFunc::Sum, Some(c), Some(PgColType::Float)) => (format!("SUM({})::double precision", q_ident(c)), PgColType::Float),
-                        (AggFunc::Avg, Some(c), Some(PgColType::Int | PgColType::Float)) => (format!("AVG({})::double precision", q_ident(c)), PgColType::Float),
-                        (AggFunc::Min, Some(c), Some(t @ (PgColType::Int | PgColType::Float | PgColType::Text))) => (format!("MIN({})", q_ident(c)), t),
-                        (AggFunc::Max, Some(c), Some(t @ (PgColType::Int | PgColType::Float | PgColType::Text))) => (format!("MAX({})", q_ident(c)), t),
+                        (AggFunc::Count, _, _) => (call()?, PgColType::Int),
+                        (AggFunc::Sum, Some(_), Some(PgColType::Int)) => (format!("{}::bigint", call()?), PgColType::Int),
+                        (AggFunc::Sum, Some(_), Some(PgColType::Float)) => (format!("{}::double precision", call()?), PgColType::Float),
+                        (AggFunc::Avg, Some(_), Some(PgColType::Int | PgColType::Float)) => (format!("{}::double precision", call()?), PgColType::Float),
+                        (AggFunc::Min | AggFunc::Max, Some(_), Some(t @ (PgColType::Int | PgColType::Float | PgColType::Text))) => (call()?, t),
                         (f, c, t) => return Err(LowerError::Unsupported(format!("aggregate {f:?} over {c:?} of type {t:?}"))),
                     };
                     cols.insert(a.alias.clone(), Col::Plain(ty));
@@ -523,21 +523,17 @@ impl<'a> Lower<'a> {
             }
             PlanNode::Sort { input, keys } => {
                 let i = self.node(input)?;
-                if keys.is_empty() {
-                    return Err(LowerError::Invalid("sort without keys".into()));
-                }
-                let mut ob = Vec::new();
+                // the order itself is canonical (direction, NULLS LAST both ways); PostgreSQL only has to ask for byte-order text comparison,
+                // because the database collation must not decide the order or ties
                 for k in keys {
-                    let coll = match Self::need_col(&i, &k.column, "sort")? {
-                        Col::Geometry(_) => return Err(LowerError::Invalid(format!("cannot sort by the geometry column {:?}", k.column))),
-                        // byte-order comparison like DuckDB's default; the database collation must not decide ties or order
-                        Col::Plain(PgColType::Text) => " COLLATE \"C\"",
-                        Col::Plain(_) => "",
-                    };
-                    ob.push(format!("{}{coll} {} NULLS LAST", q_ident(&k.column), if k.descending { "DESC" } else { "ASC" }));
+                    if let Col::Geometry(_) = Self::need_col(&i, &k.column, "sort")? {
+                        return Err(LowerError::Invalid(format!("cannot sort by the geometry column {:?}", k.column)));
+                    }
                 }
+                let is_text = |c: &str| matches!(i.cols.get(c), Some(Col::Plain(PgColType::Text)));
+                let ob = geo_lowering::order_by(keys, &|c| if is_text(c) { Some(" COLLATE \"C\"") } else { None })?;
                 let list = Self::pass_list(&i);
-                let name = self.push(format!("SELECT {list} FROM {} ORDER BY {}", q_ident(&i.name), ob.join(", ")));
+                let name = self.push(format!("SELECT {list} FROM {} ORDER BY {ob}", q_ident(&i.name)));
                 Ok(Out { name, ..i })
             }
         }

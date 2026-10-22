@@ -27,17 +27,30 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      # the browser lowering is the Rust crate geo-lowering compiled to WebAssembly (RFC-004); every web step below needs it
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - run: npm run typecheck
       - run: npm test
       - name: Production build (full stack profile)
         run: npm run build
-      - name: Production build (static browser profile, GitHub Pages base path)
-        run: npm run build:static
+      # The static tests are self-contained: the data is BUNDLED into the test site (GF_DEMO), never read from the CDN, so CI does not depend on
+      # a third-party host. The deployed site is checked against the real host by the Pages workflow and by the live-URL run.
+      - name: "Production build (static profile, Pages base path), data bundled, range-capable test host"
+        run: |
+          npm run build:static
+          GF_OUT=dist GF_DEMO=bundle-range node scripts/copy-demo.mjs
         env:
           GF_BASE: /geofabric/
-      - name: Static-mode browser tests (no Gateway, no PostGIS)
+      - name: Static-mode browser tests, range-capable host (partial reads are asserted)
         # the GitHub-hosted runner ships Google Chrome: no browser download
-        run: GF_OUT=dist PW_CHANNEL=chrome npx playwright test -c playwright.static.config.ts
+        run: GF_OUT=dist GF_SERVER_ARGS="--range-head" PW_CHANNEL=chrome npx playwright test -c playwright.static.config.ts
+      - name: "Static-mode browser tests, whole-file host (GitHub Pages behaviour, ranged HEAD answered 200)"
+        run: |
+          GF_OUT=dist GF_DEMO=bundle node scripts/copy-demo.mjs
+          GF_OUT=dist PW_CHANNEL=chrome npx playwright test -c playwright.static.config.ts
 
   architecture:
     name: Architecture rules

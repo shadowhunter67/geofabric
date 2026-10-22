@@ -16,3 +16,12 @@ thiserror = "1"
 # DuckDB bundled made a 26 GB debug target/ (ADR-006) and, with debug info, the test
 # binaries that link it exceed the MSVC PDB limit (LNK1140). No debug info in dev builds.
 debug = 0
+
+# the browser lowering shipped to the page as WebAssembly (web/scripts/build-lowering-wasm.mjs): smallest size, no unwinding
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

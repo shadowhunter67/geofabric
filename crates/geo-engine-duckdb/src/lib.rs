@@ -278,7 +278,6 @@ impl ExecutionEngine for DuckDbEngine {
 
         let result = (|| {
             let conn = self.open(ctx, &compiled.sources, &profile_dir)?;
-            let e = |x: duckdb::Error| EngineError::Engine(x.to_string());
             conn.execute_batch(&format!(
                 "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
                 sql::q_str(&sql::sql_path(&profile_file))

@@ -7,7 +7,8 @@ import mvpWasm from "@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url";
 import mvpWorker from "@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url";
 import ehWasm from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
 import ehWorker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
-import { compile, SUPPORTED_OPS } from "./sqlgen.ts";
+import { compile, SUPPORTED_OPS } from "./lowering.ts";
+import { ensureLowering } from "./lowering-loader.ts";
 import { EngineError } from "./contract.ts";
 import { FilePool } from "./file-pool.ts";
 import type { Capabilities, ExecutionContext, ExecutionEngine, ExecutionResult, PlanGraph } from "./contract.ts";
@@ -100,6 +101,7 @@ export class DuckDbWasmEngine implements ExecutionEngine {
 
   private async executeNow(plan: PlanGraph, ctx: ExecutionContext): Promise<ExecutionResult> {
     const t0 = performance.now();
+    await ensureLowering(); // the Rust lowering, as WebAssembly (loaded once)
     const compiled = compile(plan, ctx.sources, ctx.maxRows); // throws "unsupported"/"invalid" before any I/O
     // DuckDB caches Parquet metadata by file name: every execution registers its files under names never used before
     // (reusing `gf_src_0.parquet` for another file produced "No magic bytes found at end of file")
