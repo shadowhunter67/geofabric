@@ -108,7 +108,7 @@ jobs:
         shell: bash
         run: |
           python tools/duckdb_prebuilt.py
-          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*//')"
+          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*/\1/')"
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
       - name: Pre-install the spatial extension
@@ -139,7 +139,7 @@ jobs:
         shell: bash
         run: |
           python tools/duckdb_prebuilt.py
-          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*//')"
+          lib="$(python tools/duckdb_prebuilt.py --env | sed -E 's/^export DUCKDB_LIB_DIR="([^"]+)".*/\1/')"
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
       - name: Tests with 4 threads, three attempts
