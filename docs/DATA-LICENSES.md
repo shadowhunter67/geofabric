@@ -42,4 +42,5 @@ The static public demo bundles a **small derived database** (`data/public-demo/`
 * **Files:** plain GeoParquet (`demo/*.parquet`); `pack.json` carries the size and SHA-256 of each file.
 * **Attribution on screen:** the map corner shows the attribution of the datasets in view; Settings lists them with licence links; `attribution.html` (published with the site) lists everything verbatim.
 * **Places:** per-source licences (CDLA-Permissive-2.0, Apache-2.0 including the Foursquare notice, CC0-1.0) are kept in the attribution text.
-* **Runtime third parties:** the basemap host (OpenFreeMap) sees viewed tiles; DuckDB-Wasm fetches its `parquet` extension (code, not data) from `extensions.duckdb.org`.
+* **Hosting of the pack:** the files are served from this repository by jsDelivr at commit-pinned URLs (`pack.json` `host`), which makes each URL immutable (the content behind a URL never changes; a new data version is a new `v2/` directory). The ODbL notice and attribution stay with the files and on the attribution page.
+* **Runtime third parties:** the data host (jsDelivr) sees which ranges of the public files are read; the basemap host (OpenFreeMap) sees viewed tiles; DuckDB-Wasm fetches its `parquet` extension (code, not data) from `extensions.duckdb.org`.

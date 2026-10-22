@@ -8,7 +8,7 @@
 
 ## What can I try right now?
 
-Open the **public demo** (no install, no account, nothing runs on a server): a real map of central Ho Chi Minh City with **real Overture buildings, roads, places and boundaries**, queried by **DuckDB-Wasm in your own browser** from GeoParquet files (downloaded on demand, one layer at a time).
+Open the **public demo** (no install, no account, nothing runs on a server): a real map of central Ho Chi Minh City with **real Overture buildings, roads, places and boundaries**, queried by **DuckDB-Wasm in your own browser**, reading GeoParquet by HTTP Range requests (only the parts a view needs).
 
 - pan/zoom: the visible buildings are queried live (a spatially representative sample is drawn when a view holds more than the draw budget; counts are always the full logical count),
 - click a feature to inspect it, filter by an attribute, count by a category,
@@ -33,7 +33,7 @@ Analyses that need a server (metric distance such as "buildings within 200 m of 
            (browser)      (server)        (server)
               |              |               |
      GeoParquet / PMTiles    files        database            <- data
-        by range request
+        by HTTP range request
 ```
 
 * **Static public demo** = the browser branch only: UI + MapLibre + DuckDB-Wasm + public GeoParquet. No gateway, no database, no tunnel.
@@ -58,7 +58,7 @@ GF_BASE=/geofabric/ npm run build:static            # a sub-path host such as Gi
 node scripts/pages-like-server.mjs dist 4190        # then open http://127.0.0.1:4190/geofabric/
 ```
 
-The data pack (`data/public-demo/`, 26 MB) is copied next to the site by the build. On GitHub Pages each layer file (at most 14 MB) is downloaded whole, once, the first time the layer is used: Pages answers the ranged `HEAD` probe that DuckDB-Wasm needs for range reads with `200` instead of `206`. A host that answers it properly (an object store, for example) could be read by HTTP range requests with no change to the plan. It is regenerated from a local Overture extract with `data/scripts/make_public_demo.py`.
+The app is static (GitHub Pages). Its data (`data/public-demo/`, 27 MB of plain GeoParquet in versioned `v1/` files, SHA-256 per file in `pack.json`) is read by **HTTP Range requests** from a commit-pinned jsDelivr URL named in that manifest (`gcore.jsdelivr.net/gh/<owner>/<repo>@<commit>/…`): DuckDB-Wasm fetches only the row groups a query needs (measured on the live site: 32 ranged `206` responses and 4.2 MB of a 13.7 MB file for the first view, no whole-file download). `data/scripts/publish_demo_data.py` verifies the host with real requests before the manifest is written, and the deploy workflow re-verifies it from the GitHub runner. Build without a remote host (`GF_DEMO=bundle`) and the data is bundled and read whole instead.
 
 ### Local full stack (Windows, one-time setup)
 
@@ -95,7 +95,7 @@ cd web && npx playwright test -c playwright.static.config.ts   # static-mode bro
 * **Code:** MIT OR Apache-2.0 ([LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE)).
 * **Data:** the demo pack is a small **derived database of [Overture Maps](https://overturemaps.org) data**, which includes OpenStreetMap-derived data under the **ODbL** (share-alike). It carries the required attributions, shown on the map and in [docs/DATA-LICENSES.md](docs/DATA-LICENSES.md). The pack is offered under the ODbL; the code licence does not apply to it.
 * **Basemap:** OpenFreeMap / OpenMapTiles / OpenStreetMap, attribution shown on the map. The basemap host can see which map tiles you view.
-* **Third-party code at runtime:** DuckDB-Wasm downloads its `parquet` extension (code, not data) from DuckDB's official extension CDN, `extensions.duckdb.org`, on first use.
+* **External hosts the public demo contacts:** the static host (GitHub Pages), the data host (jsDelivr, serving this repository's `data/public-demo/v1/` files by commit), the basemap host (OpenFreeMap) and DuckDB's extension CDN (`extensions.duckdb.org`, the `parquet` extension code, on first use). If the data host is unreachable the affected layer says so ("This layer's data could not be loaded") and the other layers keep working; if the basemap host is unreachable the data draws on a plain background; if the extension CDN is unreachable queries fail. Nothing works offline.
 * **No analytics, no cookies, no tracking.** Your queries run in your browser; nothing about them is sent anywhere. See [SECURITY.md](SECURITY.md).
 
 ## Known limits

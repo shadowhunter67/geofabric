@@ -24,6 +24,16 @@ A **deployment profile**, not a second application. `vite build --mode static` d
 * The browser plan builder is a TypeScript twin of part of the Rust `build_ir` (one more compiler of "request -> plan"); it covers only the three kinds above and is unit-tested against the real browser lowering. The structural fix (shared lowering, RFC-004) stays out of scope.
 * DuckDB-Wasm fetches its `parquet` extension (code) from `extensions.duckdb.org` on first use: a runtime dependency on DuckDB's CDN, documented as an external origin in the privacy notes.
 
+## Addendum (2026-10-22): range-capable data host
+
+GitHub Pages cannot serve range reads to DuckDB-Wasm (ADR text above), so the app stays on Pages and the DATA moved to a host that can, with no account, credential or server of ours: jsDelivr's GitHub CDN serves `data/public-demo/v1/*.parquet.zip` of this repository at **commit-pinned** URLs (immutable). Measured with real requests, not documentation: `cdn.jsdelivr.net` load-balances over several CDNs and one backend (Fastly; also `fastly.jsdelivr.net`) answers a ranged `HEAD` with 200 while others answer 206 (a laptop got Cloudflare, the GitHub runner got Fastly, so the first Pages deployment of the manifest failed its own gate); `gcore.jsdelivr.net` answered 206 on 12 of 12 requests, and is what the manifest names (`host.cdn_host`). `raw.githubusercontent.com` answers ranged HEAD with 200; GitHub release assets redirect and reject the CORS preflight path, so neither was usable.
+
+* The manifest (`pack.json`, schema 2) is the single place that names URLs, sizes, SHA-256, format, CRS, licence and source release; the page resolves every data URL from it and chooses range or whole-file access from `host.range` (a host the publish script verified).
+* `data/scripts/publish_demo_data.py` validates, pins to the commit that last touched `v1/` (which must be on `origin/main`), runs `data/scripts/verify_range_host.py` (HEAD and GET Range → 206, `Content-Range` total, no `Content-Encoding`, CORS incl. preflight, Parquet magic, SHA-256 of the served bytes) and only then writes `host`. The Pages workflow re-runs the verifier from the runner and refuses to deploy a site whose data host fails.
+* If the data host is unreachable, the layer reports "This layer's data could not be loaded" (not "server required", not an uncaught error) and the other layers keep working (`LayerUnavailable`, tested).
+* CI never depends on the CDN: it bundles the data into the test site (a range-capable local server for the partial-read assertions, a Pages-like one for the whole-file path).
+* The first view opens on a neighbourhood-sized view of the pack's centre instead of fitting the whole extent, so the first query touches few row groups.
+
 ## Not decided here
 
 A CDN-hosted or remote-source data pack, PMTiles/COG layers, a cost model for the browser branch, PostGIS as a remote service.

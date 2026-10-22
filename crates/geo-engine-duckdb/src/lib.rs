@@ -278,9 +278,10 @@ impl ExecutionEngine for DuckDbEngine {
 
         let result = (|| {
             let conn = self.open(ctx, &compiled.sources, &profile_dir)?;
-            // GEOFABRIC_DUCKDB_PROFILE=0 turns the profiler off (peak memory is then reported as unavailable). It exists for the CI-flake
-            // experiment (is the profiler's output file involved in the sporadic first-statement failure?); the default is unchanged.
-            if std::env::var("GEOFABRIC_DUCKDB_PROFILE").map(|v| v != "0").unwrap_or(true) {
+            // The DuckDB profiler is OPT-IN (GEOFABRIC_DUCKDB_PROFILE=1; the benchmark tool sets it). Root cause of the CI flake (2026-10-22):
+            // with the profiler's JSON output on, several engines running in one process failed sporadically with an opaque "Error code 1"
+            // (4 of 15 runs on a hosted runner, same tests with it off: 0 of 15). Peak memory is therefore Unknown unless it is enabled.
+            if std::env::var("GEOFABRIC_DUCKDB_PROFILE").map(|v| v == "1").unwrap_or(false) {
                 conn.execute_batch(&format!(
                     "PRAGMA enable_profiling = 'json'; PRAGMA profiling_output = {};",
                     sql::q_str(&sql::sql_path(&profile_file))
@@ -380,7 +381,7 @@ impl ExecutionEngine for DuckDbEngine {
                 metrics.peak_memory_bytes = Metric::engine_observed(v);
                 metrics.notes.push("peak_memory_bytes is DuckDB's buffer-manager peak only (not process RSS)".into());
             }
-            None => metrics.notes.push("DuckDB profile unavailable".into()),
+            None => metrics.notes.push("peak_memory_bytes is Unknown: the DuckDB profiler is off by default (it made concurrent in-process engines fail sporadically; GEOFABRIC_DUCKDB_PROFILE=1 enables it)".into()),
         }
         Ok(ExecutionResult { batches, metrics })
     }

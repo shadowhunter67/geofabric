@@ -9,7 +9,7 @@ GeoFabric is one architecture with three supported deployment shapes. The plan (
 | Gateway | none (the page answers `/api/*`) | yes, `127.0.0.1` | yes |
 | DuckDB server engine | not available | yes | yes |
 | PostGIS engine | not available | optional | optional |
-| Data | public GeoParquet next to the app (range requests) | local files under `--data` | private / external storage |
+| Data | public GeoParquet on a verified range-capable host (HTTP Range); bundled whole-file when no host is named | local files under `--data` | private / external storage |
 | Needs | any static host | Rust, Node, Python | your infrastructure |
 | Status | **live public demo** | supported, tested | not packaged: no production hosting is provided |
 

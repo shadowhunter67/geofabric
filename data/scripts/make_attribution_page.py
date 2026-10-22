@@ -52,7 +52,7 @@ page = f"""<!doctype html>
 
 <h2>Demo data (derived database, ODbL)</h2>
 <p>The demo pack is a small <strong>derived database of Overture Maps data</strong> (release {esc(pack['overture_release'])}), which includes data derived from OpenStreetMap contributors. It was cut to the window
-{esc(', '.join(str(x) for x in pack['bbox_crs84']))} (longitude/latitude, OGC:CRS84), flattened to a simple column schema and rewritten with small row groups for browser range requests; no feature was altered.
+{esc(', '.join(str(x) for x in pack['bbox_crs84']))} (longitude/latitude, OGC:CRS84), flattened to a simple column schema and rewritten with small row groups for browser range requests; no feature was altered. The files are served from this repository’s <code>data/public-demo/v1/</code> by jsDelivr at commit-pinned URLs.
 It is made available under the <a href="https://opendatacommons.org/licenses/odbl/1-0/" rel="noopener noreferrer">Open Database License (ODbL) 1.0</a>: you may share and adapt it, you must attribute it as below, and a database you derive from it must be offered under the ODbL.</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Dataset</th><th>Provider</th><th>Licence</th><th>Required attribution (verbatim)</th></tr></thead>
@@ -72,7 +72,7 @@ It is made available under the <a href="https://opendatacommons.org/licenses/odb
 </ul>
 
 <h2>Privacy</h2>
-<p>This site has no analytics, cookies or tracking. Queries run in your browser. Network contacts: this site (the app and the data files), the basemap host above, and the DuckDB extension host above.</p>
+<p>This site has no analytics, cookies or tracking. Queries run in your browser. Network contacts: this site (the app), jsDelivr (the demo data files; it sees which byte ranges of the public files are read), the basemap host above, and the DuckDB extension host above.</p>
 </main>
 </body>
 </html>

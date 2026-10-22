@@ -175,16 +175,16 @@ jobs:
   flake-experiment:
     # Controlled experiment on the one failure that remains unexplained (an opaque DuckDB "Error code 1" on the engine's query, only with parallel
     # test threads, never in the bare DuckDB repro above). Same tests, same runner, only the DuckDB profiler differs. NOT a gate.
-    name: "Flake experiment (profiler=${{ matrix.profile }}, test threads=4)"
+    name: "Flake experiment (profiler=${{ matrix.profile }}, test threads=4; default = profiler off)"
     runs-on: windows-latest
     continue-on-error: true
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      GEOFABRIC_DUCKDB_PROFILE: ${{ matrix.profile }}
+      GF_PROFILE_MODE: ${{ matrix.profile }}
     strategy:
       fail-fast: false
       matrix:
-        profile: ["1", "0"]
+        profile: ["default", "1"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -205,12 +205,13 @@ jobs:
           echo "$lib" >> "$GITHUB_PATH"
       - name: Build the test binaries once
         run: cargo test -p geo-runtime --no-default-features --test vertical --test semi_join --no-run
-      - name: "Run the two DuckDB-heavy test files 15 times with 4 test threads and count failures"
+      - name: "Run the two DuckDB-heavy test files 25 times with 4 test threads and count failures"
         shell: bash
         run: |
+          if [ "$GF_PROFILE_MODE" = "1" ]; then export GEOFABRIC_DUCKDB_PROFILE=1; fi
           fails=0
-          for i in $(seq 1 15); do
+          for i in $(seq 1 25); do
             out=$(cargo test -p geo-runtime --no-default-features --test vertical --test semi_join -- --test-threads=4 2>&1) || { fails=$((fails+1)); echo "--- attempt $i FAILED"; echo "$out" | grep -E "FAILED|panicked|diag" | cut -c1-400 | head -4; }
           done
-          echo "RESULT profiler=${GEOFABRIC_DUCKDB_PROFILE}: $fails of 15 attempts failed"
+          echo "RESULT profiler=${GF_PROFILE_MODE}: $fails of 25 attempts failed"
 

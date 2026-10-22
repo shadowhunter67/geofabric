@@ -187,6 +187,8 @@ fn arg(args: &[String], name: &str, default: &str) -> String {
 }
 
 fn main() {
+    // the benchmark runs queries one at a time, so the DuckDB profiler (opt-in, see geo-engine-duckdb) is safe and gives the peak-memory metric
+    std::env::set_var("GEOFABRIC_DUCKDB_PROFILE", "1");
     let args: Vec<String> = std::env::args().collect();
     let data = PathBuf::from(arg(&args, "--data", "benchmarks/data"));
     let out = PathBuf::from(arg(&args, "--out", "benchmarks/results"));
