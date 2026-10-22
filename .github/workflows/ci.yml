@@ -66,6 +66,9 @@ jobs:
     name: Rust workspace tests (DuckDB server engine, offline PostGIS tests)
     # Windows: the verified prebuilt libduckdb used for development (ADR-006) is the Windows archive.
     runs-on: windows-latest
+    env:
+      # authenticated GitHub API reads in tools/duckdb_prebuilt.py (anonymous reads of a shared runner IP were rate-limited and failed a whole run)
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -102,6 +105,9 @@ jobs:
     # pre-installed extension. If this never fails while the test suite does, the problem is not DuckDB start-up.
     name: "DuckDB start-up repro (threads=${{ matrix.threads }}, extension=${{ matrix.ext }})"
     runs-on: windows-latest
+    env:
+      # authenticated GitHub API reads in tools/duckdb_prebuilt.py (anonymous reads of a shared runner IP were rate-limited and failed a whole run)
+      GITHUB_TOKEN: ${{ github.token }}
     strategy:
       fail-fast: false
       matrix:
@@ -136,6 +142,9 @@ jobs:
     # NOT a gate (continue-on-error): the Rust suite with parallel test threads, to collect the engine's failure diagnostics from the hosted runner.
     name: "Rust tests, parallel (experiment: failures here print diagnostics, they do not fail CI)"
     runs-on: windows-latest
+    env:
+      # authenticated GitHub API reads in tools/duckdb_prebuilt.py (anonymous reads of a shared runner IP were rate-limited and failed a whole run)
+      GITHUB_TOKEN: ${{ github.token }}
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4

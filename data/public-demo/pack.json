@@ -12,7 +12,14 @@
   "overture_release": "2026-09-23.1",
   "license": "ODbL-1.0 (derived database; attribution required, see docs/DATA-LICENSES.md)",
   "attribution": "attribution.html",
-  "host": null,
+  "host": {
+    "kind": "jsdelivr-github",
+    "base_url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/",
+    "commit": "851b57022bce50b27a8542ed52d2bc97a09767ec",
+    "range": true,
+    "verified_at": "2026-10-22T04:04:34Z",
+    "verified": "HEAD/GET Range -> 206 with correct Content-Range, no Content-Encoding, CORS for the app origin, Parquet magic, SHA-256 of the served bytes"
+  },
   "files": {
     "overture_buildings_vn_south": {
       "file": "demo_buildings.parquet.zip",
@@ -25,7 +32,8 @@
       "sha256": "72be92ce5a5bec35bed4ca223b20c23c2a568505843ddb005f955bb0ca8ad1b8",
       "license": "ODbL",
       "source_release": "2026-09-23.1",
-      "derived_from": "benchmarks/data/overture_buildings_vn_south.parquet"
+      "derived_from": "benchmarks/data/overture_buildings_vn_south.parquet",
+      "url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_buildings.parquet.zip"
     },
     "overture_transport_hcm": {
       "file": "demo_transport.parquet.zip",
@@ -38,7 +46,8 @@
       "sha256": "c28f85ec384855cd23ac87121fe4afbe4a6843bce3260e66c78ff3570944899d",
       "license": "ODbL",
       "source_release": "2026-09-23.1",
-      "derived_from": "data/local/overture_transport_hcm.parquet"
+      "derived_from": "data/local/overture_transport_hcm.parquet",
+      "url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_transport.parquet.zip"
     },
     "overture_places_hcm": {
       "file": "demo_places.parquet.zip",
@@ -51,7 +60,8 @@
       "sha256": "2185acd927439cb30659d887e98c04f539356294e58ec89bdc625f8cde1d6400",
       "license": "CDLA-Permissive-2.0 / Apache-2.0 / CC0-1.0 (per source record)",
       "source_release": "2026-09-23.1",
-      "derived_from": "data/local/overture_places_hcm.parquet"
+      "derived_from": "data/local/overture_places_hcm.parquet",
+      "url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_places.parquet.zip"
     },
     "overture_admin_hcm": {
       "file": "demo_admin.parquet.zip",
@@ -64,7 +74,8 @@
       "sha256": "aa4803aef6e0bb5795bb263af97399a9c05c4760b0ac9ae88bcd858a2e36b661",
       "license": "ODbL",
       "source_release": "2026-09-23.1",
-      "derived_from": "data/local/overture_admin_hcm.parquet"
+      "derived_from": "data/local/overture_admin_hcm.parquet",
+      "url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_admin.parquet.zip"
     },
     "overture_landuse_hcm": {
       "file": "demo_landuse.parquet.zip",
@@ -77,7 +88,8 @@
       "sha256": "628d3516f2db394875a99cacc9fb57efbb9a8334a6b92da5ec20f1ac1e7abace",
       "license": "ODbL",
       "source_release": "2026-09-23.1",
-      "derived_from": "data/local/overture_landuse_hcm.parquet"
+      "derived_from": "data/local/overture_landuse_hcm.parquet",
+      "url": "https://cdn.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_landuse.parquet.zip"
     }
   },
   "metadata": [

@@ -41,8 +41,23 @@ def duckdb_version() -> str:
 
 
 def http_json(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "geofabric-tools"}), timeout=60) as r:
-        return json.load(r)
+    """GitHub API read. Authenticated when GITHUB_TOKEN is set (CI: the anonymous limit of a shared runner IP is exhausted by other tenants,
+    which once failed a whole CI run with 'HTTP 403 rate limit exceeded'), retried with a pause on transient errors."""
+    import os
+    import time
+    import urllib.error
+
+    headers = {"User-Agent": "geofabric-tools"}
+    if os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = "Bearer " + os.environ["GITHUB_TOKEN"]
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if attempt == 3 or e.code not in (403, 429, 500, 502, 503):
+                raise
+            time.sleep(10 * (attempt + 1))
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -64,18 +79,24 @@ def main():
     if (lib / "duckdb.dll").exists() and (lib / "duckdb.lib").exists() and LOCK.exists():
         print(f"already present: {lib}")
     else:
-        rel = http_json(f"https://api.github.com/repos/duckdb/duckdb/releases/tags/v{ver}")
-        asset = next(a for a in rel["assets"] if a["name"] == ASSET)
-        expected = asset["digest"].split(":", 1)[1]
+        lock = json.loads(LOCK.read_text()) if LOCK.exists() else {}
+        pinned = lock.get(f"v{ver}", {}).get(ASSET)
+        if pinned:
+            # the digest is already pinned locally (trust-on-first-use, then pinned): no API call is needed, only the download
+            expected = pinned
+            url = f"https://github.com/duckdb/duckdb/releases/download/v{ver}/{ASSET}"
+        else:
+            rel = http_json(f"https://api.github.com/repos/duckdb/duckdb/releases/tags/v{ver}")
+            asset = next(a for a in rel["assets"] if a["name"] == ASSET)
+            expected = asset["digest"].split(":", 1)[1]
+            url = asset["browser_download_url"]
         dl = cache / "download"
         dl.mkdir(parents=True, exist_ok=True)
         zpath = dl / ASSET
-        urllib.request.urlretrieve(asset["browser_download_url"], zpath)
+        urllib.request.urlretrieve(url, zpath)
         got = sha256(zpath)
         if got != expected:
             sys.exit(f"CHECKSUM MISMATCH vs GitHub digest: {got} != {expected}")
-        lock = json.loads(LOCK.read_text()) if LOCK.exists() else {}
-        pinned = lock.get(f"v{ver}", {}).get(ASSET)
         if pinned and pinned != got:
             sys.exit(f"CHECKSUM MISMATCH vs lock file: {got} != {pinned}")
         lock.setdefault(f"v{ver}", {})[ASSET] = got
