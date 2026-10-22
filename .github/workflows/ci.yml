@@ -74,8 +74,9 @@ jobs:
           echo "DUCKDB_LIB_DIR=$lib" >> "$GITHUB_ENV"
           echo "$lib" >> "$GITHUB_PATH"
       - name: "Tests (no database server is started; live PostgreSQL tests skip and are not counted as evidence)"
-        # two test threads: the hosted runner is small, and many in-process DuckDB instances opening at once were seen to fail sporadically
-        run: cargo test --workspace --no-default-features -- --test-threads=2
+        # serial: with 2+ test threads the first DuckDB query of a test process failed sporadically on the hosted runner ("Error code 1", not
+        # reproduced locally, not root-caused); serial runs are the mitigation, not an explanation
+        run: cargo test --workspace --no-default-features -- --test-threads=1
       - name: Diagnostics when the tests failed (DuckDB probe, then the semi-join tests alone, three times)
         if: failure()
         shell: bash
