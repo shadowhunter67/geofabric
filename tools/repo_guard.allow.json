@@ -1,0 +1,19 @@
+{
+  "allow": [
+    {
+      "pattern": "web/public/probe/*.parquet",
+      "covers": ["binary"],
+      "reason": "runtime-probe fixtures (64 rows each): the browser engine's start-up self-test reads them; they are test inputs, tens of kilobytes"
+    },
+    {
+      "pattern": "benchmarks/results/invalid-sim/perturbed/*.bak",
+      "covers": ["binary"],
+      "reason": "archived evidence of an invalidated simulation run (small JSON backup), kept so the report's claim can be re-checked"
+    },
+    {
+      "pattern": "data/public-demo/v1/*.parquet.zip",
+      "covers": ["binary"],
+      "reason": "demo data v1 as published at commit 851b570 (served by jsDelivr from this path, so it stays valid for the lifetime of that URL). Future versions are published to the dedicated data repository and are never added here."
+    }
+  ]
+}
