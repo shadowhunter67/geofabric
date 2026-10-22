@@ -9,6 +9,7 @@ import ehWasm from "@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url";
 import ehWorker from "@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url";
 import { compile, SUPPORTED_OPS } from "./sqlgen.ts";
 import { EngineError } from "./contract.ts";
+import { FilePool } from "./file-pool.ts";
 import type { Capabilities, ExecutionContext, ExecutionEngine, ExecutionResult, PlanGraph } from "./contract.ts";
 
 export const ENGINE_ID = "duckdb-wasm";
@@ -30,6 +31,12 @@ export class DuckDbWasmEngine implements ExecutionEngine {
   private db: duckdb.AsyncDuckDB | null = null;
   private starting: Promise<duckdb.AsyncDuckDB> | null = null;
   private cumulativeInput = 0;
+  /** Whole-file downloads are shared by every query of the session (a layer is downloaded once, not once per query). */
+  readonly files = new FilePool(96 * 1024 * 1024, async (url) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new EngineError("engine", `fetching ${url} failed: HTTP ${r.status}`);
+    return r.arrayBuffer();
+  });
   recycles = 0;
   /** Cumulative estimated input after which the instance is recycled (tests/benchmarks may change it). */
   recycleBudget = RECYCLE_AFTER_INPUT_BYTES;
@@ -117,9 +124,9 @@ export class DuckDbWasmEngine implements ExecutionEngine {
       const url = new URL(f.url, location.href).href;
       if (f.access === "full") {
         // small file: one request for all of it (dozens of sequential range requests are slower than one download)
-        const r = await fetch(url);
-        if (!r.ok) throw new EngineError("engine", `fetching ${f.uri} failed: HTTP ${r.status}`);
-        await db.registerFileBuffer(f.name, new Uint8Array(await r.arrayBuffer()));
+        const bytes = await this.files.get(url);
+        // registerFileBuffer takes ownership of what it is given: hand it a copy, keep the pooled bytes
+        await db.registerFileBuffer(f.name, new Uint8Array(bytes.slice(0)));
         buffered.push(f.name);
       } else {
         db.registerFileURL(f.name, url, duckdb.DuckDBDataProtocol.HTTP, true);
