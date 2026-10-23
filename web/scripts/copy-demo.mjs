@@ -2,7 +2,8 @@
 //
 //   default           the manifest (data/public-demo/pack.json) names a VERIFIED remote host (host.base_url): only the app-config files
 //                     (pack.json, sources.json, catalog.json) are published with the site; the data is read from the host (HTTP range).
-//                     No host in the manifest -> the data files are bundled with the site (offline/dev/CI), whole-file mode.
+//                     No host in the manifest -> the data files are bundled with the site (offline/dev/CI), whole-file mode. The bundled files come from
+//                     data/public-demo-build/<version>/ (git-ignored; `python data/scripts/fetch_demo_data.py` downloads and verifies them).
 //   --bundle          always bundle the data (and drop `host` from the published manifest): a self-contained site, nothing remote.
 //   --bundle-range    bundle the data but declare it range-capable: for local tests of range reads with
 //                     `node scripts/pages-like-server.mjs <dir> <port> --range-head` (a server that answers ranged HEAD correctly).
@@ -13,6 +14,8 @@ import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const from = join(here, "..", "..", "data", "public-demo");
+// the data files are not in this repository's history: bundling reads them from the git-ignored build directory (python data/scripts/fetch_demo_data.py fills it)
+const dataDir = join(here, "..", "..", "data", "public-demo-build");
 const to = join(here, "..", process.env.GF_OUT ?? "dist", "demo");
 const wanted = process.env.GF_DEMO; // same switch for CI: GF_DEMO=bundle | bundle-range
 const mode = process.argv.includes("--bundle-range") || wanted === "bundle-range" ? "bundle-range" : process.argv.includes("--bundle") || wanted === "bundle" ? "bundle" : "default";
@@ -32,11 +35,11 @@ let published = manifest;
 if (remote) {
   console.log(`data host: ${manifest.host.kind} @ ${String(manifest.host.commit).slice(0, 10)} (range=${manifest.host.range}); data NOT bundled`);
 } else {
-  if (!existsSync(join(from, manifest.version))) {
-    console.error(`the data files (${manifest.version}/) are missing and the manifest names no host`);
+  if (!existsSync(join(dataDir, manifest.version))) {
+    console.error(`the data files (${dataDir}/${manifest.version}/) are missing: run  python data/scripts/fetch_demo_data.py`);
     process.exit(1);
   }
-  cpSync(join(from, manifest.version), join(to, manifest.version), { recursive: true });
+  cpSync(join(dataDir, manifest.version), join(to, manifest.version), { recursive: true });
   // a bundled copy reads relative to the page: no absolute URL and no remote host
   const files = Object.fromEntries(Object.entries(manifest.files).map(([id, f]) => [id, { ...f, url: undefined }]));
   published = { ...manifest, files, host: mode === "bundle-range" ? { kind: "bundled-range-test", base_url: "demo/", range: true } : null };

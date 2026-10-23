@@ -12,15 +12,6 @@
   "overture_release": "2026-09-23.1",
   "license": "ODbL-1.0 (derived database; attribution required, see docs/DATA-LICENSES.md)",
   "attribution": "attribution.html",
-  "host": {
-    "kind": "jsdelivr-github",
-    "cdn_host": "gcore.jsdelivr.net",
-    "base_url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/",
-    "commit": "851b57022bce50b27a8542ed52d2bc97a09767ec",
-    "range": true,
-    "verified_at": "2026-10-22T07:03:29Z",
-    "verified": "HEAD/GET Range -> 206 with correct Content-Range, no Content-Encoding, CORS for the app origin, Parquet magic, SHA-256 of the served bytes"
-  },
   "files": {
     "overture_buildings_vn_south": {
       "file": "demo_buildings.parquet.zip",
@@ -34,7 +25,7 @@
       "license": "ODbL",
       "source_release": "2026-09-23.1",
       "derived_from": "benchmarks/data/overture_buildings_vn_south.parquet",
-      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_buildings.parquet.zip"
+      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/v1/demo_buildings.parquet.zip"
     },
     "overture_transport_hcm": {
       "file": "demo_transport.parquet.zip",
@@ -48,7 +39,7 @@
       "license": "ODbL",
       "source_release": "2026-09-23.1",
       "derived_from": "data/local/overture_transport_hcm.parquet",
-      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_transport.parquet.zip"
+      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/v1/demo_transport.parquet.zip"
     },
     "overture_places_hcm": {
       "file": "demo_places.parquet.zip",
@@ -62,7 +53,7 @@
       "license": "CDLA-Permissive-2.0 / Apache-2.0 / CC0-1.0 (per source record)",
       "source_release": "2026-09-23.1",
       "derived_from": "data/local/overture_places_hcm.parquet",
-      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_places.parquet.zip"
+      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/v1/demo_places.parquet.zip"
     },
     "overture_admin_hcm": {
       "file": "demo_admin.parquet.zip",
@@ -76,7 +67,7 @@
       "license": "ODbL",
       "source_release": "2026-09-23.1",
       "derived_from": "data/local/overture_admin_hcm.parquet",
-      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_admin.parquet.zip"
+      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/v1/demo_admin.parquet.zip"
     },
     "overture_landuse_hcm": {
       "file": "demo_landuse.parquet.zip",
@@ -90,7 +81,7 @@
       "license": "ODbL",
       "source_release": "2026-09-23.1",
       "derived_from": "data/local/overture_landuse_hcm.parquet",
-      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric@851b57022bce50b27a8542ed52d2bc97a09767ec/data/public-demo/v1/demo_landuse.parquet.zip"
+      "url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/v1/demo_landuse.parquet.zip"
     }
   },
   "metadata": [
@@ -98,5 +89,15 @@
     "catalog.json"
   ],
   "total_bytes": 27658805,
-  "note": "Plain GeoParquet. The files carry a .zip suffix so that CDNs and static hosts do not transfer-compress them: a compressed representation breaks HTTP byte ranges. `host` is filled in by data/scripts/publish_demo_data.py after the host was verified (HEAD/GET Range -> 206, correct Content-Range, no Content-Encoding, CORS, SHA-256 of the served bytes)."
+  "note": "Plain GeoParquet. The files carry a .zip suffix so that CDNs and static hosts do not transfer-compress them: a compressed representation breaks HTTP byte ranges. `host` is filled in by data/scripts/publish_demo_data.py after the host was verified (HEAD/GET Range -> 206, correct Content-Range, no Content-Encoding, CORS, SHA-256 of the served bytes).",
+  "host": {
+    "kind": "jsdelivr-github",
+    "cdn_host": "gcore.jsdelivr.net",
+    "repository": "shadowhunter67/geofabric-demo-data",
+    "base_url": "https://gcore.jsdelivr.net/gh/shadowhunter67/geofabric-demo-data@5a88958ae225dc5f6b2240096b32e22c6a5429e7/",
+    "commit": "5a88958ae225dc5f6b2240096b32e22c6a5429e7",
+    "range": true,
+    "verified_at": "2026-10-22T09:49:12Z",
+    "verified": "HEAD/GET Range -> 206 with correct Content-Range, no Content-Encoding, CORS for the app origin, Parquet magic, SHA-256 of the served bytes"
+  }
 }

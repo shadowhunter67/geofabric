@@ -50,6 +50,11 @@ jobs:
         run: npm run build
       # The static tests are self-contained: the data is BUNDLED into the test site (GF_DEMO), never read from the CDN, so CI does not depend on
       # a third-party host. The deployed site is checked against the real host by the Pages workflow and by the live-URL run.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch the demo data (not in this repository's history; SHA-256 verified against the manifest)
+        run: python ../data/scripts/fetch_demo_data.py
       - name: "Production build (static profile, Pages base path), data bundled, range-capable test host"
         run: |
           npm run build:static

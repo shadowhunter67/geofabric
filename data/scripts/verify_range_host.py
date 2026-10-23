@@ -113,7 +113,10 @@ def main() -> int:
     while True:
         report = {}
         for sid, f in manifest["files"].items():
-            report[sid] = check_file(sid, base + f["path"], f["bytes"], f["sha256"], args.origin, not args.no_checksum)
+            try:
+                report[sid] = check_file(sid, base + f["path"], f["bytes"], f["sha256"], args.origin, not args.no_checksum)
+            except OSError as e:  # timeout / reset: the CDN may still be pulling a fresh file from GitHub; counts as a failed check and is retried under --wait
+                report[sid] = [f"network error: {type(e).__name__}: {e}"]
         failed = {k: v for k, v in report.items() if v}
         if not failed or time.time() >= deadline:
             break

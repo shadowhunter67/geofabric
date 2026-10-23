@@ -4,10 +4,11 @@ It cuts one small window out of the normalized GeoParquet files that `fetch_over
 rewrites them with small row groups so the browser can prune by range request, and writes a manifest with sizes and SHA-256.
 
 The result is a derived Overture database: it stays under the ODbL (share-alike) and must keep the attribution in `docs/DATA-LICENSES.md`
-(shown on the page and in the map corner). It is NOT committed to Git history as a data dump of the full pack; only this small subset is
-published, with the manifest.
+(shown on the page and in the map corner). The output is NEVER committed to this repository: it goes to the git-ignored build directory
+and is published to the dedicated data repository by `publish_demo_data.py` (generate -> validate -> checksums -> publish -> verify -> manifest).
 
-    benchmarks/.venv/Scripts/python data/scripts/make_public_demo.py --out web/public/demo
+    benchmarks/.venv/Scripts/python data/scripts/make_public_demo.py --out data/public-demo-build      # step 1: generate (writes the IR source nodes too)
+    python data/scripts/publish_demo_data.py --publish                                                 # steps 2-6
 """
 
 from __future__ import annotations
@@ -192,6 +193,12 @@ def main() -> int:
     }
     (args.out / "pack.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print("total", manifest["total_bytes"] // 1024, "KiB")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import ir_sources  # the static page builds plans in the browser: it needs each layer's IR Source node, read by the Rust GeoParquet reader
+
+    ir_sources.apply(args.out)
     return 0
 
 

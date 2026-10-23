@@ -34,6 +34,8 @@ export interface GatewayDeps {
   pack: StaticPack;
   /** absolute URL of a layer's file (from the manifest; a bundled pack resolves against the page, so a non-root base path works) */
   fileUrl(sourceId: string): string;
+  /** resolves when the canonical plan builder (the lowering wasm module) is loaded; the browser install passes the Vite loader, node tests load it themselves */
+  ready?(): Promise<void>;
 }
 
 export interface GatewayState {
@@ -147,6 +149,7 @@ const empty = { elapsed_ms: { value: null, source: "unknown" }, rows_returned: {
 async function query(q: QueryReq, deps: GatewayDeps, st: GatewayState): Promise<RunResp> {
   if (q.engine === "duckdb" || q.engine === "postgis") throw new StaticError(422, "server_required", `This analysis requires GeoFabric Server: the ${q.engine} engine is ${NOT_IN_DEPLOYMENT}.`);
   if (q.browser === false) throw new StaticError(422, "server_required", `This analysis requires GeoFabric Server: browser execution was declined and there is no other engine (${NOT_IN_DEPLOYMENT}).`);
+  await deps.ready?.();
   // request -> PlanGraph by the canonical builder (Rust, as WebAssembly); then the capability verdict: a plan the browser cannot run is refused, not approximated
   const planned = planRequest(q, deps.pack.sources);
   if (planned.missingOps.length) throw serverRequired(planned.missingOps);
@@ -192,6 +195,7 @@ export async function handle(method: string, path: string, body: unknown, deps: 
       if (path === "/api/query") return ok(await query(body as QueryReq, deps, st));
       if (path === "/api/query/capability") {
         // "request -> PlanGraph -> capability evaluation": can this deployment run what the request means? (the UI enables or disables from this, it never guesses)
+        await deps.ready?.();
         const planned = planRequest(body as QueryReq, deps.pack.sources);
         return ok({ supported: planned.missingOps.length === 0, missing_ops: planned.missingOps });
       }
@@ -233,7 +237,9 @@ export async function installStaticGateway(baseUrl: string): Promise<void> {
     const f = manifest.files[id];
     return f.url ?? new URL(`demo/${f.path}`, origin).href;
   };
-  const deps: GatewayDeps = { pack: { sources: sources.sources, catalog, manifest }, fileUrl };
+  // dynamic: the loader imports the wasm asset through Vite (`?url`), which node tests cannot resolve
+  const { ensureLowering } = await import("../engine/lowering-loader.ts");
+  const deps: GatewayDeps = { pack: { sources: sources.sources, catalog, manifest }, fileUrl, ready: ensureLowering };
   const st = newState();
   const real = window.fetch.bind(window);
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
