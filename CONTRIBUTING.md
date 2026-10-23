@@ -28,6 +28,10 @@ python tools/arch_check.py
 
 Live PostgreSQL/PostGIS tests (`--features live`) need a server and skip otherwise; **a skipped test is not evidence**, report live and offline results separately. The full-stack browser suite needs the Gateway (`cd web && npm run build && npx playwright test`, see the comments in `web/playwright.config.ts`).
 
+## Repository hygiene (checked first in CI)
+
+`python tools/repo_guard.py` fails on tracked build output (`dist*/`, `target/`, `node_modules/`, `.runtime/`...), any file above 20 MiB, and binary/generated file types outside `tools/repo_guard.allow.json` (every exception needs a reason). Optional: `git config core.hooksPath .githooks` runs it on staged files. Data does not belong in this repository: demo data is published to `geofabric-demo-data` (see `docs/public-demo.md`); static tests that bundle data run `python data/scripts/fetch_demo_data.py` first.
+
 ## Run it
 
 * Static: `cd web && npm run build:static && node scripts/pages-like-server.mjs dist 4190` (a tiny server that behaves like GitHub Pages; open `http://127.0.0.1:4190/geofabric/` after building with `GF_BASE=/geofabric/`).

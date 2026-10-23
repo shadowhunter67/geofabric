@@ -1,6 +1,6 @@
 # Data licences and attribution
 
-These are engineering review notes derived from the committed dataset manifests. They are not legal advice. Dataset files are not redistributed by GeoFabric: they remain under `data/local/` (gitignored). The repository commits manifests, fetch scripts, checksums, and small quality reports.
+These are engineering review notes derived from the committed dataset manifests. They are not legal advice. Full dataset files are not redistributed by GeoFabric: they remain under `data/local/` (gitignored). The small public demo subset is the exception (see "Public demo pack"). The repository commits manifests, fetch scripts, checksums, and small quality reports.
 
 | Dataset | Provider | Licence | Redistribution | Required attribution (verbatim) | Release / retrieved | Coverage | Changes |
 |---|---|---|---|---|---|---|---|
@@ -42,5 +42,5 @@ The static public demo bundles a **small derived database** (`data/public-demo/`
 * **Files:** plain GeoParquet (`demo/*.parquet`); `pack.json` carries the size and SHA-256 of each file.
 * **Attribution on screen:** the map corner shows the attribution of the datasets in view; Settings lists them with licence links; `attribution.html` (published with the site) lists everything verbatim.
 * **Places:** per-source licences (CDLA-Permissive-2.0, Apache-2.0 including the Foursquare notice, CC0-1.0) are kept in the attribution text.
-* **Hosting of the pack:** the files are served from this repository by jsDelivr at commit-pinned URLs (`pack.json` `host`), which makes each URL immutable (the content behind a URL never changes; a new data version is a new `v2/` directory). The ODbL notice and attribution stay with the files and on the attribution page.
+* **Hosting of the pack:** since 2026-10-23 the files live in the dedicated repository [shadowhunter67/geofabric-demo-data](https://github.com/shadowhunter67/geofabric-demo-data) (licence: the ODbL 1.0 text, with `ATTRIBUTION.md`, `SHA256SUMS` and a per-version `MANIFEST.json`), served by jsDelivr at commit-pinned URLs (`pack.json` `host`), which makes each URL immutable (a new data version is a new `v2/` directory). `v1` was first published from this repository's commit 851b570; those URLs stay valid. The ODbL notice and attribution stay with the files and on the attribution page.
 * **Runtime third parties:** the data host (jsDelivr) sees which ranges of the public files are read; the basemap host (OpenFreeMap) sees viewed tiles; DuckDB-Wasm fetches its `parquet` extension (code, not data) from `extensions.duckdb.org`.

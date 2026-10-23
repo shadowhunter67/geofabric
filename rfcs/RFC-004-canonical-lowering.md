@@ -1,6 +1,6 @@
 # RFC-004 — Canonical lowering: one definition of what a plan means, three dialects
 
-Status: **Accepted and implemented (2026-10-22)** for the predicate/sort/bbox/aggregate/semi-join/row-cap semantics and for the browser dialect. Remaining debt is listed at the end. No IR or wire-format change (IR stays 0.3).
+Status: **Accepted and implemented (2026-10-22)** for the predicate/sort/bbox/aggregate/semi-join/row-cap semantics and for the browser dialect; **request → PlanGraph unified (2026-10-23)** in the `geo-plan` crate (see "Request → plan" below). Remaining debt is listed at the end. No IR or wire-format change (IR stays 0.3).
 
 ## Problem (architecture debt that already cost a correctness bug)
 
@@ -67,9 +67,12 @@ SQL function names and spelling of leaves (DuckDB inline literals vs PostgreSQL 
 
 No IR change. DuckDB and browser SQL differ from before only in (a) explicit `ASC NULLS LAST` / `DESC NULLS LAST` (the previous implicit behaviour, now stated) and (b) the refusal of literals outside `[1e-9, 1e15]` or non-finite. PostGIS SQL is unchanged except the same literal rule. The fixtures were regenerated for (a).
 
+## Request → plan (2026-10-23)
+
+`User request → canonical request model → ONE PlanGraph builder → PlanGraph → geo-lowering → DuckDB | PostGIS | Browser`. The builder is the pure Rust crate `geo-plan` (`PlanRequest`, `build_plan`, structured `PlanError` codes `INVALID_FIELD`, `INVALID_FILTER`, `INVALID_BBOX`, `INVALID_CRS`, `UNKNOWN_DATASET`, `UNSUPPORTED_REQUEST`...). The gateway links it natively; the static page calls it through the lowering wasm module that is already loaded (`gf_build_plan`, JSON in/out, the plan returned as the exact `plan_json` string). `web/src/static/adapter.ts` only forwards the request, attaches the engine hint (a planner input, never part of the plan nodes) and reads the capability verdict. The request model carries no SQL and no engine detail; it is validated before any node is built; a request the browser cannot run (transform, spatial semi join, intersects...) is built exactly and refused by the capability layer (`missing_ops` against `SUPPORTED_OPS`), never approximated or silently dropped. No IR change (0.3); the request carries its own `schema_version`. Evidence: 40 golden request fixtures (`crates/geo-plan/fixtures/requests/`) whose native and wasm plans are byte-identical; the previous gateway's plans for 19 requests are reproduced byte for byte (3 refusals deliberately became structured `INVALID_FIELD`); `tools/arch_check.py` forbids plan-node construction in the gateway and in the web code.
+
 ## Remaining debt (honest)
 
-* **Request → plan** is still built twice: Rust `geo-gateway/src/{lib,templates}.rs` and `web/src/static/ir.ts` (features/count/count_by only). This is the next duplication to remove (the same crate can host the templates; the wasm would grow slightly).
 * **Relational skeletons** (CTE chains, covering propagation through Project/Limit/Sort) are still per engine; only the *decisions* are shared. A true shared intermediate relational tree would remove them too; it was not needed to stop semantic drift and would be a larger rewrite.
 * **Intersects/Buffer/SpatialJoin** keep engine-specific code (spatial functions), covered by the cross-engine tests but not by a shared definition beyond `semi_join_exists`.
 * The wasm needs the Rust toolchain in every web build (documented in CONTRIBUTING; CI installs the target).
