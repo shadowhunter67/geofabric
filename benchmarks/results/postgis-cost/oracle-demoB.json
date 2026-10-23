@@ -1,0 +1,44 @@
+{
+ "window": [
+  106.68,
+  10.76,
+  106.72,
+  10.8
+ ],
+ "distance_m": 200.0,
+ "utm_epsg": 32648,
+ "buildings_in_window": 41150,
+ "roads_considered": 1279,
+ "oracle": {
+  "near_count": 27624,
+  "ids_sha256": "5181cea85939d0eb3f8e09db00451ce43167781036473c1731a03a61668533b6",
+  "seconds": 1.7
+ },
+ "geofabric_runs": {
+  "duckdb": {
+   "engine_that_ran": "duckdb",
+   "near_rows": 27624,
+   "near_count": 27624,
+   "count_engine": "duckdb",
+   "ids_sha256": "5181cea85939d0eb3f8e09db00451ce43167781036473c1731a03a61668533b6",
+   "seconds": 1.69,
+   "ids_equal_oracle": true,
+   "distinct_ids": true,
+   "only_oracle": [],
+   "only_engine": [],
+   "metric_semantics": {
+    "crs": "EPSG:32648",
+    "distance_m": 200.0,
+    "max_scale_error_pct": 0.5,
+    "method": "ST_DWithin in the plane of a local UTM zone, chosen from the area of the query"
+   }
+  }
+ },
+ "ids_equal": true,
+ "counts_equal": true,
+ "geodesic_check": {
+  "pairs_within_5pct_of_limit": 1955,
+  "classification_flips_vs_geodesic": 3,
+  "note": "UTM planar distance vs WGS 84 ellipsoidal distance between the nearest points of each pair"
+ }
+}

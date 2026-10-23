@@ -52,7 +52,7 @@ Measured, not assumed: PostGIS wins when a selective index applies (small window
 
 ## Not done / not verified (the honest list)
 
-No PostGIS cost model (still `Unmeasured`, R5d in force), no held-out calibration, no TLS, a single machine, `SpatialJoin` and `Buffer` not implemented, the shared lowering (RFC-004) not realized (three compilers of the IR).
+**Superseded in part by ADR-015 (2026-10-23): the PostGIS cost model, the semi-join risk policy and class-scoped R5d now exist; PostGIS is selected automatically for four validated workload classes.** Originally: no PostGIS cost model (still `Unmeasured`, R5d in force), no held-out calibration, no TLS, a single machine, `SpatialJoin` and `Buffer` not implemented, the shared lowering (RFC-004) not realized (three compilers of the IR).
 
 ## Debt
 

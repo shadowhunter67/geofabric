@@ -64,3 +64,36 @@ Data imported from Overture (ODbL) keeps its attribution obligations in the copy
 ## DuckDB profiler (opt-in)
 
 The DuckDB engine's JSON profiler is **off by default** and only on when `GEOFABRIC_DUCKDB_PROFILE` is exactly `1` (the benchmark tool sets it; it runs one query at a time). With it on, several engines in one process failed sporadically in CI ("Error code 1"); with it off, `peak_memory_bytes` is `Unknown` with an explanatory note. The contract is unit-tested (`profiling_contract` in `geo-engine-duckdb`).
+
+## Cost model, risk policy and when PostGIS is chosen automatically (ADR-015)
+
+`PostGisEngine::cost_estimate` classifies every plan from its plan-time features and prices it with an interpretable per-class formula (`crates/geo-engine-postgis/src/cost_model_v1.json`: coefficients with their provenance). The planner chooses PostGIS **on predicted cost only in a validated class with an available index**; elsewhere policy R5d keeps the measured engine, and an explicit `"engine":"postgis"` still selects it.
+
+| Workload class | PostGIS model | Automatic choice |
+|---|---|---|
+| selective indexed window (`indexed_bbox`) | validated | yes |
+| intersects / projected column (`indexed_spatial`) | validated | yes |
+| aggregates up to 300,000 matching rows (`aggregate`) | validated | yes |
+| admin-style intersects semi join (`semijoin_intersects`) | validated | yes |
+| broad scans (> 300,000 rows read) | limited | no |
+| metric semi join, <= 5,000 probes | limited | no |
+| metric semi join, > 5,000 probes | limited | no; refused for automatic choice above 50,000 probes (hard risk policy) |
+
+The index state comes from the catalog written by `load_data.py` (`spatially_indexed`, `metric_indexes`); `unknown` is never treated as available, and an unindexed source is never `validated`. Developer mode shows, per candidate, the predicted time, class, validation level, risk, index state and the largest terms.
+
+Scope of the evidence: one machine, loopback PostgreSQL 16.9 + PostGIS 3.6.2, 3.85 M buildings. It does not cover a remote database, another host or unknown index state.
+
+### DuckDB profiler (opt-in)
+
+The DuckDB engine's JSON profiler is **off by default** and on only when `GEOFABRIC_DUCKDB_PROFILE` is exactly `1` (the benchmark tool sets it; it runs one query at a time). With it on, several engines in one process failed sporadically in CI ("Error code 1"); with it off, `peak_memory_bytes` is `Unknown` with an explanatory note. The contract is unit-tested (`profiling_contract` in `geo-engine-duckdb`).
+
+### Re-running the evidence
+
+```
+python benchmarks/make_postgis_cost_cases.py --split calibration|heldout|confirm --out benchmarks/results/postgis-cost/cases-<split>.json
+GF_COST_CASES=... GF_COST_OUT=benchmarks/results/postgis-cost/raw/<split>.jsonl \
+  cargo test --release -p geo-runtime --no-default-features --features postgis-live --test postgis_cost -- --nocapture     # opt-in, live, resumable
+python benchmarks/postgis_cost_fit.py fit --cal <raw sets> ...      # coefficients (calibration data only)
+python benchmarks/postgis_cost_eval.py decide|report ...             # gates in benchmarks/postgis_cost_gates.json
+```
+`GF_COST_PLAN_ONLY=1` re-plans stored cases with the current models without executing anything. Raw traces (EXPLAIN text, every run) stay out of Git (`benchmarks/results/postgis-cost/raw/`); the compact per-case files and the evaluations are committed.
