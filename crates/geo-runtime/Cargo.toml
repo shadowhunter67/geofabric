@@ -26,6 +26,7 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+geo-plan = { path = "../geo-plan" }
 sha2 = "0.10"
 arrow-array = "58"
 arrow-schema = "58"

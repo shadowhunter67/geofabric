@@ -15,6 +15,7 @@ use geo_executor::{
     ExecutionContext, ExecutionEngine, ExecutionMetrics, ExecutionResult, ExplainStep, Metric,
 };
 use geo_ir::{validate, OpKind, Plan, PlanNode, SourceFormat};
+use arrow_array::Array;
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -48,6 +49,28 @@ impl PostGisEngine {
 
     pub fn last_probe(&self) -> Option<PostGisProbe> {
         self.last_probe.lock().ok().and_then(|g| g.clone())
+    }
+
+    /// BENCHMARK EVIDENCE ONLY (never used by the planner, never on a user request path): the server's own account of how it ran `plan`,
+    /// `EXPLAIN (ANALYZE, BUFFERS)` as text lines (plan node types, actual rows/loops, shared hit/read blocks, index names, planning and
+    /// execution time). The statement is the same parameterized SELECT `execute` would send, authorized and lowered the same way, on the same
+    /// read-only role, so EXPLAIN ANALYZE cannot write anything.
+    pub fn explain_analyze(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<String>, EngineError> {
+        for n in plan.nodes.values() {
+            if let PlanNode::Source { uri, .. } = n {
+                ctx.guard.authorize(uri).map_err(|_| EngineError::AccessDenied)?;
+            }
+        }
+        let lowered = lower(plan, &self.catalog, ctx.max_rows).map_err(map_lower)?;
+        let q = PgQuery { sql: format!("EXPLAIN (ANALYZE, BUFFERS, SETTINGS) {}", lowered.sql), params: lowered.params.clone(), timeout: ctx.timeout };
+        let batches = self.connector.query(&q, &ctx.cancel).map_err(|e| map_error(e, ctx.timeout.as_millis() as u64))?;
+        let mut lines = Vec::new();
+        for b in &batches {
+            if let Some(col) = b.columns().first().and_then(|c| c.as_any().downcast_ref::<arrow_array::StringArray>()) {
+                lines.extend((0..col.len()).filter(|i| !col.is_null(*i)).map(|i| col.value(i).to_string()));
+            }
+        }
+        Ok(lines)
     }
 }
 

@@ -893,6 +893,7 @@ dependencies = [
  "geo-engine-postgis",
  "geo-executor",
  "geo-ir",
+ "geo-plan",
  "geo-planner",
  "geo-source-geoparquet",
  "geo-types",

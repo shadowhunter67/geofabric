@@ -257,6 +257,102 @@ pub enum EngineCalibration {
     Unmeasured,
 }
 
+/// Plan-time facts about a workload, computed ONCE by the planner from source metadata and the row estimator and handed to an engine's cost
+/// model. Engine independent (no SQL, no index names); everything here is knowable before anything runs - nothing is a runtime observation.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct WorkloadFeatures {
+    pub sources: Vec<SourceFeatures>,
+    /// Estimated rows the query returns / the pessimistic bound / the rows that match before aggregate and LIMIT.
+    pub result_rows: u64,
+    pub result_rows_high: u64,
+    pub cardinality: u64,
+    pub result_geom_bytes: f64,
+    pub result_attr_bytes: f64,
+    /// Selected / total rows of the first source (the spatial window's selectivity), when the plan has a window.
+    pub bbox_selectivity: Option<f64>,
+    /// `features | count | count_by`
+    pub shape: String,
+    pub has_bbox_filter: bool,
+    pub has_filter: bool,
+    pub has_sort: bool,
+    pub has_aggregate: bool,
+    pub has_intersects: bool,
+    pub has_transform: bool,
+    pub limit: Option<u64>,
+    pub limit_certain: bool,
+    pub bounded_by_limit: bool,
+    pub semi_join: Option<SemiJoinFeatures>,
+    /// `good | fair | poor`: how much the row estimate can be trusted.
+    pub estimate_quality: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SourceFeatures {
+    pub uri: String,
+    pub total_rows: u64,
+    /// Rows the spatial window is expected to select (uniform/histogram estimate, before attribute filters).
+    pub selected_rows: f64,
+}
+
+/// A SpatialSemiJoin: the shape that makes the cost of repeated right-side probes matter.
+#[derive(Debug, Clone, Serialize)]
+pub struct SemiJoinFeatures {
+    pub left_uri: String,
+    pub right_uri: String,
+    pub left_rows: f64,
+    pub right_rows: f64,
+    pub left_total_rows: u64,
+    pub right_total_rows: u64,
+    /// The predicate runs on projected (metric) geometries, i.e. an explicit Transform feeds it.
+    pub metric: bool,
+    /// `within_distance | intersects | other`
+    pub predicate: String,
+    pub distance_m: Option<f64>,
+    /// Right-side probes the join has to make: one per left row.
+    pub expected_probes: f64,
+}
+
+/// How much evidence stands behind an engine's cost model for ONE workload class.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelValidation {
+    /// Enough held-out samples, acceptable prediction error and planner regret, no unsafe selection: the planner may choose on this cost.
+    Validated,
+    /// Measured but not (yet) validated: explained, never chosen on predicted cost over a measured engine (R5d).
+    Limited,
+    /// No measurements for this class.
+    Unvalidated,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CostTerm {
+    pub name: String,
+    pub ms: f64,
+}
+
+/// A HARD risk policy, deliberately separate from the cost: a blocked workload is not "expensive", it is refused.
+#[derive(Debug, Clone, Serialize)]
+pub struct RiskVerdict {
+    pub blocked: bool,
+    /// `low | elevated | high`
+    pub level: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct EngineCostEstimate {
+    pub model_version: String,
+    pub workload_class: String,
+    pub validation: ModelValidation,
+    /// Estimated server-side time (everything except the network to the client), milliseconds.
+    pub time_ms: f64,
+    pub terms: Vec<CostTerm>,
+    pub risk: RiskVerdict,
+    /// `available | unavailable | unknown`: the physical access path the model assumed (index) can be relied on.
+    pub index_state: String,
+    pub notes: Vec<String>,
+}
+
 /// What the planner needs to know about an engine. Engines that run elsewhere
 /// (the browser) are described to the planner here and executed by their own
 /// host; the planner never executes anything.
@@ -273,6 +369,12 @@ pub trait EngineDescriptor: Send + Sync {
     /// planner never prefers it on predicted cost over a `Measured` one (policy R5d): a stand-in cost model is not evidence.
     fn calibration(&self) -> EngineCalibration {
         EngineCalibration::Measured
+    }
+    /// An engine-owned cost model for THIS workload. `None` (default) = the planner's shared server model applies. An engine that returns
+    /// `Some` states its model version, the workload class, how well that class is validated and a hard risk verdict; the planner treats a
+    /// non-`Validated` class like an `Unmeasured` engine (R5d) and refuses a blocked one. The planner never learns what is inside the model.
+    fn cost_estimate(&self, _plan: &Plan, _features: &WorkloadFeatures) -> Option<EngineCostEstimate> {
+        None
     }
     fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Estimate, EngineError>;
     fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<ExplainStep>, EngineError>;

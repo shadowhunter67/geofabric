@@ -29,6 +29,7 @@
 mod browser_model;
 mod confidence;
 mod estimator;
+mod features;
 mod failure;
 mod network;
 mod probe;
@@ -40,13 +41,14 @@ pub use estimator::{
     bucket_of, error_factor, estimate as estimate_rows, layout_class, plan_shape, summarize_errors, PlanShape, Calibration, CoveringQuality, Correction, ErrorSummary,
     EstimateQuality, Observation, RowEstimate,
 };
+pub use features::extract as extract_features;
 pub use failure::{FailureClass, HealthConfig, HealthState, HealthTracker, HealthView, KnownIncompat};
 pub use network::{NetworkOrigin, NetworkProfile, PROFILE_NAMES};
 pub use probe::{checks as probe_checks, envelope, memory_class_for, BrowserSafety, DeviceProfile, Envelope, Freshness, MemoryClass, ProbeCheck, ProbeReport};
 pub use state::{now_ms, ExecutionReport, PlanInputs, PlannerState, ProbeVerdict, StateSummary};
 
 use geo_executor::{
-    Capabilities, EngineCalibration, EngineDescriptor, EngineId, EngineKind, Estimate, ExecutionContext, ExplainStep,
+    Capabilities, EngineCalibration, EngineCostEstimate, EngineDescriptor, EngineId, EngineKind, Estimate, ExecutionContext, ExplainStep, ModelValidation, WorkloadFeatures,
 };
 use geo_ir::{validate, OpKind, Plan, PlanNode, ValidationReport};
 use geo_source_geoparquet::{analyze_plan_with, ReadClass, SourceScan};
@@ -251,8 +253,11 @@ pub struct Candidate {
     pub confidence: Option<Confidence>,
     /// Browser candidates only: risk of the tab running out of memory / failing (0 safe .. 1 certain).
     pub risk: Option<BrowserRisk>,
-    /// `measured` | `unmeasured` (stand-in cost model, never preferred on cost: policy R5d)
+    /// `measured` | `unmeasured` (stand-in cost model, never preferred on cost: policy R5d). With an engine cost model this is per WORKLOAD
+    /// CLASS: `measured` only when the engine's model is `Validated` for the class of this plan.
     pub calibration: EngineCalibration,
+    /// The engine's own cost model verdict for this plan (version, class, validation, terms, risk), when the engine has one.
+    pub cost_model: Option<EngineCostEstimate>,
     pub health: HealthView,
     /// `fresh | stale | missing | not_required`
     pub probe_status: String,
@@ -443,6 +448,8 @@ pub struct PhysicalPlan {
     pub decisions: Vec<Decision>,
     /// Engine-provided execution steps (what will actually run).
     pub steps: Vec<ExplainStep>,
+    /// Plan-time workload features handed to engine cost models (see `geo_executor::WorkloadFeatures`).
+    pub workload: WorkloadFeatures,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -491,6 +498,7 @@ struct EngineView<'a> {
     /// `Err` = the engine cannot reach this plan's data (source residency), checked before scoring.
     residency: Result<(), String>,
     calibration: EngineCalibration,
+    cost_model: Option<EngineCostEstimate>,
     health: HealthView,
     probe: Option<&'a ProbeReport>,
     probe_status: Freshness,
@@ -609,6 +617,7 @@ impl Planner {
                 if est.notes.is_empty() { String::new() } else { format!("; {}", est.notes.join("; ")) }
             ),
         ));
+        let workload = features::extract(plan, &scans, &est, result_geom_bytes, result_attr_bytes);
         let access = browser_access(plan, &scans, &est, &cfg.cost);
         let source_keys: Vec<String> = scans.iter().map(|s| source_key(&s.uri)).collect();
         let read_classes: Vec<ReadClass> = scans.iter().map(|s| s.read_class).collect();
@@ -641,6 +650,7 @@ impl Planner {
                     caps: e.capabilities(),
                     residency: e.source_residency(plan, ctx),
                     calibration: e.calibration(),
+                    cost_model: e.cost_estimate(plan, &workload),
                     health: inputs.health.get(&id).cloned().unwrap_or_else(HealthView::unknown),
                     probe,
                     probe_status: match probe {
@@ -697,9 +707,14 @@ impl Planner {
         if !hinted && candidates[chosen].calibration == EngineCalibration::Unmeasured {
             if let Some(ci) = cheapest(&|c| c.calibration == EngineCalibration::Measured) {
                 let (u, m) = (&candidates[chosen], &candidates[ci]);
+                let basis = match &u.cost_model {
+                    Some(cm) => format!("{} class '{}' is {:?}, not validated for automatic selection", cm.model_version, cm.workload_class, cm.validation),
+                    None => "has no measurements on this system".to_string(),
+                };
                 policy.push(format!(
-                    "R5d uncalibrated engine: {} has no measurements on this system (stand-in cost {:.0} ms); the measured {} ({:.0} ms) is chosen. An explicit engine hint or its being the only engine that can reach the data selects it",
+                    "R5d uncalibrated engine: {} {} (predicted {:.0} ms); the measured {} ({:.0} ms) is chosen. An explicit engine hint or its being the only engine that can reach the data selects it",
                     u.engine,
+                    basis,
                     u.score_ms.unwrap_or(0.0),
                     m.engine,
                     m.score_ms.unwrap_or(0.0)
@@ -897,6 +912,7 @@ impl Planner {
             assessment,
             decisions: log,
             steps,
+            workload,
         })
     }
 
@@ -922,7 +938,26 @@ impl Planner {
         if let Err(reason) = &e.residency {
             why_not.push(format!("data not reachable by this engine: {reason}"));
         }
-        if e.calibration == EngineCalibration::Unmeasured {
+        // an engine cost model decides per workload class: only a Validated class counts as measured evidence
+        let calibration = match &e.cost_model {
+            Some(m) if m.validation == ModelValidation::Validated => EngineCalibration::Measured,
+            Some(_) => EngineCalibration::Unmeasured,
+            None => e.calibration,
+        };
+        if let Some(m) = &e.cost_model {
+            if m.risk.blocked {
+                why_not.push(format!("risk policy ({}): {}", m.model_version, m.risk.reason));
+            }
+            why.push(format!(
+                "{} class '{}' is {:?}: {:.0} ms server time (risk {}){}",
+                m.model_version,
+                m.workload_class,
+                m.validation,
+                m.time_ms,
+                m.risk.level,
+                if m.validation == ModelValidation::Validated { String::new() } else { "; not validated for automatic selection (R5d applies)".to_string() }
+            ));
+        } else if calibration == EngineCalibration::Unmeasured {
             why.push("cost is a stand-in (engine not measured on this system): never preferred on predicted cost over a measured engine (R5d)".into());
         }
         if browser && !cfg.allow_browser {
@@ -1107,10 +1142,21 @@ impl Planner {
             match caps.kind {
                 EngineKind::Server => {
                     let latency = net.turn_ms();
+                    // the engine's own model replaces the shared server formula for server-side time (the network part stays the planner's)
+                    let own = e.cost_model.as_ref().map(|m| {
+                        let term = |n: &str| m.terms.iter().filter(|t| t.name == n).map(|t| t.ms).sum::<f64>();
+                        let (fixed, result) = (term("startup"), term("result"));
+                        (fixed, (m.time_ms - fixed - result).max(0.0), result)
+                    });
+                    let (fixed_ms, scan_ms, result_ms) = own.unwrap_or((
+                        c.server_fixed_ms,
+                        mb(input_bytes) * c.server_ms_per_input_mb,
+                        result_rows as f64 * c.server_us_per_result_row / 1000.0 + f.result_geom_bytes / MB_F * c.server_ms_per_geom_mb + f.result_attr_bytes / MB_F * c.server_ms_per_attr_mb,
+                    ));
                     CostBreakdown {
-                        fixed_ms: c.server_fixed_ms,
-                        scan_ms: mb(input_bytes) * c.server_ms_per_input_mb,
-                        result_ms: result_rows as f64 * c.server_us_per_result_row / 1000.0 + f.result_geom_bytes / MB_F * c.server_ms_per_geom_mb + f.result_attr_bytes / MB_F * c.server_ms_per_attr_mb,
+                        fixed_ms,
+                        scan_ms,
+                        result_ms,
                         transfer_ms: latency + net.upload_ms(c.request_bytes) + net.download_ms(result_bytes),
                         latency_ms: latency,
                         cold_start_ms: 0.0,
@@ -1204,7 +1250,7 @@ impl Planner {
                 1 | 2 => 0.8,
                 _ => 1.0,
             } * if extrapolated { 0.5 } else { 1.0 }
-                * if e.calibration == EngineCalibration::Unmeasured { 0.5 } else { 1.0 };
+                * if calibration == EngineCalibration::Unmeasured { 0.5 } else { 1.0 };
             let ops_v = if !browser || (ops_certain && e.probe.is_some()) { 1.0 } else { 0.7 };
             combine(vec![
                 factor("estimate_quality", est.quality.score(), W_ESTIMATE, format!("result-size estimate quality {:?}", est.quality)),
@@ -1247,7 +1293,8 @@ impl Planner {
             rejected_because: why_not,
             confidence,
             risk,
-            calibration: e.calibration,
+            calibration,
+            cost_model: e.cost_model.clone(),
             health: e.health.clone(),
             probe_status: probe_status.into(),
         }

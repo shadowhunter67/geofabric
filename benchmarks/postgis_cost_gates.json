@@ -1,0 +1,35 @@
+{
+  "_comment": "Validation gates for the PostGIS cost model, fixed BEFORE the held-out corpus (seed 20261107) was run. They are not tuned after looking at held-out results; any later change must be a new commit that says why.",
+  "defined_before_heldout_run": true,
+  "class_auto_select_requires": {
+    "min_heldout_cases": 15,
+    "max_p90_regret": 1.5,
+    "max_unsafe_selections": 0,
+    "max_correctness_mismatches": 0,
+    "max_p90_prediction_ratio": 3.0,
+    "max_median_prediction_ratio": 1.6,
+    "index_state": "available"
+  },
+  "global_targets": {
+    "max_correctness_mismatches": 0,
+    "max_unsafe_selections": 0,
+    "max_p90_regret": 1.5,
+    "investigate_absolute_penalty_ms_above": 2000
+  },
+  "definitions": {
+    "regret": "selected_actual_ms / best_actual_ms over the engines that produced a correct result for the case",
+    "absolute_penalty": "selected_actual_ms - best_actual_ms",
+    "prediction_ratio": "max(pred/actual, actual/pred) with both floored at 1 ms",
+    "actual_ms": "median of the warm repetitions when there are any, else the first run (cases above 30 s are run once); engine `execute` wall time, planning excluded",
+    "unsafe_selection": [
+      "the selected engine failed (timeout, cancel, error) on a case the other engine completed",
+      "PostGIS selected although the semi-join risk policy blocks the shape",
+      "PostGIS selected on a source/index state that is not `available`",
+      "a plan the selected engine cannot reach (residency / unsupported operation)"
+    ],
+    "merely_slower": "NOT unsafe: it is regret and absolute penalty"
+  },
+  "calibration_seed": 20261103,
+  "heldout_seed": 20261107,
+  "seeds_not_used": [20261018, 20261019, 20261026]
+}
