@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { gatewayEnv } from "./e2e/gateway-env.ts";
 
 // Smoke test: starts the real gateway (API + built UI) and drives the system Chrome
 // (no browser download). Needs: `npm run build`, benchmarks/data (10mb files).
@@ -21,8 +22,10 @@ export default defineConfig({
       : `cargo run -p geo-gateway --no-default-features -- --data data/local --data benchmarks/data --manifests data/manifests --repo-root . --web web/dist --port ${PORT}`,
     cwd: "..",
     url: `http://127.0.0.1:${PORT}/api/health`,
-    reuseExistingServer: true,
+    // a FRESH gateway by default: a gateway left running (possibly with PostGIS configured) must not decide what the suite sees. PW_REUSE_GATEWAY=1 opts in.
+    reuseExistingServer: process.env.PW_REUSE_GATEWAY === "1",
     timeout: 900_000,
-    env: { CARGO_BUILD_JOBS: "3" },
+    // GEOFABRIC_POSTGIS_* is blanked for this gateway unless GF_E2E_POSTGIS=1 (see e2e/gateway-env.ts and test/e2e-env.test.ts)
+    env: gatewayEnv(),
   },
 });

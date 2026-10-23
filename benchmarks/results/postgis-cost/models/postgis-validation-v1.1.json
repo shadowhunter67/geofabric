@@ -1,0 +1,70 @@
+{
+  "model_version": "postgis-cost-v1.1",
+  "heldout_seed": 20261107,
+  "confirmation_seed": 20261111,
+  "classes": {
+    "aggregate": {
+      "level": "validated",
+      "heldout_cases": 47,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 2.32,
+      "median_prediction_ratio": 1.13,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "broad_scan": {
+      "level": "limited",
+      "heldout_cases": 19,
+      "p90_regret": 1.937,
+      "p90_prediction_ratio": 3.66,
+      "median_prediction_ratio": 1.22,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): P90 regret 1.937 > 1.5; P90 prediction ratio 3.66 > 3.0"
+    },
+    "indexed_bbox": {
+      "level": "validated",
+      "heldout_cases": 73,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 1.66,
+      "median_prediction_ratio": 1.03,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "indexed_spatial": {
+      "level": "validated",
+      "heldout_cases": 22,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 2.95,
+      "median_prediction_ratio": 1.12,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "semijoin_intersects": {
+      "level": "validated",
+      "heldout_cases": 25,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 1.85,
+      "median_prediction_ratio": 1.16,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "semijoin_metric_large": {
+      "level": "limited",
+      "heldout_cases": 39,
+      "p90_regret": 3.595,
+      "p90_prediction_ratio": 6.84,
+      "median_prediction_ratio": 2.33,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): P90 regret 3.595 > 1.5; P90 prediction ratio 6.84 > 3.0; median prediction ratio 2.33 > 1.6"
+    },
+    "semijoin_metric_small": {
+      "level": "limited",
+      "heldout_cases": 32,
+      "p90_regret": 1.323,
+      "p90_prediction_ratio": 5.09,
+      "median_prediction_ratio": 2.85,
+      "unsafe_selections": 0,
+      "reason": "confirmation set B (seed 20261111, model postgis-cost-v1.1): P90 prediction ratio 5.09 > 3.0; median prediction ratio 2.85 > 1.6"
+    }
+  }
+}

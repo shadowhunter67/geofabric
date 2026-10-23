@@ -1,0 +1,623 @@
+{
+ "model": "postgis-cost-v1.1",
+ "rows": [
+  {
+   "class": "indexed_bbox",
+   "cardinality": 25094,
+   "result_rows": 40,
+   "result_geom_bytes": 4147.516029216791,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 40,
+   "semi_join": null,
+   "expected_ms": 23.09661874264786
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 22901,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 20655.878984404564,
+    "right_rows": 2244.698679513276,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 317.78647874477997
+  },
+  {
+   "class": "indexed_bbox",
+   "cardinality": 6391,
+   "result_rows": 6391,
+   "result_geom_bytes": 561486.3178943887,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 20000,
+   "semi_join": null,
+   "expected_ms": 27.315921857557438
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 34105,
+   "result_rows": 34105,
+   "result_geom_bytes": 3536275.8544109664,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 90.55209450499999
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 135720,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 58.31711208499999
+  },
+  {
+   "class": "indexed_bbox",
+   "cardinality": 952,
+   "result_rows": 952,
+   "result_geom_bytes": 315836.7733674776,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 5000,
+   "semi_join": null,
+   "expected_ms": 19.3131239946431
+  },
+  {
+   "class": "indexed_bbox",
+   "cardinality": 118043,
+   "result_rows": 40,
+   "result_geom_bytes": 4147.516029216791,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 40,
+   "semi_join": null,
+   "expected_ms": 48.94517794864786
+  },
+  {
+   "class": "indexed_bbox",
+   "cardinality": 87,
+   "result_rows": 87,
+   "result_geom_bytes": 28863.234540935453,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 2000,
+   "semi_join": null,
+   "expected_ms": 16.35225444068692
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 344,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 183.1355974077068,
+    "right_rows": 160.800206396608,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 16.87402033238032
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 185134,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 165984.17161262213,
+    "right_rows": 19149.72354202192,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 2663.0543353949683
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 9986,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 8392.919482100679,
+    "right_rows": 1592.2801677004745,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 217.18895314884043
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 91698,
+   "result_rows": 91698,
+   "result_geom_bytes": 9507973.121178033,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 82003.42379851584,
+    "right_rows": 9694.204493084704,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 2104.4036340100433
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 287450,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 105.28649915499999
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 139,
+   "result_rows": 50,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 50,
+   "semi_join": null,
+   "expected_ms": 16.431494951
+  },
+  {
+   "class": "indexed_bbox",
+   "cardinality": 496,
+   "result_rows": 496,
+   "result_geom_bytes": 51429.19876228821,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 500,
+   "semi_join": null,
+   "expected_ms": 16.981922266433454
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 9639,
+   "result_rows": 9639,
+   "result_geom_bytes": 999447.6751405161,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 9638.736146927786,
+    "right_rows": 0.001020139893625599,
+    "predicate": "intersects"
+   },
+   "expected_ms": 52.611391501701945
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 39304,
+   "result_rows": 39304,
+   "result_geom_bytes": 4075349.2503084186,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 35843.00741449172,
+    "right_rows": 3460.451827962524,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 818.1853917033932
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 122,
+   "result_rows": 122,
+   "result_geom_bytes": 12649.923889111213,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 121.93963259550452,
+    "right_rows": 5.7510596666561065e-05,
+    "predicate": "intersects"
+   },
+   "expected_ms": 14.923069113608392
+  },
+  {
+   "class": "semijoin_metric_large",
+   "cardinality": 14051,
+   "result_rows": 14051,
+   "result_geom_bytes": 1456918.693163128,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 12965.529080536699,
+    "right_rows": 1085.0951453489467,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 276.38818542744633
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 3101,
+   "result_rows": 3101,
+   "result_geom_bytes": 77526.97841275629,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": true,
+   "has_transform": false,
+   "limit": 20000,
+   "semi_join": null,
+   "expected_ms": 21.937731180999997
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 4910,
+   "result_rows": 500,
+   "result_geom_bytes": 43927.89218388271,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": true,
+   "has_transform": false,
+   "limit": 500,
+   "semi_join": null,
+   "expected_ms": 16.1815075
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 1109,
+   "result_rows": 1109,
+   "result_geom_bytes": 114989.88191003552,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 1108.4627662086502,
+    "right_rows": 8.085109677545316e-05,
+    "predicate": "intersects"
+   },
+   "expected_ms": 18.829888162111835
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 210,
+   "result_rows": 210,
+   "result_geom_bytes": 18449.714717230738,
+   "has_sort": false,
+   "has_aggregate": false,
+   "has_intersects": true,
+   "has_transform": false,
+   "limit": 20000,
+   "semi_join": null,
+   "expected_ms": 15.539714009999999
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 3791,
+   "result_rows": 3791,
+   "result_geom_bytes": 393080.83166902134,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 3790.0406281148717,
+    "right_rows": 0.0006973275695089596,
+    "predicate": "intersects"
+   },
+   "expected_ms": 29.449445995054234
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 8533,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 20.672107947
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 2136,
+   "result_rows": 2136,
+   "result_geom_bytes": 221477.35596017662,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 1763.3157215877222,
+    "right_rows": 372.1003943695465,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 56.02079910000858
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 16974,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 23.285095466
+  },
+  {
+   "class": "aggregate",
+   "cardinality": 246114,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 94.217444726
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 843125,
+   "result_rows": 50,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 50,
+   "semi_join": null,
+   "expected_ms": 162.314219375
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 3112,
+   "result_rows": 3112,
+   "result_geom_bytes": 322676.7470730663,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 3111.926624408253,
+    "right_rows": 0.0005725617328192549,
+    "predicate": "intersects"
+   },
+   "expected_ms": 26.763985698715317
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 4258,
+   "result_rows": 4258,
+   "result_geom_bytes": 441503.0813101274,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 3610.8379306562892,
+    "right_rows": 646.2672735449096,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 101.7906085539894
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 689246,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 137.535545642
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 464,
+   "result_rows": 464,
+   "result_geom_bytes": 48111.18593891477,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 16.101836583999997
+  },
+  {
+   "class": "indexed_spatial",
+   "cardinality": 100,
+   "result_rows": 100,
+   "result_geom_bytes": 10368.790073041977,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 15.296275099999999
+  },
+  {
+   "class": "semijoin_intersects",
+   "cardinality": 47785,
+   "result_rows": 47785,
+   "result_geom_bytes": 4954726.336403109,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 47784.715641440074,
+    "right_rows": 0.00876458102066959,
+    "predicate": "intersects"
+   },
+   "expected_ms": 203.67671803607456
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 321109,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 78.25554894300001
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 508,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 303.7362515437067,
+    "right_rows": 203.55596198617107,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 19.861734868495702
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 410943,
+   "result_rows": 50,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": 50,
+   "semi_join": null,
+   "expected_ms": 92.72124846099999
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 6187,
+   "result_rows": 6187,
+   "result_geom_bytes": 641517.0418191071,
+   "has_sort": true,
+   "has_aggregate": false,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 3546.2609301487164,
+    "right_rows": 2640.6112464425446,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 100.19080261182899
+  },
+  {
+   "class": "semijoin_metric_small",
+   "cardinality": 136,
+   "result_rows": 1,
+   "result_geom_bytes": 0.0,
+   "has_sort": false,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": true,
+   "limit": null,
+   "semi_join": {
+    "expected_probes": 126.9323352821177,
+    "right_rows": 8.221580670217783,
+    "predicate": "within_distance"
+   },
+   "expected_ms": 15.481662186127107
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 804620,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 156.11387474
+  },
+  {
+   "class": "broad_scan",
+   "cardinality": 1891785,
+   "result_rows": 1000,
+   "result_geom_bytes": 0.0,
+   "has_sort": true,
+   "has_aggregate": true,
+   "has_intersects": false,
+   "has_transform": false,
+   "limit": null,
+   "semi_join": null,
+   "expected_ms": 331.176793195
+  }
+ ]
+}

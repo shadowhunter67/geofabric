@@ -107,23 +107,127 @@ fn candidate<'a>(p: &'a geo_planner::PhysicalPlan, id: &str) -> &'a geo_planner:
     p.candidates.iter().find(|c| c.engine.0 == id).unwrap_or_else(|| panic!("no candidate {id}: {:?}", p.candidates.iter().map(|c| c.engine.to_string()).collect::<Vec<_>>()))
 }
 
+/// A resident source WITHOUT a spatial index: the model's access-path assumption (an index) does not hold, so no class can be validated for it.
+fn resident_without_index(uri: &str) -> PostGisCatalog {
+    let mut s = resident_sources(uri);
+    s[0].spatially_indexed = false;
+    PostGisCatalog::new(s).unwrap()
+}
+
+fn resident_sources(uri: &str) -> Vec<PostGisSource> {
+    vec![PostGisSource {
+        logical_uri: uri.into(),
+        schema: "geofabric".into(),
+        relation: "places".into(),
+        geometry_column: "geometry".into(),
+        crs: "OGC:CRS84".into(),
+        srid: 4326,
+        columns: [("id", PgColType::Int), ("class", PgColType::Text)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+        row_estimate: Some(200),
+        spatially_indexed: true,
+        metric_indexes: vec![],
+        coverage: None,
+        covering: None,
+    }]
+}
+
 #[test]
-fn the_planner_compares_duckdb_and_postgis_and_never_prefers_the_unmeasured_one_on_cost() {
+fn postgis_is_chosen_on_predicted_cost_only_inside_a_validated_workload_class() {
     let (dir, uri) = fixture("compare");
     let rt = runtime(resident(&uri), Arc::new(Mock::default()));
     let ctx = ExecutionContext::new(vec![dir]);
     let p = rt.plan(&plan_for(&rt, &ctx, &uri, None), &ctx).unwrap();
     let pg = candidate(&p, "postgis");
     assert!(pg.feasible, "{:?}", pg.rejected_because);
-    assert_eq!(pg.calibration, EngineCalibration::Unmeasured);
-    assert!(pg.reasons.iter().any(|r| r.contains("stand-in")), "{:?}", pg.reasons);
+    // the plan-time features the cost model saw: a windowed, limited feature query over an indexed source
+    assert_eq!(p.workload.shape, "features");
+    assert!(p.workload.has_bbox_filter && !p.workload.has_aggregate && p.workload.semi_join.is_none());
+    assert_eq!(p.workload.limit, Some(50));
+    // the engine's cost model: class from the features, Validated for it, index state from the catalog - so the engine counts as MEASURED here
+    let cm = pg.cost_model.as_ref().expect("the PostGIS cost model reached the planner (SharedPostGis forwards cost_estimate)");
+    assert_eq!((cm.workload_class.as_str(), cm.validation, cm.index_state.as_str()), ("indexed_bbox", geo_executor::ModelValidation::Validated, "available"), "{cm:?}");
+    assert!(cm.model_version.starts_with("postgis-cost-v1") && !cm.risk.blocked && cm.risk.level == "low");
+    assert_eq!(pg.calibration, EngineCalibration::Measured, "R5d is scoped by validated class, not blanket");
     assert_eq!(candidate(&p, "duckdb").calibration, EngineCalibration::Measured);
-    // equal stand-in cost + PostGIS registered first => the cost tie goes to PostGIS; policy R5d hands the choice to the measured engine
-    assert_eq!(p.engine.0, "duckdb", "decisions: {:?}", p.decisions);
-    assert!(p.assessment.policy.iter().any(|m| m.starts_with("R5d")), "{:?}", p.assessment.policy);
-    // the unmeasured engine also carries lower confidence than the measured one
-    let (cp, cd) = (pg.confidence.as_ref().unwrap().score, candidate(&p, "duckdb").confidence.as_ref().unwrap().score);
-    assert!(cp < cd, "postgis confidence {cp} should be below duckdb {cd}");
+    // and it WINS on cost (a validated indexed window is where PostGIS measured 5-10x faster), with no R5d override
+    assert_eq!(p.engine.0, "postgis", "decisions: {:?}", p.decisions);
+    assert!(!p.assessment.policy.iter().any(|m| m.starts_with("R5d")), "{:?}", p.assessment.policy);
+    assert!(pg.score_ms.unwrap() < candidate(&p, "duckdb").score_ms.unwrap());
+}
+
+#[test]
+fn without_the_index_the_model_cannot_be_validated_and_r5d_keeps_the_measured_engine() {
+    let (dir, uri) = fixture("noindex");
+    let rt = runtime(resident_without_index(&uri), Arc::new(Mock::default()));
+    let ctx = ExecutionContext::new(vec![dir]);
+    let p = rt.plan(&plan_for(&rt, &ctx, &uri, None), &ctx).unwrap();
+    let pg = candidate(&p, "postgis");
+    let cm = pg.cost_model.as_ref().unwrap();
+    assert_eq!((cm.index_state.as_str(), cm.validation), ("unavailable", geo_executor::ModelValidation::Unvalidated), "{cm:?}");
+    assert_eq!(cm.risk.level, "elevated");
+    assert_eq!(pg.calibration, EngineCalibration::Unmeasured);
+    assert_eq!(p.engine.0, "duckdb", "even though the stand-in prediction is lower: decisions {:?}", p.decisions);
+    let msg = p.assessment.policy.iter().find(|m| m.starts_with("R5d")).expect("R5d fired");
+    assert!(msg.contains("not validated for automatic selection") && msg.contains("indexed_bbox"), "{msg}");
+    // an explicit request still reaches PostGIS: R5d is about automatic choice, never a prohibition
+    let hinted = rt.plan(&plan_for(&rt, &ctx, &uri, Some("postgis")), &ctx).unwrap();
+    assert_eq!(hinted.engine.0, "postgis");
+}
+
+/// An engine whose cost model reports a HARD risk refusal (the real PostGIS one needs > 50,000 probes, which a 200-row fixture cannot make).
+struct RiskRefusing(Arc<PostGisEngine>);
+
+impl geo_executor::EngineDescriptor for RiskRefusing {
+    fn id(&self) -> geo_executor::EngineId {
+        geo_executor::EngineId::new("pg-risky")
+    }
+    fn capabilities(&self) -> geo_executor::Capabilities {
+        self.0.capabilities()
+    }
+    fn source_residency(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<(), String> {
+        self.0.source_residency(plan, ctx)
+    }
+    fn calibration(&self) -> EngineCalibration {
+        EngineCalibration::Unmeasured
+    }
+    fn cost_estimate(&self, _: &Plan, _: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        Some(geo_executor::EngineCostEstimate {
+            model_version: "test".into(),
+            workload_class: "semijoin_metric_large".into(),
+            validation: geo_executor::ModelValidation::Validated,
+            time_ms: 1.0,
+            terms: vec![],
+            risk: geo_executor::RiskVerdict { blocked: true, level: "high".into(), reason: "repeated-probe risk (test)".into() },
+            index_state: "available".into(),
+            notes: vec![],
+        })
+    }
+    fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<geo_executor::Estimate, geo_executor::EngineError> {
+        self.0.estimate(plan, ctx)
+    }
+    fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_executor::ExplainStep>, geo_executor::EngineError> {
+        self.0.explain(plan, ctx)
+    }
+}
+
+#[test]
+fn a_hard_risk_verdict_refuses_automatic_selection_but_an_explicit_request_overrides_it() {
+    let (dir, uri) = fixture("risk");
+    let engine = Arc::new(PostGisEngine::new(resident(&uri), Arc::new(Mock::default())));
+    let mut rt = Runtime::empty();
+    rt.register_client(Box::new(RiskRefusing(engine)));
+    rt.register(Box::new(DuckDbEngine::new(DuckDbConfig::default())));
+    let ctx = ExecutionContext::new(vec![dir]);
+    let p = rt.plan(&plan_for(&rt, &ctx, &uri, None), &ctx).unwrap();
+    let risky = candidate(&p, "pg-risky");
+    assert!(!risky.feasible, "a blocked workload is refused, not merely expensive");
+    assert!(risky.rejected_because.iter().any(|r| r.contains("risk policy") && r.contains("repeated-probe risk")), "{:?}", risky.rejected_because);
+    assert_eq!(p.engine.0, "duckdb");
+    // the refusal is about AUTOMATIC selection: asked for explicitly, the engine is allowed and says why
+    let h = rt.plan(&plan_for(&rt, &ctx, &uri, Some("pg-risky")), &ctx).unwrap();
+    let risky = candidate(&h, "pg-risky");
+    assert!(risky.feasible && risky.reasons.iter().any(|r| r.contains("allowed because the engine was requested explicitly")), "{:?} / {:?}", risky.rejected_because, risky.reasons);
+    assert_eq!(h.engine.to_string(), "pg-risky");
 }
 
 #[test]

@@ -103,3 +103,59 @@ pub fn estimate(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) -> 
     }
     Some(EngineCostEstimate { model_version: model().model_version.clone(), workload_class: class.into(), validation: level, time_ms, terms, risk: risk(class, f, index), index_state: index.into(), notes })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use geo_executor::SemiJoinFeatures;
+
+    fn metric(probes: f64) -> WorkloadFeatures {
+        WorkloadFeatures {
+            semi_join: Some(SemiJoinFeatures {
+                left_uri: "l".into(),
+                right_uri: "r".into(),
+                left_rows: probes,
+                right_rows: 1000.0,
+                left_total_rows: 1,
+                right_total_rows: 1,
+                metric: true,
+                predicate: "within_distance".into(),
+                distance_m: Some(200.0),
+                expected_probes: probes,
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn the_repeated_probe_policy_is_a_hard_refusal_separate_from_the_cost() {
+        let f = metric(BLOCK_PROBES + 1.0);
+        let r = risk(workload_class(&f), &f, "available");
+        assert!(r.blocked && r.level == "high" && r.reason.contains("repeated-probe"), "{r:?}");
+        let f = metric(PROBES_SMALL + 1.0);
+        let r = risk(workload_class(&f), &f, "available");
+        assert!(!r.blocked && r.level == "elevated", "{r:?}");
+        let f = metric(PROBES_SMALL);
+        let r = risk(workload_class(&f), &f, "available");
+        assert!(!r.blocked && r.level == "low", "{r:?}");
+    }
+
+    #[test]
+    fn an_index_state_that_is_not_available_raises_the_risk_and_is_never_read_as_available() {
+        let f = WorkloadFeatures::default();
+        for state in ["unavailable", "unknown"] {
+            let r = risk(workload_class(&f), &f, state);
+            assert!(!r.blocked && r.level == "elevated" && r.reason.contains(state), "{state}: {r:?}");
+        }
+        assert_eq!(risk(workload_class(&f), &f, "available").level, "low");
+    }
+
+    #[test]
+    fn the_shipped_model_covers_every_class_and_names_its_version() {
+        let m = model();
+        assert!(m.model_version.starts_with("postgis-cost-v1"));
+        for c in ["indexed_bbox", "indexed_spatial", "aggregate", "broad_scan", "semijoin_intersects", "semijoin_metric_small", "semijoin_metric_large"] {
+            assert!(m.classes.contains_key(c), "class {c} has no formula");
+        }
+    }
+}

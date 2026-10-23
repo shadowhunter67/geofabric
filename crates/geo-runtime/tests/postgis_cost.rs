@@ -470,6 +470,15 @@ fn postgis_cost_corpus() {
             id, case["template"].as_str().unwrap(), td.warm_ms.first().copied().unwrap_or(td.first_ms), td.status, tp.warm_ms.first().copied().unwrap_or(tp.first_ms), tp.status, td.rows.max(tp.rows),
             if identical { "IDENTICAL" } else if kd.is_some() && kp.is_some() { "MISMATCH" } else { "(not comparable)" }
         );
+        // regression cases carry the answer they must give (Demo B 27,624 ids, the wide window 189,772): a wrong row count is a correctness failure
+        let mut problems = problems;
+        if let Some(want) = case["expected_rows"].as_u64() {
+            for (name, t) in [("duckdb", &td), ("postgis", &tp)] {
+                if t.status == "ok" && t.rows as u64 != want {
+                    problems.push(format!("{name} returned {} rows, the regression case expects {want}", t.rows));
+                }
+            }
+        }
         if !problems.is_empty() {
             mismatches.push(format!("{id}: {}", problems.join(" | ").chars().take(600).collect::<String>()));
         }

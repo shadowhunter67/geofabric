@@ -1,0 +1,101 @@
+{
+ "split": "regression",
+ "seed": null,
+ "generator": "hand-written regression set",
+ "cases": [
+  {
+   "id": "reg-demoB",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "expected_rows": 27624,
+   "params": {
+    "bbox": [
+     106.68,
+     10.76,
+     106.72,
+     10.8
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "reg-wide",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "expected_rows": 189772,
+   "params": {
+    "bbox": [
+     106.6,
+     10.72,
+     106.76,
+     10.86
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "reg-small-indexed",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.69,
+     10.77,
+     106.7,
+     10.78
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "reg-small-count",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.69,
+     10.77,
+     106.71,
+     10.79
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "reg-admin-semi",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.69,
+     10.77,
+     106.71,
+     10.79
+    ]
+   }
+  }
+ ]
+}

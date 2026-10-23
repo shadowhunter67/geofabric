@@ -40,7 +40,7 @@
     },
     "semijoin_intersects": {
       "level": "limited",
-      "heldout_cases": 15,
+      "heldout_cases": 18,
       "p90_regret": 1.0,
       "p90_prediction_ratio": 2.68,
       "median_prediction_ratio": 1.78,
@@ -49,12 +49,12 @@
     },
     "semijoin_metric_large": {
       "level": "limited",
-      "heldout_cases": 33,
-      "p90_regret": 1.891,
-      "p90_prediction_ratio": 4.93,
+      "heldout_cases": 35,
+      "p90_regret": 3.754,
+      "p90_prediction_ratio": 4.96,
       "median_prediction_ratio": 2.04,
-      "unsafe_selections": 0,
-      "reason": "P90 regret 1.891 > 1.5; P90 prediction ratio 4.93 > 3.0; median prediction ratio 2.04 > 1.6"
+      "unsafe_selections": 2,
+      "reason": "P90 regret 3.754 > 1.5; P90 prediction ratio 4.96 > 3.0; median prediction ratio 2.04 > 1.6; 2 unsafe selection(s)"
     },
     "semijoin_metric_small": {
       "level": "limited",

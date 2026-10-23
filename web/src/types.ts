@@ -19,11 +19,17 @@ export interface Risk {
   memory_input_bytes: number; fetch_upper_bytes: number; result_upper_bytes: number; envelope: Envelope; reasons: string[];
 }
 export interface Health { state: "healthy" | "degraded" | "unhealthy" | "unknown"; reason: string; events: number; failures: number; last_failure: string | null }
+/** An engine's own cost model verdict for this plan (PostGIS cost model, ADR-015): class, validation level, terms and the hard risk policy. */
+export interface CostModelVerdict {
+  model_version: string; workload_class: string; validation: "validated" | "limited" | "unvalidated"; time_ms: number;
+  terms: { name: string; ms: number }[]; risk: { blocked: boolean; level: string; reason: string }; index_state: string; notes: string[];
+}
 export interface Candidate {
   engine: string; kind: "server" | "browser"; feasible: boolean; score_ms: number | null;
   cost: { fixed_ms: number; scan_ms: number; result_ms: number; transfer_ms: number; latency_ms: number; cold_start_ms: number; scan_bytes: number; transfer_bytes: number } | null;
   reasons: string[]; rejected_because: string[];
   confidence: Confidence | null; risk: Risk | null; health: Health; probe_status: string;
+  calibration?: "measured" | "unmeasured"; cost_model?: CostModelVerdict | null;
 }
 export interface Estimate {
   rows: number; low: number; high: number; quality: "poor" | "fair" | "good";

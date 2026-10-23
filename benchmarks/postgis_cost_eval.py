@@ -27,10 +27,25 @@ TIMEOUT_MS = 60_000.0
 
 
 def actual(rec: dict, eng: str) -> float | None:
+    """Measured time; a timed-out run is CENSORED: it took at least TIMEOUT_MS (so the regret of choosing it is a lower bound - conservative)."""
     e = rec[eng]
     if e["status"] == "ok" and e.get("model_ms") is not None:
         return e["model_ms"]
+    if e["status"] == "timeout":
+        return TIMEOUT_MS
     return None
+
+
+def censored(rec: dict, eng: str) -> bool:
+    return rec[eng]["status"] == "timeout"
+
+
+def decidable(rec: dict) -> bool:
+    """A case whose truth we know: both engines ran and agree, or one finished and the other timed out (it cannot be the better choice)."""
+    a, b = actual(rec, "duckdb"), actual(rec, "postgis")
+    if a is None or b is None:
+        return False
+    return bool(rec.get("identical")) or censored(rec, "duckdb") or censored(rec, "postgis")
 
 
 def cands(rec: dict) -> dict[str, dict]:
@@ -65,17 +80,18 @@ def metrics_for(recs: list[dict], validated: set[str]) -> dict:
             mismatches += 1
         a = {e: actual(r, e) for e in ("duckdb", "postgis")}
         ok = {e: t for e, t in a.items() if t is not None}
-        if not ok or not r.get("comparable"):
+        if not ok or not decidable(r):
             continue  # nothing to compare: not a planning decision we can score
         best = min(ok.values())
         eng, why = decide(r, validated)
         if eng is None:
             continue
         sel = a.get(eng)
-        if sel is None:
-            # the selected engine produced nothing while another did: unsafe by definition
+        if sel is None or censored(r, eng):
+            # the selected engine produced nothing (or hit the timeout) while the other completed: unsafe by definition
             unsafe.append({"id": r["id"], "reason": f"{eng} selected but it {r[eng]['status']} while the other completed"})
-            continue
+            if sel is None:
+                continue
         cs = cands(r)
         cm = (cs.get("postgis") or {}).get("cost_model") or {}
         if eng == "postgis" and cm.get("index_state") not in (None, "available"):
@@ -103,7 +119,7 @@ def baselines(recs: list[dict]) -> dict:
         for r in recs:
             a = {e: actual(r, e) for e in ("duckdb", "postgis")}
             ok = {e: t for e, t in a.items() if t is not None}
-            if not ok or not r.get("comparable"):
+            if not ok or not decidable(r):
                 continue
             eng = pick(r) if pick else (decide(r, set())[0])
             if eng is None or a.get(eng) is None:
@@ -139,7 +155,7 @@ def classes_of(recs: list[dict]) -> list[str]:
 def class_decision(recs: list[dict], cls: str) -> dict:
     """Would PostGIS be auto-selectable for `cls`? Evaluated by replaying the planner with ONLY this class validated."""
     g = GATES["class_auto_select_requires"]
-    sub = [r for r in recs if pg_class(r) == cls and r.get("comparable") and r.get("identical")]
+    sub = [r for r in recs if pg_class(r) == cls and decidable(r)]
     m = metrics_for(sub, {cls})
     s = summarize(m["rows"])
     pr = pred_ratio(sub, cls)
@@ -197,8 +213,12 @@ def main() -> int:
     by = {}
     for cls in sorted({r["cls"] for r in m["rows"]}):
         by[cls] = {"planner": summarize([r for r in m["rows"] if r["cls"] == cls]), "prediction_ratio": pred_ratio(recs, cls)}
+    scope = {
+        "in_auto_select_scope": summarize([r for r in m["rows"] if r["cls"] in validated]),
+        "outside_scope_R5d_or_risk_policy": summarize([r for r in m["rows"] if r["cls"] not in validated]),
+    }
     worst = sorted(m["rows"], key=lambda r: -r["penalty_ms"])[:8]
-    out = {"validated_classes": sorted(validated), "overall": overall, "baselines": baselines(recs), "pg_prediction": pred_ratio(recs), "by_class": by, "unsafe_selections": m["unsafe"], "correctness_mismatches": m["mismatches"],
+    out = {"validated_classes": sorted(validated), "overall": overall, "baselines": baselines(recs), "pg_prediction": pred_ratio(recs), "by_class": by, "scope": scope, "unsafe_selections": m["unsafe"], "correctness_mismatches": m["mismatches"],
            "worst_penalties": [{k: (round(v, 1) if isinstance(v, float) else v) for k, v in r.items()} for r in worst]}
     a.out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({k: out[k] for k in ("overall", "baselines", "pg_prediction", "unsafe_selections", "correctness_mismatches")}, indent=1))
