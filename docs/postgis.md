@@ -60,3 +60,7 @@ Verified without a database: lowering shape and syntax, parameterization, refusa
 ## Licences
 
 Data imported from Overture (ODbL) keeps its attribution obligations in the copy (`docs/DATA-LICENSES.md`).
+
+## DuckDB profiler (opt-in)
+
+The DuckDB engine's JSON profiler is **off by default** and only on when `GEOFABRIC_DUCKDB_PROFILE` is exactly `1` (the benchmark tool sets it; it runs one query at a time). With it on, several engines in one process failed sporadically in CI ("Error code 1"); with it off, `peak_memory_bytes` is `Unknown` with an explanatory note. The contract is unit-tested (`profiling_contract` in `geo-engine-duckdb`).

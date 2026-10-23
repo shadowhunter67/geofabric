@@ -154,7 +154,7 @@ test("a second layer (roads) is queried in the browser and drawn, with no server
 test("a layer whose data cannot be loaded says so plainly; the map and the other layer keep working", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.route(/demo\/v1\/demo_places\.parquet/, (r) => r.abort());
+  await page.route(/\/v1\/demo_places\.parquet/, (r) => r.abort());
   await open(page, { lang: "en" });
   await showLayer(page, "Places");
   await expect(page.getByTestId("status")).toContainText("could not be loaded", { timeout: 90_000 });
