@@ -13,6 +13,7 @@
 
 pub mod catalog;
 pub mod config;
+pub mod cost;
 pub mod connector;
 pub mod crs;
 pub mod engine;

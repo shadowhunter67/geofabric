@@ -1,0 +1,52 @@
+{
+  "model_version": "duckdb-semijoin-cost-v1",
+  "engine": "duckdb",
+  "provenance": {
+    "benchmark_commit": "a5dd14b",
+    "calibration_seed": 20261103,
+    "calibration_cases": 240,
+    "dataset_versions": "Overture 2026-09-23.1; PostGIS rows admin=325, buildings=3845734, landuse=13277, places=449849, transport=453550",
+    "machine_class": "Intel(R) Core(TM) i7-14700, 31.8 GB RAM, Windows 11, loopback PostgreSQL + DuckDB on the same host (PostgreSQL 16.9; PostGIS 3.6.2)",
+    "build_profile": "release (cargo --release); engine `execute` wall time, planning excluded",
+    "fitted_at": "2026-10-23",
+    "method": "non-negative least squares per workload class on relative error (weight 1/max(time,5 ms)); DuckDB timeouts enter as censored observations at 60000 ms"
+  },
+  "classes": {
+    "semijoin_intersects": {
+      "terms": {
+        "startup": 106.124913,
+        "scan": 0.0,
+        "result": 0.0,
+        "probe": 389.668871,
+        "right": 0.0
+      },
+      "n_calibration": 19,
+      "fit_ratio_median": 3.204,
+      "fit_ratio_p90": 8.984
+    },
+    "semijoin_metric_small": {
+      "terms": {
+        "startup": 152.150201,
+        "scan": 0.0,
+        "result": 17.228549,
+        "probe": 11.222131,
+        "right": 75.352634
+      },
+      "n_calibration": 17,
+      "fit_ratio_median": 1.314,
+      "fit_ratio_p90": 3.109
+    },
+    "semijoin_metric_large": {
+      "terms": {
+        "startup": 174.059786,
+        "scan": 0.0,
+        "result": 9.159686,
+        "probe": 0.0,
+        "right": 12.91325
+      },
+      "n_calibration": 30,
+      "fit_ratio_median": 1.908,
+      "fit_ratio_p90": 7.495
+    }
+  }
+}

@@ -143,6 +143,10 @@ impl EngineDescriptor for PostGisEngine {
         EngineCalibration::Unmeasured
     }
 
+    fn cost_estimate(&self, plan: &Plan, features: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        crate::cost::estimate(&self.catalog, plan, features)
+    }
+
     fn estimate(&self, plan: &Plan, _ctx: &ExecutionContext) -> Result<Estimate, EngineError> {
         let mut rows: u64 = 0;
         let mut known = true;

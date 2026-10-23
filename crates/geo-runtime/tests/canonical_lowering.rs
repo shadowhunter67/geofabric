@@ -52,6 +52,7 @@ fn fx() -> Option<Fx> {
         columns: [("id", PgColType::Int), ("category", PgColType::Text), ("height", PgColType::Float)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(1000),
         spatially_indexed: true,
+        metric_indexes: vec![],
         coverage: None,
         covering: Some(CoveringCols { xmin: "bbox_xmin".into(), ymin: "bbox_ymin".into(), xmax: "bbox_xmax".into(), ymax: "bbox_ymax".into() }),
     };

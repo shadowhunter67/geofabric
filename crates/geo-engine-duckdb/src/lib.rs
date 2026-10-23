@@ -9,6 +9,7 @@
 //! `InterruptHandle::interrupt()` when `ctx.timeout` elapses or `ctx.cancel`
 //! is set, so the query really stops (not just the caller's wait).
 
+mod cost;
 mod sql;
 
 use duckdb::arrow::record_batch::RecordBatch;
@@ -168,6 +169,10 @@ fn scan_analysis(plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_source_g
 }
 
 impl EngineDescriptor for DuckDbEngine {
+    fn cost_estimate(&self, _plan: &Plan, features: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        cost::estimate(features)
+    }
+
     fn id(&self) -> EngineId {
         EngineId::new(ENGINE_ID)
     }

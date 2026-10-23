@@ -54,6 +54,9 @@ pub struct PostGisSource {
     /// A GiST index exists on the geometry column (bbox filters can use it). Recorded after `CREATE INDEX` + `ANALYZE`.
     #[serde(default)]
     pub spatially_indexed: bool,
+    /// SRIDs of the expression GiST indexes on `st_transform(geometry, <srid>)` (a metric semi join probes these). Recorded by the loader.
+    #[serde(default)]
+    pub metric_indexes: Vec<i32>,
     /// `[min_x, min_y, max_x, max_y]` in the source's CRS when the relation holds only the rows that intersect this region (a clipped
     /// copy). A partial copy must never answer a question it cannot answer completely: the lowering refuses any plan that reads this
     /// source other than through a `BboxFilter` whose window lies inside the coverage. `None` = the relation holds the whole source.
@@ -193,6 +196,7 @@ pub(crate) fn test_source(uri: &str, relation: &str) -> PostGisSource {
         columns: [("id", PgColType::Int), ("class", PgColType::Text), ("height", PgColType::Float)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(1000),
         spatially_indexed: true,
+        metric_indexes: vec![],
         coverage: None,
         covering: None,
     }

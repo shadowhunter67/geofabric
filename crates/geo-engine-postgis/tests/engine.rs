@@ -51,6 +51,7 @@ fn catalog(uri: &str) -> PostGisCatalog {
         columns: [("id", PgColType::Int), ("class", PgColType::Text)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(500),
         spatially_indexed: true,
+        metric_indexes: vec![],
         coverage: None,
         covering: None,
     }])

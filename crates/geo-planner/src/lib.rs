@@ -941,12 +941,16 @@ impl Planner {
         // an engine cost model decides per workload class: only a Validated class counts as measured evidence
         let calibration = match &e.cost_model {
             Some(m) if m.validation == ModelValidation::Validated => EngineCalibration::Measured,
-            Some(_) => EngineCalibration::Unmeasured,
-            None => e.calibration,
+            // a model that is not (yet) validated for this class adds information but not authority: the engine keeps its engine-level calibration
+            // (PostGIS: Unmeasured, so R5d applies; DuckDB: Measured, it is the baseline whose shared formula is fitted)
+            Some(_) | None => e.calibration,
         };
         if let Some(m) = &e.cost_model {
-            if m.risk.blocked {
-                why_not.push(format!("risk policy ({}): {}", m.model_version, m.risk.reason));
+            let hinted_here = plan.hints.preferred_engine.as_deref() == Some(e.id.0.as_str());
+            if m.risk.blocked && !hinted_here {
+                why_not.push(format!("risk policy ({}): {} An explicit engine hint overrides this refusal.", m.model_version, m.risk.reason));
+            } else if m.risk.blocked {
+                why.push(format!("risk policy ({}) would refuse this workload ({}); allowed because the engine was requested explicitly", m.model_version, m.risk.reason));
             }
             why.push(format!(
                 "{} class '{}' is {:?}: {:.0} ms server time (risk {}){}",
@@ -1145,7 +1149,7 @@ impl Planner {
                     // the engine's own model replaces the shared server formula for server-side time (the network part stays the planner's)
                     let own = e.cost_model.as_ref().map(|m| {
                         let term = |n: &str| m.terms.iter().filter(|t| t.name == n).map(|t| t.ms).sum::<f64>();
-                        let (fixed, result) = (term("startup"), term("result"));
+                        let (fixed, result) = (term("startup"), m.terms.iter().filter(|t| t.name.starts_with("result")).map(|t| t.ms).sum::<f64>());
                         (fixed, (m.time_ms - fixed - result).max(0.0), result)
                     });
                     let (fixed_ms, scan_ms, result_ms) = own.unwrap_or((

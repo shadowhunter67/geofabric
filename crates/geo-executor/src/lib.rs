@@ -7,7 +7,7 @@
 use arrow_array::RecordBatch;
 use geo_ir::{OpKind, Plan, SourceFormat};
 use geo_types::{Crs, RootedAccessGuard, SourceAccessGuard};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -139,6 +139,8 @@ pub struct ExplainStep {
 }
 
 /// Central default limits (single place; do not hard-code elsewhere).
+pub mod cost_model;
+
 pub mod limits {
     use std::time::Duration;
     pub const DEFAULT_QUERY_TIMEOUT: Duration = Duration::from_secs(30);
@@ -313,7 +315,7 @@ pub struct SemiJoinFeatures {
 }
 
 /// How much evidence stands behind an engine's cost model for ONE workload class.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelValidation {
     /// Enough held-out samples, acceptable prediction error and planner regret, no unsafe selection: the planner may choose on this cost.

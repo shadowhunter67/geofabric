@@ -41,6 +41,7 @@ fn rel(uri: &str, relation: &str) -> PostGisSource {
         columns: [("id", PgColType::Int), ("class", PgColType::Text), ("height", PgColType::Float)].into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
         row_estimate: Some(1000),
         spatially_indexed: true,
+        metric_indexes: vec![],
         coverage: None,
         covering: None,
     }
