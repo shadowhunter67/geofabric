@@ -9,8 +9,6 @@ use geo_executor::cost_model::{evaluate, workload_class, ModelFile, ValidationFi
 use geo_executor::{EngineCostEstimate, RiskVerdict, WorkloadFeatures};
 use std::sync::OnceLock;
 
-pub const MODEL_VERSION: &str = "duckdb-semijoin-cost-v1";
-
 fn model() -> &'static ModelFile {
     static M: OnceLock<ModelFile> = OnceLock::new();
     M.get_or_init(|| serde_json::from_str(include_str!("cost_model_v1.json")).expect("duckdb cost_model_v1.json"))
@@ -30,7 +28,7 @@ pub fn estimate(f: &WorkloadFeatures) -> Option<EngineCostEstimate> {
         notes.push(v.reason.clone());
     }
     Some(EngineCostEstimate {
-        model_version: MODEL_VERSION.into(),
+        model_version: model().model_version.clone(),
         workload_class: class.into(),
         validation: validation().level(class),
         time_ms,

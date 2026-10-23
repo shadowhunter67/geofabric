@@ -258,6 +258,9 @@ impl EngineDescriptor for SharedPostGis {
     fn calibration(&self) -> geo_executor::EngineCalibration {
         self.0.calibration()
     }
+    fn cost_estimate(&self, plan: &Plan, features: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        self.0.cost_estimate(plan, features)
+    }
     fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<geo_executor::Estimate, geo_executor::EngineError> {
         self.0.estimate(plan, ctx)
     }

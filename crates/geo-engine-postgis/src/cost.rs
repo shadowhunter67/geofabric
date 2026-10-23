@@ -19,8 +19,6 @@ use geo_ir::{Plan, PlanNode};
 use geo_types::Crs;
 use std::sync::OnceLock;
 
-pub const MODEL_VERSION: &str = "postgis-cost-v1";
-
 /// Hard policy: a metric semi join with more right-side probes than this is refused for AUTOMATIC selection (an explicit engine request still runs).
 /// Calibration: above ~5 k probes the winner flips with right-side density and distance; above 50 k PostGIS took 2-35 s in most measured cases where
 /// DuckDB took 0.3-20 s, and the largest known case (189,772 ids) took 12-17 s against 1.0-1.9 s. No validated efficient strategy exists for it
@@ -103,5 +101,5 @@ pub fn estimate(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) -> 
     if let Some(v) = validation().classes.get(class) {
         notes.push(v.reason.clone());
     }
-    Some(EngineCostEstimate { model_version: MODEL_VERSION.into(), workload_class: class.into(), validation: level, time_ms, terms, risk: risk(class, f, index), index_state: index.into(), notes })
+    Some(EngineCostEstimate { model_version: model().model_version.clone(), workload_class: class.into(), validation: level, time_ms, terms, risk: risk(class, f, index), index_state: index.into(), notes })
 }

@@ -155,6 +155,7 @@ ENGINE_CLASSES = {
     "duckdb": ["semijoin_intersects", "semijoin_metric_small", "semijoin_metric_large"],
 }
 MODEL_VERSION = {"postgis": "postgis-cost-v1", "duckdb": "duckdb-semijoin-cost-v1"}
+SUFFIX = ""  # set by --version-suffix (e.g. ".1" -> postgis-cost-v1.1)
 
 
 def build_model(cal_rows: list[dict], engine: str, meta: dict) -> dict:
@@ -180,16 +181,19 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     f = sub.add_parser("fit")
-    f.add_argument("--cal", type=Path, required=True)
+    f.add_argument("--cal", type=Path, required=True, nargs="+", help="one or more measured sets; all of them are CALIBRATION data for this model version")
+    f.add_argument("--version-suffix", default="")
+    f.add_argument("--seeds", type=int, nargs="+", default=[20261103])
     f.add_argument("--out-dir", type=Path, required=True, help="directory receiving postgis-cost-v1.json and duckdb-semijoin-cost-v1.json")
     f.add_argument("--commit", required=True)
     f.add_argument("--env", type=Path, required=True)
     a = ap.parse_args(argv)
-    rows = load_compact(a.cal)
+    rows = [r for c in a.cal for r in load_compact(c)]
     env = json.loads(a.env.read_text(encoding="utf-8"))
     meta = {
         "benchmark_commit": a.commit,
-        "calibration_seed": 20261103,
+        "calibration_seed": a.seeds[0],
+        "calibration_seeds": a.seeds,
         "calibration_cases": len(rows),
         "dataset_versions": f"Overture {list(env['dataset_versions'].values())[0].get('release', '2026-09-23.1') if env.get('dataset_versions') else '2026-09-23.1'}; PostGIS rows " + ", ".join(f"{k}={v}" for k, v in env["dataset_row_counts"].items() if not k.startswith("fx_")),
         "machine_class": f"{env['cpu']}, {env['ram_gb']} GB RAM, {env['os'].split(' (')[0]}, loopback PostgreSQL + DuckDB on the same host ({env['postgresql'].split(',')[0]}; PostGIS 3.6.2)",
@@ -200,7 +204,8 @@ def main(argv: list[str]) -> int:
     a.out_dir.mkdir(parents=True, exist_ok=True)
     for eng in ("postgis", "duckdb"):
         model = build_model(rows, eng, meta)
-        out = a.out_dir / f"{MODEL_VERSION[eng]}.json"
+        model["model_version"] = MODEL_VERSION[eng] + a.version_suffix
+        out = a.out_dir / f"{model['model_version']}.json"
         out.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(out, {k: (v["n_calibration"], v["fit_ratio_median"], v["fit_ratio_p90"]) for k, v in model["classes"].items()})
     return 0

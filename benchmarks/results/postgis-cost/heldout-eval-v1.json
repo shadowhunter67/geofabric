@@ -1,0 +1,337 @@
+{
+  "validated_classes": [
+    "aggregate",
+    "indexed_bbox",
+    "indexed_spatial"
+  ],
+  "overall": {
+    "n": 211,
+    "p50_regret": 1.0,
+    "p90_regret": 2.078,
+    "p95_regret": 73.573,
+    "max_regret": 358.01,
+    "max_penalty_ms": 40967.3,
+    "mean_penalty_ms": 819.5,
+    "optimal": 170,
+    "pg_chosen": 138
+  },
+  "baselines": {
+    "always_duckdb": {
+      "n": 211,
+      "p50_regret": 4.504,
+      "p90_regret": 10.822,
+      "p95_regret": 73.573,
+      "max_regret": 358.01,
+      "max_penalty_ms": 40967.3,
+      "mean_penalty_ms": 876.1,
+      "optimal": 36,
+      "pg_chosen": 0,
+      "failed_or_capped": 0
+    },
+    "always_postgis": {
+      "n": 211,
+      "p50_regret": 1.0,
+      "p90_regret": 1.827,
+      "p95_regret": 3.234,
+      "max_regret": 9.24,
+      "max_penalty_ms": 20084.0,
+      "mean_penalty_ms": 298.4,
+      "optimal": 179,
+      "pg_chosen": 211,
+      "failed_or_capped": 0
+    },
+    "existing_planner_R5d_everywhere": {
+      "n": 211,
+      "p50_regret": 4.504,
+      "p90_regret": 10.822,
+      "p95_regret": 73.573,
+      "max_regret": 358.01,
+      "max_penalty_ms": 40967.3,
+      "mean_penalty_ms": 876.1,
+      "optimal": 36,
+      "pg_chosen": 0,
+      "failed_or_capped": 0
+    }
+  },
+  "pg_prediction": {
+    "n": 216,
+    "median": 1.2,
+    "p90": 2.76,
+    "p95": 4.62,
+    "max": 8.8
+  },
+  "by_class": {
+    "aggregate": {
+      "planner": {
+        "n": 50,
+        "p50_regret": 1.0,
+        "p90_regret": 1.0,
+        "p95_regret": 1.0,
+        "max_regret": 1.0,
+        "max_penalty_ms": 0.0,
+        "mean_penalty_ms": 0.0,
+        "optimal": 50,
+        "pg_chosen": 50
+      },
+      "prediction_ratio": {
+        "n": 50,
+        "median": 1.06,
+        "p90": 2.54,
+        "p95": 2.68,
+        "max": 2.8
+      }
+    },
+    "broad_scan": {
+      "planner": {
+        "n": 15,
+        "p50_regret": 1.0,
+        "p90_regret": 1.615,
+        "p95_regret": 2.001,
+        "max_regret": 2.0,
+        "max_penalty_ms": 91.8,
+        "mean_penalty_ms": 18.3,
+        "optimal": 11,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 15,
+        "median": 1.29,
+        "p90": 4.72,
+        "p95": 5.19,
+        "max": 5.2
+      }
+    },
+    "indexed_bbox": {
+      "planner": {
+        "n": 70,
+        "p50_regret": 1.0,
+        "p90_regret": 1.0,
+        "p95_regret": 1.0,
+        "max_regret": 1.0,
+        "max_penalty_ms": 0.0,
+        "mean_penalty_ms": 0.0,
+        "optimal": 70,
+        "pg_chosen": 70
+      },
+      "prediction_ratio": {
+        "n": 70,
+        "median": 1.05,
+        "p90": 2.36,
+        "p95": 2.56,
+        "max": 2.8
+      }
+    },
+    "indexed_spatial": {
+      "planner": {
+        "n": 18,
+        "p50_regret": 1.0,
+        "p90_regret": 1.11,
+        "p95_regret": 1.732,
+        "max_regret": 1.73,
+        "max_penalty_ms": 268.5,
+        "mean_penalty_ms": 18.3,
+        "optimal": 16,
+        "pg_chosen": 18
+      },
+      "prediction_ratio": {
+        "n": 18,
+        "median": 1.32,
+        "p90": 2.72,
+        "p95": 2.86,
+        "max": 2.9
+      }
+    },
+    "semijoin_intersects": {
+      "planner": {
+        "n": 15,
+        "p50_regret": 87.552,
+        "p90_regret": 265.191,
+        "p95_regret": 358.011,
+        "max_regret": 358.01,
+        "max_penalty_ms": 40967.3,
+        "mean_penalty_ms": 9158.7,
+        "optimal": 0,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 18,
+        "median": 1.78,
+        "p90": 2.68,
+        "p95": 2.87,
+        "max": 2.9
+      }
+    },
+    "semijoin_metric_large": {
+      "planner": {
+        "n": 33,
+        "p50_regret": 1.0,
+        "p90_regret": 1.891,
+        "p95_regret": 4.402,
+        "max_regret": 5.92,
+        "max_penalty_ms": 19021.7,
+        "mean_penalty_ms": 1040.5,
+        "optimal": 21,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 35,
+        "median": 2.04,
+        "p90": 4.96,
+        "p95": 6.15,
+        "max": 6.5
+      }
+    },
+    "semijoin_metric_small": {
+      "planner": {
+        "n": 10,
+        "p50_regret": 1.539,
+        "p90_regret": 7.73,
+        "p95_regret": 8.349,
+        "max_regret": 8.35,
+        "max_penalty_ms": 117.5,
+        "mean_penalty_ms": 58.5,
+        "optimal": 2,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 10,
+        "median": 2.37,
+        "p90": 7.02,
+        "p95": 8.85,
+        "max": 8.8
+      }
+    }
+  },
+  "unsafe_selections": [],
+  "correctness_mismatches": 0,
+  "worst_penalties": [
+    {
+      "id": "hel-0080",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 41082.0,
+      "best_ms": 114.8,
+      "regret": 358.0,
+      "penalty_ms": 40967.3,
+      "best_engine": "postgis",
+      "pg_pred": 62.9,
+      "pg_act": 114.8,
+      "dd_pred": 4691.6,
+      "dd_act": 41082.0
+    },
+    {
+      "id": "hel-0027",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 34553.9,
+      "best_ms": 130.3,
+      "regret": 265.2,
+      "penalty_ms": 34423.6,
+      "best_engine": "postgis",
+      "pg_pred": 58.6,
+      "pg_act": 130.3,
+      "dd_pred": 4303.9,
+      "dd_act": 34553.9
+    },
+    {
+      "id": "hel-0182",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 22888.6,
+      "best_ms": 3866.9,
+      "regret": 5.9,
+      "penalty_ms": 19021.7,
+      "best_engine": "postgis",
+      "pg_pred": 1447.8,
+      "pg_act": 3866.9,
+      "dd_pred": 343.5,
+      "dd_act": 22888.6
+    },
+    {
+      "id": "hel-0167",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 18520.2,
+      "best_ms": 81.2,
+      "regret": 228.0,
+      "penalty_ms": 18439.0,
+      "best_engine": "postgis",
+      "pg_pred": 34.6,
+      "pg_act": 81.2,
+      "dd_pred": 2112.3,
+      "dd_act": 18520.2
+    },
+    {
+      "id": "hel-0191",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 9603.7,
+      "best_ms": 155.7,
+      "regret": 61.7,
+      "penalty_ms": 9448.0,
+      "best_engine": "postgis",
+      "pg_pred": 265.0,
+      "pg_act": 155.7,
+      "dd_pred": 23102.3,
+      "dd_act": 9603.7
+    },
+    {
+      "id": "hel-0186",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 7672.7,
+      "best_ms": 63.8,
+      "regret": 120.2,
+      "penalty_ms": 7608.8,
+      "best_engine": "postgis",
+      "pg_pred": 22.2,
+      "pg_act": 63.8,
+      "dd_pred": 987.8,
+      "dd_act": 7672.7
+    },
+    {
+      "id": "hel-0199",
+      "cls": "semijoin_intersects",
+      "template": "semi_admin",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 5913.3,
+      "best_ms": 47.9,
+      "regret": 123.4,
+      "penalty_ms": 5865.4,
+      "best_engine": "postgis",
+      "pg_pred": 17.9,
+      "pg_act": 47.9,
+      "dd_pred": 591.0,
+      "dd_act": 5913.3
+    },
+    {
+      "id": "hel-0115",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 7358.8,
+      "best_ms": 1671.7,
+      "regret": 4.4,
+      "penalty_ms": 5687.1,
+      "best_engine": "postgis",
+      "pg_pred": 1811.0,
+      "pg_act": 1671.7,
+      "dd_pred": 378.3,
+      "dd_act": 7358.8
+    }
+  ]
+}

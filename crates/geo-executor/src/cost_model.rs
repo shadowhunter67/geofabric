@@ -62,6 +62,8 @@ pub fn workload_class(f: &WorkloadFeatures) -> &'static str {
 pub struct Provenance {
     pub benchmark_commit: String,
     pub calibration_seed: u64,
+    #[serde(default)]
+    pub calibration_seeds: Vec<u64>,
     pub calibration_cases: usize,
     pub dataset_versions: String,
     pub machine_class: String,

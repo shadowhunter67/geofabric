@@ -411,11 +411,19 @@ fn postgis_cost_corpus() {
     let start: usize = get("GF_COST_START").and_then(|v| v.parse().ok()).unwrap_or(0);
     let count: usize = get("GF_COST_COUNT").and_then(|v| v.parse().ok()).unwrap_or(usize::MAX);
     let explain = get("GF_COST_EXPLAIN").as_deref() != Some("0");
+    // GF_COST_PLAN_ONLY=1: do not execute anything; re-plan every case with the CURRENT planner/models/validation and write {id, planner} lines.
+    // Used to evaluate a model change on already measured cases (the timings do not depend on the planner) and to confirm final planner decisions.
+    let plan_only = get("GF_COST_PLAN_ONLY").as_deref() == Some("1");
+    // GF_COST_ONLY=<id,id> runs just those cases; GF_COST_ENGINES=duckdb|postgis restricts the engines (isolating a case that kills the process);
+    // GF_COST_SKIP=<id,id> leaves cases out and GF_COST_NOTE_CRASH=<id> records one as a crash instead of silently dropping it
+    let only: BTreeSet<String> = get("GF_COST_ONLY").map(|v| v.split(',').map(str::to_string).collect()).unwrap_or_default();
+    let skip: BTreeSet<String> = get("GF_COST_SKIP").map(|v| v.split(',').map(str::to_string).collect()).unwrap_or_default();
+    let engines: Vec<String> = get("GF_COST_ENGINES").map(|v| v.split(',').map(str::to_string).collect()).unwrap_or_else(|| vec!["duckdb".into(), "postgis".into()]);
     let mut out = std::fs::OpenOptions::new().create(true).append(true).open(&out_path).unwrap();
     let mut mismatches = Vec::new();
     for (i, case) in doc["cases"].as_array().unwrap().iter().enumerate().skip(start).take(count) {
         let id = case["id"].as_str().unwrap().to_string();
-        if done.contains(&id) {
+        if done.contains(&id) || skip.contains(&id) || (!only.is_empty() && !only.contains(&id)) {
             continue;
         }
         let (plan, tol) = match build(&e, case) {
@@ -425,12 +433,19 @@ fn postgis_cost_corpus() {
                 continue;
             }
         };
+        if plan_only {
+            writeln!(out, "{}", serde_json::json!({"id": id, "planner": planner_json(&e, &plan)})).unwrap();
+            continue;
+        }
         // alternate / randomize the engine order: a fixed order would hand one engine the warmer OS cache every time
         let order: [&str; 2] = if (i * 2654435761usize) >> 7 & 1 == 0 { ["duckdb", "postgis"] } else { ["postgis", "duckdb"] };
         let planner = planner_json(&e, &plan);
         let (mut kd, mut kp) = (None, None);
         let (mut td, mut tp) = (Timing::default(), Timing::default());
         for engine in order {
+            if !engines.iter().any(|x| x == engine) {
+                continue;
+            }
             if engine == "duckdb" {
                 td = time_engine(&e, &plan, "duckdb", &mut kd);
             } else {
@@ -459,7 +474,7 @@ fn postgis_cost_corpus() {
             mismatches.push(format!("{id}: {}", problems.join(" | ").chars().take(600).collect::<String>()));
         }
         let record = serde_json::json!({
-            "id": id, "seq": i, "template": case["template"], "region": case["region"], "spec": case, "plan_id": plan.plan_id(),
+            "id": id, "seq": i, "template": case["template"], "region": case["region"], "spec": case, "plan_id": plan.plan_id(), "engines_run": engines,
             "engine_order": order, "planner": planner,
             "duckdb": timing_json(&td), "postgis": timing_json(&tp),
             "comparable": kd.is_some() && kp.is_some(), "identical": identical, "problems": problems, "explain": explain_lines,

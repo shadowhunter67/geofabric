@@ -10,7 +10,7 @@ Coverage the brief asks for, by construction:
   * selectivity     very selective .. near-full scan (window half-size 0.0015 deg .. the whole extent), log-uniform
   * spatial windows dense centre / medium density / sparse / broad (4 region kinds, several centres each)
   * cardinality     hundreds .. millions of rows (buildings 3.8 M, transport 0.45 M, places 0.45 M, landuse 13 k, admin 325)
-Seeds: calibration 20261103, held-out 20261107. NOT used before: 20261018, 20261019, 20261026 (earlier planner/browser studies).
+Seeds: calibration 20261103, held-out (A) 20261107, confirmation (B) 20261111. NOT used before: 20261018, 20261019, 20261026 (earlier planner/browser studies).
 
     python benchmarks/make_postgis_cost_cases.py --split calibration --out benchmarks/results/postgis-cost/cases-calibration.json
     python benchmarks/make_postgis_cost_cases.py --split heldout     --out benchmarks/results/postgis-cost/cases-heldout.json
@@ -24,8 +24,12 @@ import math
 import random
 from pathlib import Path
 
-SEEDS = {"calibration": 20261103, "heldout": 20261107}
-COUNTS = {"calibration": 240, "heldout": 220}
+SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260}
+# the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
+# the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
+CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07}
 COVERAGE = (106.35, 10.35, 107.05, 11.25)  # the PostGIS relation is a clipped copy: only windows INSIDE this are readable there
 INSET = 0.03  # windows (and the metric prefilter margin) stay this far inside the coverage
 EXTENT = (COVERAGE[0] + INSET, COVERAGE[1] + INSET, COVERAGE[2] - INSET, COVERAGE[3] - INSET)
@@ -68,6 +72,7 @@ def pick_filter(rng: random.Random, src: str) -> dict:
 
 
 def make_case(rng: random.Random, template: str, idx: int, split: str) -> dict:
+    near_hi = NEAR_HI[split]
     base = {"id": f"{split[:3]}-{idx:04d}", "template": template}
     if template == "features_bbox":
         src = rng.choice(SOURCES)
@@ -98,7 +103,7 @@ def make_case(rng: random.Random, template: str, idx: int, split: str) -> dict:
         return {**base, "kind": "request", "region": kind, "request": {"kind": "intersects_features", "source": src, "bbox": bbox, "crs": "OGC:CRS84", "limit": rng.choice([500, 5000, 20000])}}
     if template in ("near_count", "near_ids"):
         # buildings within d metres of roads. Window sizes stay under ~0.2 deg: the largest known case (0.16 x 0.14 deg) already takes PostGIS ~15 s.
-        bbox, kind = window(rng, 0.003, 0.11)
+        bbox, kind = window(rng, 0.003, near_hi)
         dist = rng.choice([25, 50, 100, 200, 200, 500, 1000])
         with_ = {"source": "transport", "distance_m": dist}
         if rng.random() < 0.6:
@@ -134,11 +139,12 @@ def main() -> int:
     a = ap.parse_args()
     rng = random.Random(SEEDS[a.split])
     n = a.n or COUNTS[a.split]
-    names, weights = zip(*TEMPLATES)
+    table = [(n, CONFIRM_WEIGHTS.get(n, w) if a.split == "confirm" else w) for n, w in TEMPLATES]
+    names, weights = zip(*table)
     total = sum(weights)
     # stratified: each template gets its proportional share first (at least 1), the remainder is drawn by weight
     plan: list[str] = []
-    for name, w in TEMPLATES:
+    for name, w in table:
         plan += [name] * max(1, int(n * w / total))
     while len(plan) < n:
         plan.append(rng.choices(names, weights)[0])

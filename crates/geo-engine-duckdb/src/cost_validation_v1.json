@@ -1,5 +1,33 @@
 {
-  "model_version": "duckdb-semijoin-cost-v1",
+  "model_version": "duckdb-semijoin-cost-v1.1",
   "heldout_seed": 20261107,
-  "classes": {}
+  "classes": {
+    "semijoin_intersects": {
+      "level": "limited",
+      "heldout_cases": 0,
+      "p90_regret": null,
+      "p90_prediction_ratio": null,
+      "median_prediction_ratio": null,
+      "unsafe_selections": 0,
+      "reason": "DuckDB keeps its engine-level calibration (measured); this class model improves the comparison with PostGIS but has no auto-select authority of its own"
+    },
+    "semijoin_metric_small": {
+      "level": "limited",
+      "heldout_cases": 0,
+      "p90_regret": null,
+      "p90_prediction_ratio": null,
+      "median_prediction_ratio": null,
+      "unsafe_selections": 0,
+      "reason": "DuckDB keeps its engine-level calibration (measured); this class model improves the comparison with PostGIS but has no auto-select authority of its own"
+    },
+    "semijoin_metric_large": {
+      "level": "limited",
+      "heldout_cases": 0,
+      "p90_regret": null,
+      "p90_prediction_ratio": null,
+      "median_prediction_ratio": null,
+      "unsafe_selections": 0,
+      "reason": "DuckDB keeps its engine-level calibration (measured); this class model improves the comparison with PostGIS but has no auto-select authority of its own"
+    }
+  }
 }

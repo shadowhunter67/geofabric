@@ -1,0 +1,5030 @@
+{
+ "split": "confirm",
+ "seed": 20261111,
+ "generator": "benchmarks/make_postgis_cost_cases.py",
+ "cases": [
+  {
+   "id": "con-0000",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.673154,
+     10.76729,
+     106.726846,
+     10.83271
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0001",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.496626,
+     10.616937,
+     106.903374,
+     10.983063
+    ]
+   }
+  },
+  {
+   "id": "con-0002",
+   "template": "count_by",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.553182,
+     10.594874,
+     106.566818,
+     10.605126
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 30.0
+    }
+   }
+  },
+  {
+   "id": "con-0003",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "medium",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.481443,
+     10.687682,
+     106.758557,
+     10.912318
+    ]
+   }
+  },
+  {
+   "id": "con-0004",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.472104,
+     10.576974,
+     106.927896,
+     11.023026
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0005",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.690145,
+     10.788753,
+     106.709855,
+     10.811247
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0006",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.666011,
+     10.73037,
+     106.773989,
+     10.86963
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0007",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.394752,
+     10.905104,
+     106.505248,
+     10.994896
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0008",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "sparse",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.549091,
+     10.590186,
+     106.570909,
+     10.609814
+    ],
+    "n": 5000,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0009",
+   "template": "count_by",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count_by",
+    "source": "transport",
+    "bbox": [
+     106.589961,
+     10.694024,
+     106.810039,
+     10.905976
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype"
+   }
+  },
+  {
+   "id": "con-0010",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.406632,
+     10.918305,
+     106.493368,
+     10.981695
+    ],
+    "distance_m": 100,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0011",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.454521,
+     10.617488,
+     106.945479,
+     10.982512
+    ]
+   }
+  },
+  {
+   "id": "con-0012",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "landuse",
+    "bbox": [
+     106.667755,
+     10.83785,
+     106.792245,
+     10.96215
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0013",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.584684,
+     10.764356,
+     106.655316,
+     10.835644
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0014",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696555,
+     10.796967,
+     106.703445,
+     10.803033
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0015",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "medium",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.552401,
+     10.673994,
+     106.647599,
+     10.786006
+    ]
+   }
+  },
+  {
+   "id": "con-0016",
+   "template": "count_by",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.717247,
+     10.797663,
+     106.722753,
+     10.802337
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0017",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "broad",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.670526,
+     10.779065,
+     106.729474,
+     10.820935
+    ],
+    "n": 40,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0018",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.676862,
+     10.750614,
+     106.703138,
+     10.769386
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0019",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.752661,
+     10.830812,
+     106.807339,
+     10.869188
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0020",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.615622,
+     10.684402,
+     106.824378,
+     10.915598
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0021",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.716602,
+     10.797498,
+     106.723398,
+     10.802502
+    ]
+   }
+  },
+  {
+   "id": "con-0022",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "landuse",
+    "bbox": [
+     106.767436,
+     10.834473,
+     106.792564,
+     10.865527
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0023",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.649817,
+     10.777058,
+     106.670183,
+     10.802942
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0024",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.492592,
+     11.042383,
+     106.507408,
+     11.057617
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0025",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "sparse",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.38,
+     10.38,
+     106.848091,
+     10.943155
+    ]
+   }
+  },
+  {
+   "id": "con-0026",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.875778,
+     10.696527,
+     106.884222,
+     10.703473
+    ]
+   }
+  },
+  {
+   "id": "con-0027",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.597444,
+     10.728078,
+     106.602556,
+     10.731922
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0028",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.671758,
+     10.742666,
+     106.768242,
+     10.857334
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "residential"
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0029",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "medium",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.593304,
+     10.723305,
+     106.606696,
+     10.736695
+    ]
+   }
+  },
+  {
+   "id": "con-0030",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.612644,
+     10.792473,
+     106.627356,
+     10.807527
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0031",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.637216,
+     10.767253,
+     106.682784,
+     10.812747
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0032",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.854359,
+     10.673274,
+     106.905641,
+     10.726726
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary"
+    ]
+   }
+  },
+  {
+   "id": "con-0033",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "sparse",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.404889,
+     10.491365,
+     106.715111,
+     10.708635
+    ]
+   }
+  },
+  {
+   "id": "con-0034",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "medium",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.554922,
+     10.682941,
+     106.645078,
+     10.777059
+    ]
+   }
+  },
+  {
+   "id": "con-0035",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "transport",
+    "bbox": [
+     106.38,
+     10.487371,
+     106.917784,
+     11.112629
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "primary"
+    }
+   }
+  },
+  {
+   "id": "con-0036",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "landuse",
+    "bbox": [
+     106.38,
+     10.38,
+     107.02,
+     11.22
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype"
+   }
+  },
+  {
+   "id": "con-0037",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.776573,
+     10.847547,
+     106.783427,
+     10.852453
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0038",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.664473,
+     10.739427,
+     106.715527,
+     10.780573
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 15.0
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0039",
+   "template": "count_by",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.752744,
+     10.555082,
+     107.007256,
+     10.844918
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "category",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.7
+    }
+   }
+  },
+  {
+   "id": "con-0040",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "broad",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.696652,
+     10.795958,
+     106.703348,
+     10.804042
+    ]
+   }
+  },
+  {
+   "id": "con-0041",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "dense",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.716676,
+     10.79693,
+     106.723324,
+     10.80307
+    ],
+    "n": 2000
+   }
+  },
+  {
+   "id": "con-0042",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.7158,
+     10.795795,
+     106.7242,
+     10.804205
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0043",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.880361,
+     10.428386,
+     106.919639,
+     10.471614
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0044",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.54077,
+     10.578405,
+     106.57923,
+     10.621595
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0045",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.715374,
+     10.794431,
+     106.724626,
+     10.805569
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "con-0046",
+   "template": "count_by",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count_by",
+    "source": "transport",
+    "bbox": [
+     106.872618,
+     10.690805,
+     106.887382,
+     10.709195
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0047",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.714381,
+     10.794038,
+     106.725619,
+     10.805962
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0048",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "medium",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.775433,
+     10.84475,
+     106.784567,
+     10.85525
+    ]
+   }
+  },
+  {
+   "id": "con-0049",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.776987,
+     10.847541,
+     106.783013,
+     10.852459
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0050",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.496069,
+     11.044981,
+     106.503931,
+     11.055019
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0051",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.641939,
+     10.720043,
+     106.738061,
+     10.799957
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0052",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.432684,
+     10.990926,
+     106.567316,
+     11.109074
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0053",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "buildings",
+    "bbox": [
+     106.720256,
+     10.892366,
+     106.739744,
+     10.907634
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0054",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.610346,
+     10.788073,
+     106.629654,
+     10.811927
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "con-0055",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.604434,
+     10.723604,
+     106.715566,
+     10.856396
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0056",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.657876,
+     10.787642,
+     106.662124,
+     10.792358
+    ],
+    "n": 500,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0057",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.542622,
+     10.739552,
+     106.917378,
+     11.060448
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "category"
+   }
+  },
+  {
+   "id": "con-0058",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.708964,
+     10.874271,
+     106.751036,
+     10.925729
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0059",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "medium",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.776525,
+     10.847201,
+     106.783475,
+     10.852799
+    ]
+   }
+  },
+  {
+   "id": "con-0060",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "sparse",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.849278,
+     10.665798,
+     106.910722,
+     10.734202
+    ],
+    "n": 40,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0061",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.555099,
+     10.593974,
+     106.564901,
+     10.606026
+    ]
+   }
+  },
+  {
+   "id": "con-0062",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "medium",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.692535,
+     10.862581,
+     106.767465,
+     10.937419
+    ]
+   }
+  },
+  {
+   "id": "con-0063",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.582596,
+     10.769228,
+     106.657404,
+     10.830772
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0064",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.774838,
+     10.846235,
+     106.785162,
+     10.853765
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0065",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count",
+    "source": "places",
+    "bbox": [
+     106.598153,
+     10.728487,
+     106.601847,
+     10.731513
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "category",
+     "op": "eq",
+     "value": "school"
+    }
+   }
+  },
+  {
+   "id": "con-0066",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.556908,
+     10.597044,
+     106.563092,
+     10.602956
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0067",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.644585,
+     10.74325,
+     106.755415,
+     10.85675
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0068",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.54723,
+     10.641624,
+     106.85277,
+     10.958376
+    ]
+   }
+  },
+  {
+   "id": "con-0069",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.718939,
+     10.888564,
+     106.741061,
+     10.911436
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0070",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count",
+    "source": "places",
+    "bbox": [
+     106.660678,
+     10.845293,
+     106.799322,
+     10.954707
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0071",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.670657,
+     10.775634,
+     106.729343,
+     10.824366
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0072",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.593527,
+     10.722462,
+     106.606473,
+     10.737538
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0073",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.865766,
+     10.686565,
+     106.894234,
+     10.713435
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0074",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.38,
+     10.548926,
+     106.857117,
+     10.911074
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "category"
+   }
+  },
+  {
+   "id": "con-0075",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.894717,
+     10.44348,
+     106.905283,
+     10.45652
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0076",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "medium",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.724242,
+     10.89557,
+     106.735758,
+     10.90443
+    ]
+   }
+  },
+  {
+   "id": "con-0077",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.688696,
+     10.78941,
+     106.711304,
+     10.81059
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "con-0078",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.519305,
+     10.523894,
+     107.02,
+     11.176106
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0079",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.38,
+     10.710861,
+     106.661647,
+     11.189139
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0080",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.876475,
+     10.696507,
+     106.883525,
+     10.703493
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0081",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.697604,
+     10.778302,
+     106.702396,
+     10.781698
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "footway"
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0082",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.715421,
+     10.794433,
+     106.724579,
+     10.805567
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "residential"
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0083",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "medium",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.758191,
+     10.829502,
+     106.801809,
+     10.870498
+    ],
+    "n": 500,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0084",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "medium",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.563262,
+     10.684716,
+     106.636738,
+     10.775284
+    ]
+   }
+  },
+  {
+   "id": "con-0085",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.838645,
+     10.668981,
+     106.921355,
+     10.731019
+    ]
+   }
+  },
+  {
+   "id": "con-0086",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.44406,
+     10.944625,
+     106.45594,
+     10.955375
+    ]
+   }
+  },
+  {
+   "id": "con-0087",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.77785,
+     10.847718,
+     106.78215,
+     10.852282
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 30.0
+    }
+   }
+  },
+  {
+   "id": "con-0088",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.653103,
+     10.781562,
+     106.666897,
+     10.798438
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0089",
+   "template": "count_by",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count_by",
+    "source": "transport",
+    "bbox": [
+     106.565796,
+     10.682572,
+     106.754204,
+     10.897428
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype"
+   }
+  },
+  {
+   "id": "con-0090",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.556978,
+     10.687704,
+     106.643022,
+     10.772296
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "con-0091",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "sparse",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.477421,
+     11.032592,
+     106.522579,
+     11.067408
+    ]
+   }
+  },
+  {
+   "id": "con-0092",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.497174,
+     10.599671,
+     106.902826,
+     11.000329
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0093",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.692085,
+     10.79378,
+     106.707915,
+     10.80622
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0094",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "landuse",
+    "bbox": [
+     106.38,
+     10.38,
+     107.02,
+     11.22
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0095",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "landuse",
+    "bbox": [
+     106.397759,
+     10.434163,
+     107.002241,
+     11.165837
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0096",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.693529,
+     10.792296,
+     106.706471,
+     10.807704
+    ]
+   }
+  },
+  {
+   "id": "con-0097",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.461858,
+     11.002793,
+     106.538142,
+     11.097207
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0098",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.693897,
+     10.77307,
+     106.706103,
+     10.78693
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50
+    }
+   }
+  },
+  {
+   "id": "con-0099",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "broad",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.695714,
+     10.794558,
+     106.704286,
+     10.805442
+    ]
+   }
+  },
+  {
+   "id": "con-0100",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.679111,
+     10.855735,
+     106.780889,
+     10.944265
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0101",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.546079,
+     10.669745,
+     106.653921,
+     10.790255
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0102",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.420461,
+     10.965451,
+     106.579539,
+     11.134549
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "primary"
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0103",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.716908,
+     10.796591,
+     106.723092,
+     10.803409
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100
+    }
+   }
+  },
+  {
+   "id": "con-0104",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.634017,
+     10.770282,
+     106.685983,
+     10.809718
+    ]
+   }
+  },
+  {
+   "id": "con-0105",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.441969,
+     10.940602,
+     106.458031,
+     10.959398
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "con-0106",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "places",
+    "bbox": [
+     106.514918,
+     10.612894,
+     106.885082,
+     10.987106
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.9
+    }
+   }
+  },
+  {
+   "id": "con-0107",
+   "template": "count_by",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.552744,
+     10.594154,
+     106.567256,
+     10.605846
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "category"
+   }
+  },
+  {
+   "id": "con-0108",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.689664,
+     10.79273,
+     106.710336,
+     10.80727
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "con-0109",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "transport",
+    "bbox": [
+     106.727751,
+     10.898336,
+     106.732249,
+     10.901664
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0110",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "broad",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.695294,
+     10.794456,
+     106.704706,
+     10.805544
+    ]
+   }
+  },
+  {
+   "id": "con-0111",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.874379,
+     10.695675,
+     106.885621,
+     10.704325
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "con-0112",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "sparse",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.556474,
+     10.595832,
+     106.563526,
+     10.604168
+    ],
+    "n": 5000,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0113",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "medium",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.718172,
+     10.890444,
+     106.741828,
+     10.909556
+    ]
+   }
+  },
+  {
+   "id": "con-0114",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.430187,
+     10.934796,
+     106.469813,
+     10.965204
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0115",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "intersects_features",
+    "source": "transport",
+    "bbox": [
+     106.872247,
+     10.691356,
+     106.887753,
+     10.708644
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0116",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "medium",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.726841,
+     10.89763,
+     106.733159,
+     10.90237
+    ]
+   }
+  },
+  {
+   "id": "con-0117",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.410886,
+     10.544007,
+     106.829114,
+     11.055993
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 15.0
+    }
+   }
+  },
+  {
+   "id": "con-0118",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.871353,
+     10.416805,
+     106.928647,
+     10.483195
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0119",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.446181,
+     10.946585,
+     106.453819,
+     10.953415
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0120",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "medium",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.664975,
+     10.83199,
+     106.795025,
+     10.96801
+    ],
+    "n": 40,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0121",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "broad",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.655376,
+     10.757465,
+     106.744624,
+     10.842535
+    ],
+    "n": 20
+   }
+  },
+  {
+   "id": "con-0122",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.66865,
+     10.737725,
+     106.71135,
+     10.782275
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0123",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "landuse",
+    "bbox": [
+     106.585098,
+     10.625961,
+     106.794902,
+     10.894039
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0124",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "sparse",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.551349,
+     10.59185,
+     106.568651,
+     10.60815
+    ]
+   }
+  },
+  {
+   "id": "con-0125",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.492591,
+     11.04085,
+     106.507409,
+     11.05915
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "grass"
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0126",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "dense",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.575684,
+     10.68529,
+     106.744316,
+     10.89471
+    ],
+    "n": 20
+   }
+  },
+  {
+   "id": "con-0127",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.600931,
+     10.68021,
+     106.799069,
+     10.91979
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "secondary"
+    }
+   }
+  },
+  {
+   "id": "con-0128",
+   "template": "count_by",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.465994,
+     10.38,
+     107.02,
+     11.210055
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "operating_status"
+   }
+  },
+  {
+   "id": "con-0129",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.703215,
+     10.784306,
+     106.736785,
+     10.815694
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "residential"
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0130",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.716514,
+     10.796176,
+     106.723486,
+     10.803824
+    ]
+   }
+  },
+  {
+   "id": "con-0131",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.566096,
+     10.633289,
+     106.833904,
+     10.966711
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0132",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "medium",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.569194,
+     10.761627,
+     106.890806,
+     11.038373
+    ]
+   }
+  },
+  {
+   "id": "con-0133",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.866271,
+     10.687287,
+     106.893729,
+     10.712713
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0134",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.687015,
+     10.75684,
+     106.692985,
+     10.76316
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "apartments"
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0135",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.608442,
+     10.790777,
+     106.631558,
+     10.809223
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0136",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.67615,
+     10.755112,
+     106.76385,
+     10.844888
+    ]
+   }
+  },
+  {
+   "id": "con-0137",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.710144,
+     10.792448,
+     106.729856,
+     10.807552
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0138",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.876833,
+     10.697146,
+     106.883167,
+     10.702854
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "residential"
+    }
+   }
+  },
+  {
+   "id": "con-0139",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.857234,
+     10.682952,
+     106.902766,
+     10.717048
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.9
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0140",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.873307,
+     10.692813,
+     106.886693,
+     10.707187
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0141",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.873578,
+     10.692231,
+     106.886422,
+     10.707769
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100
+    }
+   }
+  },
+  {
+   "id": "con-0142",
+   "template": "count_by",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.600252,
+     10.698087,
+     106.799748,
+     10.901913
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0143",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.446509,
+     10.947364,
+     106.453491,
+     10.952636
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0144",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "medium",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.592952,
+     10.723981,
+     106.607048,
+     10.736019
+    ]
+   }
+  },
+  {
+   "id": "con-0145",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.538956,
+     10.740578,
+     106.701044,
+     10.859422
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0146",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "buildings",
+    "bbox": [
+     106.595724,
+     10.724497,
+     106.604276,
+     10.735503
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0147",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.415683,
+     10.913019,
+     106.484317,
+     10.986981
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0148",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.894542,
+     10.443844,
+     106.905458,
+     10.456156
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "unclassified"
+    }
+   }
+  },
+  {
+   "id": "con-0149",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.588829,
+     10.702729,
+     106.811171,
+     10.897271
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0150",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.489189,
+     11.036641,
+     106.510811,
+     11.063359
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50
+    }
+   }
+  },
+  {
+   "id": "con-0151",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.671538,
+     10.759939,
+     106.728462,
+     10.800061
+    ],
+    "n": 5000,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0152",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "dense",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.648817,
+     10.779142,
+     106.671183,
+     10.800858
+    ],
+    "n": 2000
+   }
+  },
+  {
+   "id": "con-0153",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.38,
+     10.38,
+     107.02,
+     11.22
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "industrial"
+    }
+   }
+  },
+  {
+   "id": "con-0154",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.705339,
+     10.78442,
+     106.734661,
+     10.81558
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0155",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.639118,
+     10.771477,
+     106.680882,
+     10.808523
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0156",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.69077,
+     10.790457,
+     106.70923,
+     10.809543
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.5
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0157",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.642838,
+     10.770186,
+     106.677162,
+     10.809814
+    ]
+   }
+  },
+  {
+   "id": "con-0158",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.556424,
+     10.597035,
+     106.563576,
+     10.602965
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.7
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0159",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.716534,
+     10.88785,
+     106.743466,
+     10.91215
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0160",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "places",
+    "bbox": [
+     106.655941,
+     10.758548,
+     106.744059,
+     10.841452
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0161",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.658256,
+     10.833134,
+     106.801744,
+     10.966866
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0162",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.62941,
+     10.765346,
+     106.69059,
+     10.814654
+    ]
+   }
+  },
+  {
+   "id": "con-0163",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.682725,
+     10.7783,
+     106.717275,
+     10.8217
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0164",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.672633,
+     10.764882,
+     106.727367,
+     10.835118
+    ]
+   }
+  },
+  {
+   "id": "con-0165",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "broad",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.686406,
+     10.785219,
+     106.713594,
+     10.814781
+    ]
+   }
+  },
+  {
+   "id": "con-0166",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "landuse",
+    "bbox": [
+     106.717602,
+     10.796993,
+     106.722398,
+     10.803007
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0167",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.581674,
+     10.661001,
+     106.818326,
+     10.938999
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0168",
+   "template": "agg_stats",
+   "kind": "template",
+   "region": "sparse",
+   "name": "agg_stats",
+   "params": {
+    "bbox": [
+     106.790471,
+     10.622429,
+     106.969529,
+     10.777571
+    ]
+   }
+  },
+  {
+   "id": "con-0169",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.834923,
+     10.657964,
+     106.925077,
+     10.742036
+    ]
+   }
+  },
+  {
+   "id": "con-0170",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.719563,
+     10.792985,
+     106.840437,
+     10.907015
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "con-0171",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.500077,
+     10.529865,
+     106.619923,
+     10.670135
+    ]
+   }
+  },
+  {
+   "id": "con-0172",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.616967,
+     10.796895,
+     106.623033,
+     10.803105
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0173",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "landuse",
+    "bbox": [
+     106.38,
+     10.38,
+     107.02,
+     11.22
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype"
+   }
+  },
+  {
+   "id": "con-0174",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.71361,
+     10.794741,
+     106.72639,
+     10.805259
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0175",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.556876,
+     10.596265,
+     106.563124,
+     10.603735
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "commercial"
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0176",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.761001,
+     10.829867,
+     106.798999,
+     10.870133
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100
+    }
+   }
+  },
+  {
+   "id": "con-0177",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.454546,
+     10.499677,
+     106.945454,
+     11.100323
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0178",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.860277,
+     10.401057,
+     106.939723,
+     10.498943
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0179",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.692008,
+     10.790734,
+     106.707992,
+     10.809266
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0180",
+   "template": "count_by",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count_by",
+    "source": "landuse",
+    "bbox": [
+     106.662599,
+     10.757175,
+     106.737401,
+     10.842825
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "subtype"
+   }
+  },
+  {
+   "id": "con-0181",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.698205,
+     10.797984,
+     106.701795,
+     10.802016
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0182",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.656804,
+     10.787294,
+     106.663196,
+     10.792706
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0183",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "broad",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.693712,
+     10.79513,
+     106.706288,
+     10.80487
+    ],
+    "n": 40,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0184",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.775093,
+     10.846338,
+     106.784907,
+     10.853662
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "primary",
+     "secondary"
+    ]
+   }
+  },
+  {
+   "id": "con-0185",
+   "template": "count_by",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.38,
+     10.494226,
+     107.02,
+     11.105774
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0186",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "transport",
+    "bbox": [
+     106.606626,
+     10.783902,
+     106.633374,
+     10.816098
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0187",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.584574,
+     10.714813,
+     106.615426,
+     10.745187
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0188",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.655592,
+     10.786336,
+     106.664408,
+     10.793664
+    ],
+    "n": 5000,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0189",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.445304,
+     10.9449,
+     106.454696,
+     10.9551
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "residential"
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0190",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.708841,
+     10.79132,
+     106.731159,
+     10.80868
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0191",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.686362,
+     10.763868,
+     106.713638,
+     10.796132
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0192",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.684992,
+     10.756419,
+     106.695008,
+     10.763581
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0193",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.548857,
+     10.585577,
+     106.571143,
+     10.614423
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 9.0
+    }
+   }
+  },
+  {
+   "id": "con-0194",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.492838,
+     10.530103,
+     106.627162,
+     10.669897
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0195",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.606535,
+     10.785817,
+     106.633465,
+     10.814183
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "unclassified"
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0196",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.867053,
+     10.419841,
+     106.932947,
+     10.480159
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0197",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "sparse",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.557951,
+     10.598499,
+     106.562049,
+     10.601501
+    ],
+    "n": 20
+   }
+  },
+  {
+   "id": "con-0198",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.813152,
+     10.652958,
+     106.946848,
+     10.747042
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0199",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "intersects_features",
+    "source": "transport",
+    "bbox": [
+     106.875073,
+     10.695022,
+     106.884927,
+     10.704978
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0200",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.556371,
+     10.597364,
+     106.563629,
+     10.602636
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0201",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.542508,
+     10.585124,
+     106.577492,
+     10.614876
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.5
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0202",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.552335,
+     10.592167,
+     106.567665,
+     10.607833
+    ]
+   }
+  },
+  {
+   "id": "con-0203",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.524989,
+     10.574439,
+     106.595011,
+     10.625561
+    ]
+   }
+  },
+  {
+   "id": "con-0204",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.607699,
+     10.788478,
+     106.632301,
+     10.811522
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0205",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "sparse",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.557717,
+     10.597866,
+     106.562283,
+     10.602134
+    ]
+   }
+  },
+  {
+   "id": "con-0206",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.398924,
+     10.891299,
+     106.501076,
+     11.008701
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "commercial"
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0207",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "places",
+    "bbox": [
+     106.38,
+     10.429442,
+     106.887337,
+     11.030558
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "operating_status"
+   }
+  },
+  {
+   "id": "con-0208",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "places",
+    "bbox": [
+     106.709074,
+     10.884907,
+     106.750926,
+     10.915093
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0209",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.654851,
+     10.786133,
+     106.665149,
+     10.793867
+    ],
+    "n": 500,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0210",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.826081,
+     10.651007,
+     106.933919,
+     10.748993
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "service"
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0211",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "places",
+    "bbox": [
+     106.69629,
+     10.796134,
+     106.70371,
+     10.803866
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.7
+    }
+   }
+  },
+  {
+   "id": "con-0212",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.593874,
+     10.722312,
+     106.606126,
+     10.737688
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "con-0213",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "sparse",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.550079,
+     10.592628,
+     106.569921,
+     10.607372
+    ],
+    "n": 5000,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0214",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "broad",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.688264,
+     10.789713,
+     106.711736,
+     10.810287
+    ]
+   }
+  },
+  {
+   "id": "con-0215",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.569191,
+     10.70162,
+     106.630809,
+     10.75838
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "confidence",
+     "op": "gt",
+     "value": 0.7
+    },
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0216",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.601217,
+     10.777113,
+     106.638783,
+     10.822887
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0217",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.586813,
+     10.696378,
+     106.733187,
+     10.883622
+    ],
+    "n": 500,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0218",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.684992,
+     10.772093,
+     106.755008,
+     10.827907
+    ]
+   }
+  },
+  {
+   "id": "con-0219",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.862422,
+     10.411213,
+     106.937578,
+     10.488787
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0220",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.577906,
+     10.713838,
+     106.622094,
+     10.746162
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0221",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.821111,
+     10.656824,
+     106.938889,
+     10.743176
+    ]
+   }
+  },
+  {
+   "id": "con-0222",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "sparse",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.555597,
+     10.596465,
+     106.564403,
+     10.603535
+    ],
+    "n": 200
+   }
+  },
+  {
+   "id": "con-0223",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.496309,
+     11.045518,
+     106.503691,
+     11.054482
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "commercial"
+    }
+   }
+  },
+  {
+   "id": "con-0224",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "medium",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.541348,
+     10.749147,
+     106.918652,
+     11.050853
+    ],
+    "n": 2000
+   }
+  },
+  {
+   "id": "con-0225",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.645573,
+     10.737447,
+     106.754427,
+     10.862553
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0226",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.843345,
+     10.387178,
+     106.956655,
+     10.512822
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary"
+    ]
+   }
+  },
+  {
+   "id": "con-0227",
+   "template": "intersects_viewport",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "intersects_features",
+    "source": "buildings",
+    "bbox": [
+     106.601926,
+     10.779471,
+     106.638074,
+     10.820529
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 20000
+   }
+  },
+  {
+   "id": "con-0228",
+   "template": "limit_unordered",
+   "kind": "template",
+   "region": "broad",
+   "name": "limit_unordered",
+   "params": {
+    "bbox": [
+     106.687901,
+     10.784696,
+     106.712099,
+     10.815304
+    ],
+    "n": 20
+   }
+  },
+  {
+   "id": "con-0229",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.550573,
+     10.592918,
+     106.569427,
+     10.607082
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0230",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.684041,
+     10.754988,
+     106.695959,
+     10.765012
+    ],
+    "n": 40,
+    "desc": true
+   }
+  },
+  {
+   "id": "con-0231",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.713564,
+     10.885886,
+     106.746436,
+     10.914114
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 100
+   }
+  },
+  {
+   "id": "con-0232",
+   "template": "count_by",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.63376,
+     10.716485,
+     106.76624,
+     10.883515
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0233",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "medium",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.777003,
+     10.847532,
+     106.782997,
+     10.852468
+    ],
+    "n": 500,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0234",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "sparse",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.514805,
+     10.551228,
+     106.605195,
+     10.648772
+    ]
+   }
+  },
+  {
+   "id": "con-0235",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.681289,
+     10.775972,
+     106.718711,
+     10.824028
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "primary",
+     "secondary"
+    ]
+   }
+  },
+  {
+   "id": "con-0236",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.491463,
+     11.039048,
+     106.508537,
+     11.060952
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0237",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.490615,
+     10.591695,
+     106.909385,
+     11.008305
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0238",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.618354,
+     10.798185,
+     106.621646,
+     10.801815
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0239",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "dense",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.657842,
+     10.73949,
+     106.782158,
+     10.86051
+    ]
+   }
+  },
+  {
+   "id": "con-0240",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "medium",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.581232,
+     10.70854,
+     106.618768,
+     10.75146
+    ]
+   }
+  },
+  {
+   "id": "con-0241",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.776903,
+     10.847419,
+     106.783097,
+     10.852581
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0242",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.496888,
+     11.047746,
+     106.503112,
+     11.052254
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 2000
+   }
+  },
+  {
+   "id": "con-0243",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count",
+    "source": "landuse",
+    "bbox": [
+     106.713133,
+     10.879334,
+     106.746867,
+     10.920666
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0244",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.715868,
+     10.769946,
+     106.844132,
+     10.930054
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "con-0245",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "buildings",
+    "bbox": [
+     106.577412,
+     10.662799,
+     106.822588,
+     10.937201
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0246",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.594335,
+     10.724706,
+     106.605665,
+     10.735294
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "con-0247",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.546641,
+     10.588885,
+     106.573359,
+     10.611115
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "residential",
+     "service"
+    ]
+   }
+  },
+  {
+   "id": "con-0248",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "places",
+    "bbox": [
+     106.427042,
+     10.923236,
+     106.472958,
+     10.976764
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "category",
+     "op": "eq",
+     "value": "shopping"
+    },
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0249",
+   "template": "semi_admin",
+   "kind": "template",
+   "region": "sparse",
+   "name": "semi_intersects_admin",
+   "params": {
+    "bbox": [
+     106.554613,
+     10.595288,
+     106.565387,
+     10.604712
+    ]
+   }
+  },
+  {
+   "id": "con-0250",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.896437,
+     10.446381,
+     106.903563,
+     10.453619
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0251",
+   "template": "sort_limit",
+   "kind": "template",
+   "region": "dense",
+   "name": "sort_limit",
+   "params": {
+    "bbox": [
+     106.69472,
+     10.773392,
+     106.74528,
+     10.826608
+    ],
+    "n": 5000,
+    "desc": false
+   }
+  },
+  {
+   "id": "con-0252",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "features",
+    "source": "buildings",
+    "bbox": [
+     106.587497,
+     10.714802,
+     106.612503,
+     10.745198
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "height",
+     "op": "gt",
+     "value": 30.0
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0253",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.682077,
+     10.765058,
+     106.717923,
+     10.794942
+    ],
+    "crs": "OGC:CRS84"
+   }
+  },
+  {
+   "id": "con-0254",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.552584,
+     10.592746,
+     106.567416,
+     10.607254
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "con-0255",
+   "template": "transform_col",
+   "kind": "template",
+   "region": "broad",
+   "name": "transform_col",
+   "params": {
+    "bbox": [
+     106.692335,
+     10.794279,
+     106.707665,
+     10.805721
+    ]
+   }
+  },
+  {
+   "id": "con-0256",
+   "template": "features_bbox",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "features",
+    "source": "landuse",
+    "bbox": [
+     106.53651,
+     10.569793,
+     106.58349,
+     10.630207
+    ],
+    "crs": "OGC:CRS84",
+    "limit": 500
+   }
+  },
+  {
+   "id": "con-0257",
+   "template": "features_filter",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "features",
+    "source": "transport",
+    "bbox": [
+     106.67262,
+     10.740173,
+     106.70738,
+     10.779827
+    ],
+    "crs": "OGC:CRS84",
+    "filter": {
+     "column": "class",
+     "op": "eq",
+     "value": "footway"
+    },
+    "limit": 5000
+   }
+  },
+  {
+   "id": "con-0258",
+   "template": "count_by",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "count_by",
+    "source": "buildings",
+    "bbox": [
+     106.612628,
+     10.793888,
+     106.627372,
+     10.806112
+    ],
+    "crs": "OGC:CRS84",
+    "group_by": "class"
+   }
+  },
+  {
+   "id": "con-0259",
+   "template": "count_bbox",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "count",
+    "source": "transport",
+    "bbox": [
+     106.38,
+     10.38,
+     107.02,
+     11.22
+    ],
+    "crs": "OGC:CRS84"
+   }
+  }
+ ]
+}
