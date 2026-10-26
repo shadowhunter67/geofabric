@@ -328,6 +328,12 @@ impl ExecutionEngine for DuckDbEngine {
                 let batches: Vec<_> = match stmt.query_arrow([]) {
                     Ok(arrow) => arrow.collect(),
                     Err(first) => {
+                        // a statement that WE interrupted (timeout / cancel) is not re-run to learn why it failed: that second execution of an
+                        // expensive plan, with the watchdog still interrupting it every tick, only prolonged the unwind (and was the one place a
+                        // timed-out query ran twice). The caller maps `fired` to Timeout / Cancelled anyway.
+                        if fired.load(Ordering::SeqCst) != 0 {
+                            return Err(EngineError::Engine(format!("interrupted: {first}")));
+                        }
                         // the arrow path reports a failed statement as an opaque "Error code N" without DuckDB's message; the row API
                         // keeps the message, so re-run the failing statement through it purely to say what actually went wrong
                         let detail = conn.prepare(&compiled.sql).and_then(|mut s| s.query([]).map(|_| ())).err().map(|d| d.to_string());

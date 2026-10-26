@@ -147,6 +147,10 @@ CI green on `801d776` (repository guard, architecture, web, Rust workspace, Duck
 
 1. Single machine, loopback database, one dataset family; no hardware-independence claim. 2. No remote latency calibration, no TLS (production/self-host debt). 3. The cost model's cardinality input is Parquet-footer based; the planner still reads footers for PostGIS sources (PostGIS-only source planning is P1). 4. DuckDB's metric semi-join model underestimates large cases by ×10–60; the first DuckDB abort of the whole benchmark process (one occurrence, exit code `0xffffffff` at the 60 s boundary of a 250 k-probe semi-join, not reproduced in isolation or on rerun) shows the engine can take the gateway process down at the timeout limit — it should be investigated before exposing huge semi-joins to untrusted users. 5. Two class thresholds (300,000 rows; 5,000 probes) and the 50,000-probe block are machine-calibrated constants.
 
+## Follow-up (2026-10-25): the DuckDB abort at the timeout boundary
+
+Investigated, **not reproduced and not root-caused**. The one abort (exit `0xffffffff`, case hel-0170, ~250k probes, at the 60 s boundary after 170 cases in one process) did not recur in isolation or on rerun, nor in 15 fresh-process runs of the same case with a 3 s timeout (0/15). One real defect was found on that path and fixed: when a statement was interrupted by the timeout or a cancel, the engine **ran the whole statement a second time** (to read DuckDB's error message) while the watchdog kept interrupting it. An interrupted statement is no longer re-run (`geo-engine-duckdb`, the existing timeout/cancel tests pass). Whether that second execution was the trigger is unknown; the P1 stays open until a 60 s-boundary stress run (many cases, one process) is clean, which I have not run because it takes tens of minutes.
+
 ## Remaining P0
 
 None known.
