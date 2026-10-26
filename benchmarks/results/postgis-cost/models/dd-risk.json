@@ -1,0 +1,29 @@
+{
+  "regime_feature": "ln_candidate_pairs",
+  "regime_min_ln": 16.11809565095832,
+  "model": {
+    "features": [
+      "ln_candidate_pairs",
+      "ln_probes"
+    ],
+    "intercept": -8.908387936733009,
+    "coefficients": [
+      0.9436434416820526,
+      0.18910147013999098
+    ],
+    "sigma": 0.4902552853734274,
+    "envelope": {
+      "ln_candidate_pairs": [
+        16.12425383049497,
+        19.411051821656493
+      ],
+      "ln_probes": [
+        8.926738053944975,
+        13.343167876258109
+      ]
+    },
+    "extrapolation_ln": 1.0
+  },
+  "n": 63,
+  "timeouts": 10
+}

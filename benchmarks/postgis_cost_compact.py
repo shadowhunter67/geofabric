@@ -15,9 +15,13 @@ from postgis_cost_lib import compact, load_raw  # noqa: E402
 
 
 def main() -> int:
-    src, dst = Path(sys.argv[1]), Path(sys.argv[2])
+    src, dst = Path(sys.argv[1]), Path(sys.argv[2])  # then optional flags
     rows = []
+    metric_only = "--metric-only" in sys.argv  # keep only the metric semi joins (the evidence of the metric-semijoin safety phase)
     for rec in load_raw(src):
+        sj = ((rec.get("planner") or {}).get("workload") or {}).get("semi_join")
+        if metric_only and not (sj and sj.get("predicate") == "within_distance"):
+            continue
         row = compact(rec)
         row["workload_class"] = workload_class(row)
         rows.append(row)

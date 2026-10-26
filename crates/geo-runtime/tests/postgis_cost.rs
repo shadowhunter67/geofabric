@@ -389,8 +389,57 @@ fn compare(plan: &Plan, a: &[RecordBatch], b: &[RecordBatch], geom_tol: f64) -> 
     problems
 }
 
+/// Plan-only experiments: PostGIS wrapped so that the classes in GF_COST_FORCE_VALIDATED count as Validated. The PLANNER (policy, R5d, R5e, risk, scoring)
+/// is the real one; only the validation level is pretended, to answer "what would the planner choose if this class were validated?". Never used to run.
+struct ForcedValidation {
+    inner: std::sync::Arc<geo_engine_postgis::PostGisEngine>,
+    classes: BTreeSet<String>,
+}
+
+impl geo_executor::EngineDescriptor for ForcedValidation {
+    fn id(&self) -> geo_executor::EngineId {
+        geo_executor::EngineId::new("postgis")
+    }
+    fn capabilities(&self) -> geo_executor::Capabilities {
+        self.inner.capabilities()
+    }
+    fn source_residency(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<(), String> {
+        self.inner.source_residency(plan, ctx)
+    }
+    fn calibration(&self) -> geo_executor::EngineCalibration {
+        self.inner.calibration()
+    }
+    fn cost_estimate(&self, plan: &Plan, f: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        let mut c = self.inner.cost_estimate(plan, f)?;
+        if self.classes.contains(&c.workload_class) && c.index_state == "available" {
+            c.validation = geo_executor::ModelValidation::Validated;
+        }
+        Some(c)
+    }
+    fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<geo_executor::Estimate, geo_executor::EngineError> {
+        self.inner.estimate(plan, ctx)
+    }
+    fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_executor::ExplainStep>, geo_executor::EngineError> {
+        self.inner.explain(plan, ctx)
+    }
+}
+
+fn forced_runtime(e: &Env, classes: BTreeSet<String>) -> Runtime {
+    let mut rt = Runtime::empty();
+    rt.register(Box::new(DuckDbEngine::new(DuckDbConfig::default())));
+    rt.register_client(Box::new(ForcedValidation { inner: e.rt.postgis().expect("postgis").clone(), classes }));
+    for uri in e.uris.values() {
+        let _ = rt.ensure_histogram(std::path::Path::new(uri), e.ctx.guard.as_ref());
+    }
+    rt
+}
+
 fn planner_json(e: &Env, plan: &Plan) -> serde_json::Value {
-    match e.rt.plan(plan, &e.ctx) {
+    planner_json_with(&e.rt, e, plan)
+}
+
+fn planner_json_with(rt: &Runtime, e: &Env, plan: &Plan) -> serde_json::Value {
+    match rt.plan(plan, &e.ctx) {
         Ok(p) => serde_json::json!({
             "chosen": p.engine.0,
             "candidates": p.candidates.iter().map(|c| serde_json::json!({
@@ -398,6 +447,7 @@ fn planner_json(e: &Env, plan: &Plan) -> serde_json::Value {
                 "rejected_because": c.rejected_because, "cost_model": c.cost_model,
             })).collect::<Vec<_>>(),
             "policy": p.assessment.policy,
+            "uncertainty": p.assessment.uncertainty,
             "workload": p.workload,
             "estimate_rows": p.result_rows_estimate,
         }),
@@ -426,6 +476,8 @@ fn postgis_cost_corpus() {
     // GF_COST_PLAN_ONLY=1: do not execute anything; re-plan every case with the CURRENT planner/models/validation and write {id, planner} lines.
     // Used to evaluate a model change on already measured cases (the timings do not depend on the planner) and to confirm final planner decisions.
     let plan_only = get("GF_COST_PLAN_ONLY").as_deref() == Some("1");
+    // GF_COST_FORCE_VALIDATED=class,class: plan as if these PostGIS classes were validated (plan-only experiments)
+    let forced = get("GF_COST_FORCE_VALIDATED").filter(|_| plan_only).map(|v| forced_runtime(&e, v.split(',').map(str::to_string).collect()));
     // GF_COST_ONLY=<id,id> runs just those cases; GF_COST_ENGINES=duckdb|postgis restricts the engines (isolating a case that kills the process);
     // GF_COST_SKIP=<id,id> leaves cases out and GF_COST_NOTE_CRASH=<id> records one as a crash instead of silently dropping it
     let only: BTreeSet<String> = get("GF_COST_ONLY").map(|v| v.split(',').map(str::to_string).collect()).unwrap_or_default();
@@ -446,7 +498,7 @@ fn postgis_cost_corpus() {
             }
         };
         if plan_only {
-            writeln!(out, "{}", serde_json::json!({"id": id, "planner": planner_json(&e, &plan)})).unwrap();
+            writeln!(out, "{}", serde_json::json!({"id": id, "planner": planner_json_with(forced.as_ref().unwrap_or(&e.rt), &e, &plan)})).unwrap();
             continue;
         }
         // alternate / randomize the engine order: a fixed order would hand one engine the warmer OS cache every time

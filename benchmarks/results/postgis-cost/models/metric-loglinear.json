@@ -1,0 +1,62 @@
+{
+  "postgis": {
+    "features": [
+      "ln_probes",
+      "ln_right_rows_filtered"
+    ],
+    "intercept": -1.9161932400774142,
+    "coefficients": [
+      0.7593465106052886,
+      0.1133403534639124
+    ],
+    "sigma": 0.6083790705942339,
+    "envelope": {
+      "ln_probes": [
+        1.343017587352221,
+        13.682702822430993
+      ],
+      "ln_right_rows_filtered": [
+        -2.4104963495326506,
+        11.673301618592754
+      ]
+    },
+    "extrapolation_ln": 1.0,
+    "n": 680,
+    "timeouts": 0,
+    "fit_ratio_median": 1.552652650119826,
+    "fit_ratio_p90": 2.6984087734601947
+  },
+  "duckdb": {
+    "features": [
+      "ln_right_rows_filtered",
+      "ln_candidate_pairs",
+      "ln_distance_m"
+    ],
+    "intercept": 1.5926598819632272,
+    "coefficients": [
+      0.49268076192915,
+      -0.04181048002055879,
+      0.3800498597681478
+    ],
+    "sigma": 0.9423707791962357,
+    "envelope": {
+      "ln_right_rows_filtered": [
+        -2.4104963495326506,
+        11.673301618592754
+      ],
+      "ln_candidate_pairs": [
+        -5.5426112919475425,
+        19.411051821656493
+      ],
+      "ln_distance_m": [
+        3.2188758248682006,
+        6.907755278982137
+      ]
+    },
+    "extrapolation_ln": 1.0,
+    "n": 680,
+    "timeouts": 10,
+    "fit_ratio_median": 1.8409965963803452,
+    "fit_ratio_p90": 4.339254994338583
+  }
+}

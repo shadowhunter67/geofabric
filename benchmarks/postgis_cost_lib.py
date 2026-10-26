@@ -71,7 +71,7 @@ def compact(rec: dict) -> dict:
         "engine_order": rec.get("engine_order"),
         "features": {k: wl.get(k) for k in ("bbox_selectivity", "cardinality", "result_rows", "result_rows_high", "shape", "has_bbox_filter", "has_filter", "has_sort", "has_aggregate", "has_intersects", "has_transform", "limit", "limit_certain", "bounded_by_limit", "estimate_quality", "result_geom_bytes", "result_attr_bytes")},
         "sources": [{"selected_rows": s["selected_rows"], "total_rows": s["total_rows"], "name": Path(s["uri"].replace("\\", "/")).name} for s in wl.get("sources", [])],
-        "semi_join": ({k: sj[k] for k in ("left_rows", "right_rows", "metric", "predicate", "distance_m", "expected_probes")} if sj else None),
+        "semi_join": ({k: sj[k] for k in ("left_rows", "right_rows", "metric", "predicate", "distance_m", "expected_probes", "candidate_pairs", "candidates_per_probe", "right_rows_filtered", "right_density_per_km2", "overlap_ratio", "estimate_basis")} if sj else None),
         "duckdb": {k: rec["duckdb"].get(k) for k in ("status", "first_ms", "model_ms", "rows", "digest")},
         "postgis": {k: rec["postgis"].get(k) for k in ("status", "first_ms", "model_ms", "rows", "digest")},
         "comparable": rec.get("comparable"), "identical": rec.get("identical"),

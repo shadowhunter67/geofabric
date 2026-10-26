@@ -58,7 +58,7 @@ fn rust_and_python_assign_the_same_class_to_every_calibration_case() {
 #[test]
 fn the_rust_evaluation_reproduces_the_python_prediction_of_the_shipped_model() {
     let model: ModelFile = serde_json::from_value(read("crates/geo-engine-postgis/src/cost_model_v1.json")).unwrap();
-    assert_eq!(model.model_version, "postgis-cost-v2");
+    assert!(model.model_version.starts_with("postgis-cost-v"), "{}", model.model_version);
     let fx = read("benchmarks/results/postgis-cost/model-fixtures.json");
     let rows = fx["rows"].as_array().unwrap();
     assert!(rows.len() >= 40);
@@ -77,6 +77,9 @@ fn the_rust_evaluation_reproduces_the_python_prediction_of_the_shipped_model() {
         };
         let class = workload_class(&features);
         assert_eq!(class, r["class"].as_str().unwrap());
+        if model.classes[class].loglinear.is_some() {
+            continue; // the metric classes are pinned by the log-linear parity test below (these fixtures are the additive v2 classes, unchanged since)
+        }
         let (ms, _) = evaluate(&model.classes[class], &features);
         let want = r["expected_ms"].as_f64().unwrap();
         assert!((ms - want).abs() <= 1e-6 * want.max(1.0), "class {class}: rust {ms} vs python {want}");
@@ -94,4 +97,63 @@ fn every_shipped_class_has_provenance_and_a_validation_entry_or_is_unvalidated_b
             assert!(cm.terms.values().all(|v| *v >= 0.0), "{engine}/{class}: coefficients are non-negative");
         }
     }
+}
+
+fn features_of(v: &Value) -> WorkloadFeatures {
+    let n = |k: &str| v[k].as_f64();
+    WorkloadFeatures {
+        semi_join: Some(SemiJoinFeatures {
+            expected_probes: n("expected_probes").unwrap(),
+            right_rows: n("right_rows").unwrap_or(0.0),
+            right_rows_filtered: n("right_rows_filtered"),
+            distance_m: n("distance_m"),
+            candidate_pairs: n("candidate_pairs"),
+            candidates_per_probe: n("candidates_per_probe"),
+            right_density_per_km2: n("right_density_per_km2"),
+            overlap_ratio: n("overlap_ratio"),
+            right_window_km2: n("right_window_km2"),
+            left_window_km2: n("left_window_km2"),
+            metric: v["metric"].as_bool().unwrap_or(true),
+            predicate: v["predicate"].as_str().unwrap_or("within_distance").to_string(),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn the_metric_models_answer_in_rust_exactly_what_the_python_fit_says() {
+    use geo_executor::cost_model::{timeout_verdict, LogLinearAnswer};
+    let fx = read("benchmarks/results/postgis-cost/metric-fixtures.json");
+    let models: Vec<(&str, ModelFile)> =
+        [("postgis", "crates/geo-engine-postgis/src/cost_model_v1.json"), ("duckdb", "crates/geo-engine-duckdb/src/cost_model_v1.json")].map(|(e, f)| (e, serde_json::from_value(read(f)).unwrap())).to_vec();
+    for (e, m) in &models {
+        assert_eq!(fx["models"][e].as_str().unwrap(), m.model_version, "the fixtures were made for another model version: run benchmarks/make_metric_fixtures.py");
+    }
+    let rows = fx["rows"].as_array().unwrap();
+    assert!(rows.len() >= 30);
+    let mut levels = std::collections::BTreeSet::new();
+    for r in rows {
+        let f = features_of(&r["features"]);
+        let class = workload_class(&f);
+        assert_eq!(class, r["class"].as_str().unwrap(), "{r}");
+        for (e, m) in &models {
+            let want = &r[*e];
+            let ll = m.classes[class].loglinear.as_ref().expect("metric class has a log-linear model");
+            match (ll.answer(&f, 60_000.0), want["time_ms"].as_f64()) {
+                (LogLinearAnswer::Known { time_ms, .. }, Some(w)) => assert!((time_ms - w).abs() <= 1e-6 * w.max(1.0), "{e} {class}: rust {time_ms} vs python {w}"),
+                (LogLinearAnswer::Unknown(_), None) => {}
+                (a, w) => panic!("{e}: rust {a:?} vs python {w:?}"),
+            }
+            let v = timeout_verdict(m, class, &f).expect("a timeout verdict for a metric class");
+            assert_eq!(v.level, want["risk"]["level"].as_str().unwrap(), "{e} {class} {r}");
+            match (v.timeout_probability, want["risk"]["p"].as_f64()) {
+                (Some(p), Some(w)) => assert!((p - w).abs() < 2e-6, "{e}: P(timeout) rust {p} vs python {w}"),
+                (None, None) => {}
+                (a, b) => panic!("{e}: probability {a:?} vs {b:?}"),
+            }
+            levels.insert(format!("{e}:{}", v.level));
+        }
+    }
+    assert!(levels.contains("duckdb:timeout_risk") && levels.contains("duckdb:low"), "the sample must exercise both ends: {levels:?}");
 }

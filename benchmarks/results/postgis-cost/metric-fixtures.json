@@ -1,0 +1,1124 @@
+{
+ "models": {
+  "postgis": "postgis-cost-v3",
+  "duckdb": "duckdb-semijoin-cost-v3"
+ },
+ "rows": [
+  {
+   "features": {
+    "expected_probes": 62.740506368208344,
+    "right_rows": 24.499818853803543,
+    "right_rows_filtered": 0.39757174901112124,
+    "distance_m": 25.0,
+    "candidate_pairs": 0.004835464523391652,
+    "candidates_per_probe": 7.707085586803396e-05,
+    "right_density_per_km2": 0.03925186457510595,
+    "overlap_ratio": 0.9680982671168783,
+    "right_window_km2": 10.128735368746444,
+    "left_window_km2": 9.805611158568867,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 3.0716185298798204,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 13.256375098288093,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 10.967047814430611,
+    "right_rows": 3.7392960368801114,
+    "right_rows_filtered": 2.2283252846388635,
+    "distance_m": 25.0,
+    "candidate_pairs": 0.02569456526156295,
+    "candidates_per_probe": 0.002342888049394081,
+    "right_density_per_km2": 1.193223085350389,
+    "overlap_ratio": 0.9261410957811939,
+    "right_window_km2": 1.8674842215146363,
+    "left_window_km2": 1.7295538832676551,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 0.9931992391992827,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 28.900007679616238,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 8.480230145434051,
+    "right_rows": 5.377472442105628,
+    "right_rows_filtered": 0.6710250916842909,
+    "distance_m": 200.0,
+    "candidate_pairs": 0.2906992936542039,
+    "candidates_per_probe": 0.03427964673938985,
+    "right_density_per_km2": 0.27278876130089336,
+    "overlap_ratio": 0.5448750387401142,
+    "right_window_km2": 2.459870738384754,
+    "left_window_km2": 1.340322163873066,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 0.7131049651184023,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 31.8610959635798,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 242.57785145949114,
+    "right_rows": 116.82588264180774,
+    "right_rows_filtered": 5.327548739236048,
+    "distance_m": 100.0,
+    "candidate_pairs": 0.5557854943874787,
+    "candidates_per_probe": 0.002291163397826908,
+    "right_density_per_km2": 0.072929996039075,
+    "overlap_ratio": 0.9527527120003362,
+    "right_window_km2": 73.05017178914437,
+    "left_window_km2": 69.59874928419775,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 11.51015364309693,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 66.12942682069996,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 128.4490744263953,
+    "right_rows": 57.36064194623217,
+    "right_rows_filtered": 2.6157869195764962,
+    "distance_m": 200.0,
+    "candidate_pairs": 1.202554231614528,
+    "candidates_per_probe": 0.00936210896796787,
+    "right_density_per_km2": 0.07450129600085245,
+    "overlap_ratio": 0.8667903510903371,
+    "right_window_km2": 35.110623035961225,
+    "left_window_km2": 30.433549268341306,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 6.552342038647307,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 58.69281797336191,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 225.11520266033378,
+    "right_rows": 20.54113787461417,
+    "right_rows_filtered": 12.240896802448942,
+    "distance_m": 25.0,
+    "candidate_pairs": 4.6204943911021115,
+    "candidates_per_probe": 0.020525021573393105,
+    "right_density_per_km2": 10.45330764951457,
+    "overlap_ratio": 0.9067011063859404,
+    "right_window_km2": 1.1710070355594464,
+    "left_window_km2": 1.0617533747274703,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_small",
+   "postgis": {
+    "time_ms": 11.950645994600777,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 53.84235085840768,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 5730.461218585873,
+    "right_rows": 891.8526428980168,
+    "right_rows_filtered": 891.8526428980168,
+    "distance_m": 100.0,
+    "candidate_pairs": 47268.49855576437,
+    "candidates_per_probe": 8.24863771915186,
+    "right_density_per_km2": 262.5622933554551,
+    "overlap_ratio": 0.7888661511867324,
+    "right_window_km2": 3.39672780695373,
+    "left_window_km2": 2.679563591700539,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_medium",
+   "postgis": {
+    "time_ms": 226.96728092234537,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 512.7311239068653,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 114936.38908519573,
+    "right_rows": 9138.310546909608,
+    "right_rows_filtered": 9138.310546909608,
+    "distance_m": 50.0,
+    "candidate_pairs": 47872.347130719114,
+    "candidates_per_probe": 0.41651166799084055,
+    "right_density_per_km2": 53.03191265295409,
+    "overlap_ratio": 0.9844495598268977,
+    "right_window_km2": 172.31719713206624,
+    "left_window_km2": 169.63758886726737,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2879.8812082298045,
+    "risk": {
+     "level": "low",
+     "p": 6.138380914677555e-09
+    }
+   },
+   "duckdb": {
+    "time_ms": 1239.2032882837111,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 64425.28068391588,
+    "right_rows": 4991.258145242431,
+    "right_rows_filtered": 622.83154225144,
+    "distance_m": 200.0,
+    "candidate_pairs": 50531.24130468279,
+    "candidates_per_probe": 0.7843387063007115,
+    "right_density_per_km2": 6.241569108303025,
+    "overlap_ratio": 0.919942956886587,
+    "right_window_km2": 99.78765458559141,
+    "left_window_km2": 91.79895002024635,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 1368.5571448082935,
+    "risk": {
+     "level": "low",
+     "p": 3.5704772471945034e-13
+    }
+   },
+   "duckdb": {
+    "time_ms": 557.5246337213382,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 111964.60996486037,
+    "right_rows": 18932.00365308941,
+    "right_rows_filtered": 11281.979819991193,
+    "distance_m": 25.0,
+    "candidate_pairs": 58736.12989186487,
+    "candidates_per_probe": 0.5245954941503298,
+    "right_density_per_km2": 267.17429125683344,
+    "overlap_ratio": 0.9842085789672246,
+    "right_window_km2": 42.227041258044835,
+    "left_window_km2": 41.56021627057067,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2891.4021498144057,
+    "risk": {
+     "level": "low",
+     "p": 5.335814678986139e-09
+    }
+   },
+   "duckdb": {
+    "time_ms": 1047.3995139039946,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 90558.26386587725,
+    "right_rows": 15971.384207487616,
+    "right_rows_filtered": 13156.575200230829,
+    "distance_m": 25.0,
+    "candidate_pairs": 63013.70716383115,
+    "candidates_per_probe": 0.6958360780542193,
+    "right_density_per_km2": 354.38640449282207,
+    "overlap_ratio": 0.9833122725548727,
+    "right_window_km2": 37.1249433765942,
+    "left_window_km2": 36.505412440109815,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2504.3729442246304,
+    "risk": {
+     "level": "low",
+     "p": 4.837704681293076e-10
+    }
+   },
+   "duckdb": {
+    "time_ms": 1126.4866755575938,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 27736.205162560957,
+    "right_rows": 3252.283984383164,
+    "right_rows_filtered": 52.776562947988275,
+    "distance_m": 1000.0,
+    "candidate_pairs": 67619.30345987578,
+    "candidates_per_probe": 2.437943585417015,
+    "right_density_per_km2": 0.7760215451965926,
+    "overlap_ratio": 0.5664297559657716,
+    "right_window_km2": 68.00914649169718,
+    "left_window_km2": 38.52240425073245,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_medium",
+   "postgis": {
+    "time_ms": 545.5595973616411,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 300.95322299240445,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 32783.211308722246,
+    "right_rows": 7572.96868773301,
+    "right_rows_filtered": 345.3460729101132,
+    "distance_m": 200.0,
+    "candidate_pairs": 79815.76503457663,
+    "candidates_per_probe": 2.4346536488736534,
+    "right_density_per_km2": 19.37435814674808,
+    "overlap_ratio": 0.8153709601972636,
+    "right_window_km2": 17.82490394233155,
+    "left_window_km2": 14.533909042882865,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_medium",
+   "postgis": {
+    "time_ms": 766.3703933364268,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 409.0534090199924,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 27581.130000364785,
+    "right_rows": 1747.5347341252022,
+    "right_rows_filtered": 1747.5347341252022,
+    "distance_m": 200.0,
+    "candidate_pairs": 79848.32675381168,
+    "candidates_per_probe": 2.8950346397248996,
+    "right_density_per_km2": 23.037953666724103,
+    "overlap_ratio": 0.9084948972404588,
+    "right_window_km2": 75.85459886783833,
+    "left_window_km2": 68.91351600365302,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_medium",
+   "postgis": {
+    "time_ms": 807.7348235082583,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 909.293863404403,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 360518.5985121457,
+    "right_rows": 59233.49687589462,
+    "right_rows_filtered": 5651.441098689424,
+    "distance_m": 50.0,
+    "candidate_pairs": 92377.95988053495,
+    "candidates_per_probe": 0.25623632251367134,
+    "right_density_per_km2": 32.625021862191915,
+    "overlap_ratio": 0.9845468232994906,
+    "right_window_km2": 173.22413215724757,
+    "left_window_km2": 170.54726903422923,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 6496.995099828398,
+    "risk": {
+     "level": "low",
+     "p": 0.00021355346850082668
+    }
+   },
+   "duckdb": {
+    "time_ms": 951.438167651814,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 49257.473983795906,
+    "right_rows": 7679.574593488331,
+    "right_rows_filtered": 7679.574593488331,
+    "distance_m": 50.0,
+    "candidate_pairs": 95667.59788648757,
+    "candidates_per_probe": 1.9421945574789132,
+    "right_density_per_km2": 247.2878914151562,
+    "overlap_ratio": 0.9634850499511429,
+    "right_window_km2": 31.055198657485306,
+    "left_window_km2": 29.921219629749896,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_medium",
+   "postgis": {
+    "time_ms": 1483.835236564656,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   },
+   "duckdb": {
+    "time_ms": 1104.9927129790947,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 388691.07887335087,
+    "right_rows": 63924.32591214332,
+    "right_rows_filtered": 6098.990971659527,
+    "distance_m": 50.0,
+    "candidate_pairs": 98352.10897689442,
+    "candidates_per_probe": 0.25303412998820324,
+    "right_density_per_km2": 32.21730604686378,
+    "overlap_ratio": 0.9850435104075429,
+    "right_window_km2": 189.30791304486607,
+    "left_window_km2": 186.47653121364075,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 6938.683151554141,
+    "risk": {
+     "level": "low",
+     "p": 0.0003817421358687234
+    }
+   },
+   "duckdb": {
+    "time_ms": 985.2576573463073,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 64762.47927822397,
+    "right_rows": 11550.661553877473,
+    "right_rows_filtered": 11550.661553877473,
+    "distance_m": 50.0,
+    "candidate_pairs": 107094.9724557912,
+    "candidates_per_probe": 1.6536576988614657,
+    "right_density_per_km2": 210.55023756461694,
+    "overlap_ratio": 0.9725119186452946,
+    "right_window_km2": 54.859408792320295,
+    "left_window_km2": 53.35142890036595,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 1913.0522530157286,
+    "risk": {
+     "level": "low",
+     "p": 5.715872219980156e-12
+    }
+   },
+   "duckdb": {
+    "time_ms": 1344.769631497576,
+    "risk": {
+     "level": "low",
+     "p": null
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 101875.74079524874,
+    "right_rows": 10734.183774153578,
+    "right_rows_filtered": 6396.726249538593,
+    "distance_m": 1000.0,
+    "candidate_pairs": 10061771.801072014,
+    "candidates_per_probe": 98.76513998847184,
+    "right_density_per_km2": 31.437920468656625,
+    "overlap_ratio": 0.7339488285181721,
+    "right_window_km2": 203.47167224104666,
+    "left_window_km2": 149.33779547794967,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2523.698789672953,
+    "risk": {
+     "level": "low",
+     "p": 1.1290812729214394e-09
+    }
+   },
+   "duckdb": {
+    "time_ms": 2595.194837022411,
+    "risk": {
+     "level": "low",
+     "p": 1.4596377617692724e-07
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 64668.416091186606,
+    "right_rows": 12634.47419912965,
+    "right_rows_filtered": 12634.47419912965,
+    "distance_m": 500.0,
+    "candidate_pairs": 11768318.756627707,
+    "candidates_per_probe": 181.9793875890454,
+    "right_density_per_km2": 231.70335260505988,
+    "overlap_ratio": 0.7400670567716452,
+    "right_window_km2": 54.52866372920036,
+    "left_window_km2": 40.354867675760076,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 1930.4659382178618,
+    "risk": {
+     "level": "low",
+     "p": 6.075362435353782e-12
+    }
+   },
+   "duckdb": {
+    "time_ms": 2770.4793589353358,
+    "risk": {
+     "level": "low",
+     "p": 2.8320216316490843e-07
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 482302.5100905946,
+    "right_rows": 83710.71743042227,
+    "right_rows_filtered": 49884.98006194363,
+    "distance_m": 200.0,
+    "candidate_pairs": 12789612.597773535,
+    "candidates_per_probe": 26.517823005671616,
+    "right_density_per_km2": 211.0221305694309,
+    "overlap_ratio": 0.9475850837568995,
+    "right_window_km2": 236.39691215007602,
+    "left_window_km2": 224.0061877996022,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 10372.567158807304,
+    "risk": {
+     "level": "low",
+     "p": 0.0037841127981601552
+    }
+   },
+   "duckdb": {
+    "time_ms": 3833.9615102045955,
+    "risk": {
+     "level": "low",
+     "p": 2.379886614511939e-05
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 76563.29318434914,
+    "right_rows": 18503.731012172648,
+    "right_rows_filtered": 11026.763130790481,
+    "distance_m": 500.0,
+    "candidate_pairs": 15009882.589328444,
+    "candidates_per_probe": 196.04541504226628,
+    "right_density_per_km2": 249.61277499583113,
+    "overlap_ratio": 0.7145019751992818,
+    "right_window_km2": 44.17547591854881,
+    "left_window_km2": 31.563464799171435,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2160.948138838391,
+    "risk": {
+     "level": "low",
+     "p": 5.0348170077541e-11
+    }
+   },
+   "duckdb": {
+    "time_ms": 2564.5736369258,
+    "risk": {
+     "level": "low",
+     "p": 3.9310102726286544e-06
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 113324.76079566512,
+    "right_rows": 21461.63065227471,
+    "right_rows_filtered": 21461.63065227471,
+    "distance_m": 500.0,
+    "candidate_pairs": 19192856.074254192,
+    "candidates_per_probe": 169.36154058035615,
+    "right_density_per_km2": 215.63781082417844,
+    "overlap_ratio": 0.8057851908163547,
+    "right_window_km2": 99.52628701917948,
+    "left_window_km2": 80.19680817699282,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 3138.657607986536,
+    "risk": {
+     "level": "low",
+     "p": 9.968081915445737e-09
+    }
+   },
+   "duckdb": {
+    "time_ms": 3524.048644031017,
+    "risk": {
+     "level": "low",
+     "p": 6.040451212818709e-05
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 64296.957399954685,
+    "right_rows": 15655.306237753019,
+    "right_rows_filtered": 15655.306237753019,
+    "distance_m": 500.0,
+    "candidate_pairs": 21873876.211261477,
+    "candidates_per_probe": 340.20079791951235,
+    "right_density_per_km2": 433.157109061579,
+    "overlap_ratio": 0.6877610693048413,
+    "right_window_km2": 36.14232783035638,
+    "left_window_km2": 24.857286035772027,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 1969.3136613332779,
+    "risk": {
+     "level": "low",
+     "p": 6.813105635217198e-12
+    }
+   },
+   "duckdb": {
+    "time_ms": 3000.335413510934,
+    "risk": {
+     "level": "low",
+     "p": 6.908908770109079e-05
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 81769.80629551476,
+    "right_rows": 18658.91090265279,
+    "right_rows_filtered": 11119.238096723617,
+    "distance_m": 1000.0,
+    "candidate_pairs": 30334576.159378774,
+    "candidates_per_probe": 370.9752723364674,
+    "right_density_per_km2": 118.0850967144217,
+    "overlap_ratio": 0.6234458457485803,
+    "right_window_km2": 94.16292492535705,
+    "left_window_km2": 58.7054843682493,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2273.7973322195157,
+    "risk": {
+     "level": "low",
+     "p": 1.1778034103571144e-10
+    }
+   },
+   "duckdb": {
+    "time_ms": 3254.114947315234,
+    "risk": {
+     "level": "low",
+     "p": 0.001003208051046256
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 311253.34197912255,
+    "right_rows": 65439.827571059366,
+    "right_rows_filtered": 6243.584298274616,
+    "distance_m": 1000.0,
+    "candidate_pairs": 30972087.087931685,
+    "candidates_per_probe": 99.50764509384497,
+    "right_density_per_km2": 31.67426718423883,
+    "overlap_ratio": 0.7293191414287918,
+    "right_window_km2": 197.11850828174596,
+    "left_window_km2": 143.76230121976715,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 5877.067033462389,
+    "risk": {
+     "level": "low",
+     "p": 7.318734065697718e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 2446.635153017798,
+    "risk": {
+     "level": "low",
+     "p": 0.0056439671266209634
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 168496.21155934193,
+    "right_rows": 37203.44501046148,
+    "right_rows_filtered": 22170.31665180802,
+    "distance_m": 500.0,
+    "candidate_pairs": 34450906.07844354,
+    "candidates_per_probe": 204.4610128596893,
+    "right_density_per_km2": 260.3278469295611,
+    "overlap_ratio": 0.791011031854123,
+    "right_window_km2": 85.16306232043941,
+    "left_window_km2": 67.36492180194776,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 4257.475505907246,
+    "risk": {
+     "level": "low",
+     "p": 6.736218450820175e-07
+    }
+   },
+   "duckdb": {
+    "time_ms": 3494.385396681808,
+    "risk": {
+     "level": "low",
+     "p": 0.005151690418594201
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 233835.32313698743,
+    "right_rows": 47128.87208824433,
+    "right_rows_filtered": 28085.087747791153,
+    "distance_m": 500.0,
+    "candidate_pairs": 36517108.36623861,
+    "candidates_per_probe": 156.16592000022956,
+    "right_density_per_km2": 198.83662488424014,
+    "overlap_ratio": 0.8355582232414029,
+    "right_window_km2": 141.24705528542285,
+    "left_window_km2": 118.02013855236812,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 5608.707994369187,
+    "risk": {
+     "level": "low",
+     "p": 1.5836148977044218e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 3916.6377488900303,
+    "risk": {
+     "level": "low",
+     "p": 0.009983572996427492
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 102478.84491736518,
+    "right_rows": 23345.83507582579,
+    "right_rows_filtered": 13912.274951591213,
+    "distance_m": 1000.0,
+    "candidate_pairs": 40856621.27551978,
+    "candidates_per_probe": 398.6834678753934,
+    "right_density_per_km2": 126.90488928277543,
+    "overlap_ratio": 0.6461999148127503,
+    "right_window_km2": 109.62757250897741,
+    "left_window_km2": 70.84132801642981,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2768.4053050853845,
+    "risk": {
+     "level": "low",
+     "p": 2.2376733799234216e-09
+    }
+   },
+   "duckdb": {
+    "time_ms": 3589.012737131291,
+    "risk": {
+     "level": "low",
+     "p": 0.007569496633543005
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 287540.80903910316,
+    "right_rows": 56502.64046492863,
+    "right_rows_filtered": 33671.113801920204,
+    "distance_m": 500.0,
+    "candidate_pairs": 42976436.33593439,
+    "candidates_per_probe": 149.46204150830624,
+    "right_density_per_km2": 190.30098168522383,
+    "overlap_ratio": 0.8516947452433352,
+    "right_window_km2": 176.93610145225352,
+    "left_window_km2": 150.69554785072597,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 6698.433085604044,
+    "risk": {
+     "level": "low",
+     "p": 9.452021873723737e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 4253.73282686117,
+    "risk": {
+     "level": "low",
+     "p": 0.02657356334021954
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 244816.60525700654,
+    "right_rows": 49132.58258323395,
+    "right_rows_filtered": 49132.58258323395,
+    "distance_m": 500.0,
+    "candidate_pairs": 66792824.95682774,
+    "candidates_per_probe": 272.82800072613196,
+    "right_density_per_km2": 347.3753994355449,
+    "overlap_ratio": 0.8346680466799412,
+    "right_window_km2": 141.43944177702323,
+    "left_window_km2": 118.05498259152925,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 6187.665804493785,
+    "risk": {
+     "level": "low",
+     "p": 3.18446940821282e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 5030.584008841839,
+    "risk": {
+     "level": "elevated",
+     "p": 0.12568248489379608
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 141198.96142736304,
+    "right_rows": 30418.09390095145,
+    "right_rows_filtered": 30418.09390095145,
+    "distance_m": 1000.0,
+    "candidate_pairs": 92841916.34970285,
+    "candidates_per_probe": 657.5254903518784,
+    "right_density_per_km2": 209.29686399684755,
+    "overlap_ratio": 0.6894846379970055,
+    "right_window_km2": 145.3346854800921,
+    "left_window_km2": 100.20603300664996,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 3858.639414584753,
+    "risk": {
+     "level": "low",
+     "p": 1.394286033296055e-07
+    }
+   },
+   "duckdb": {
+    "time_ms": 5098.596693352474,
+    "risk": {
+     "level": "timeout_risk",
+     "p": 0.23408008604938346
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 89197.41124849167,
+    "right_rows": 27441.81485356996,
+    "right_rows_filtered": 27441.81485356996,
+    "distance_m": 1000.0,
+    "candidate_pairs": 109733459.28575312,
+    "candidates_per_probe": 1230.2314355295678,
+    "right_density_per_km2": 391.59482822313817,
+    "overlap_ratio": 0.5703047474871822,
+    "right_window_km2": 70.07706148236741,
+    "left_window_km2": 39.96528085334529,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 2690.864542010602,
+    "risk": {
+     "level": "low",
+     "p": 7.29656113307442e-10
+    }
+   },
+   "duckdb": {
+    "time_ms": 4812.637561609968,
+    "risk": {
+     "level": "timeout_risk",
+     "p": 0.28065323970108913
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 219672.04300960945,
+    "right_rows": 55584.76795779065,
+    "right_rows_filtered": 33124.1342379708,
+    "distance_m": 1000.0,
+    "candidate_pairs": 168171289.9257424,
+    "candidates_per_probe": 765.5561792102321,
+    "right_density_per_km2": 243.68410027170665,
+    "overlap_ratio": 0.6785955986612664,
+    "right_window_km2": 135.93063396847617,
+    "left_window_km2": 92.24192993424356,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 5449.801392446433,
+    "risk": {
+     "level": "low",
+     "p": 1.0137191327697082e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 5186.789201490797,
+    "risk": {
+     "level": "timeout_risk",
+     "p": 0.7218995976838005
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 201252.2676930871,
+    "right_rows": 46007.433345807294,
+    "right_rows_filtered": 46007.433345807294,
+    "distance_m": 1000.0,
+    "candidate_pairs": 218355201.5035541,
+    "candidates_per_probe": 1084.9825644526363,
+    "right_density_per_km2": 345.360676602316,
+    "overlap_ratio": 0.6776472969674686,
+    "right_window_km2": 133.2156104117928,
+    "left_window_km2": 90.27319830942275,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 5292.629344059119,
+    "risk": {
+     "level": "low",
+     "p": 5.656234264739268e-06
+    }
+   },
+   "duckdb": {
+    "time_ms": 6031.900951664629,
+    "risk": {
+     "level": "timeout_risk",
+     "p": 0.8548254955380644
+    }
+   }
+  },
+  {
+   "features": {
+    "expected_probes": 226146.39508235408,
+    "right_rows": 54537.142585916255,
+    "right_rows_filtered": 54537.142585916255,
+    "distance_m": 1000.0,
+    "candidate_pairs": 236279477.31601444,
+    "candidates_per_probe": 1044.8076222040606,
+    "right_density_per_km2": 332.5725953077315,
+    "overlap_ratio": 0.7038208923712168,
+    "right_window_km2": 163.9856781808877,
+    "left_window_km2": 115.41654635337156,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "class": "semijoin_metric_large",
+   "postgis": {
+    "time_ms": 5895.265242991587,
+    "risk": {
+     "level": "low",
+     "p": 1.7344129695562316e-05
+    }
+   },
+   "duckdb": {
+    "time_ms": 6537.522969466593,
+    "risk": {
+     "level": "timeout_risk",
+     "p": 0.8951139019319271
+    }
+   }
+  }
+ ]
+}

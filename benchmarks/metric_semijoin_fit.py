@@ -151,10 +151,10 @@ def cmd_select(args: list[str]) -> int:
 def cmd_fit(args: list[str]) -> int:
     out = Path(args[args.index("--out") + 1])
     feats = args[args.index("--features") + 1:]
-    paths = [Path(a) for a in args[: args.index("--out")] if not a.startswith("--")]
+    paths = [Path(a) for a in itertools.takewhile(lambda x: not x.startswith("--"), args)]
     engine = args[args.index("--engine") + 1] if "--engine" in args else None
     rows = records(paths)
-    model = {}
+    model = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}  # one engine per call: the other engine's entry is kept
     for e in ([engine] if engine else ["duckdb", "postgis"]):
         X, y, cens = observations(rows, e, feats)
         beta, sigma = tobit(X, y, cens)
@@ -202,7 +202,41 @@ def cmd_risk(args: list[str]) -> int:
     return 0
 
 
+def cmd_fit_risk(args: list[str]) -> int:
+    """Regime-restricted timeout-risk model of ONE engine + out-of-fold probabilities to choose the thresholds.
+
+    fit-risk <raw jsonl>... --engine duckdb --regime-feature ln_candidate_pairs --regime-min 1e7 --features ln_candidate_pairs ln_probes --out piece.json
+    """
+    def opt(name, default=None):
+        return args[args.index(name) + 1] if name in args else default
+
+    engine, rfeat, rmin = opt("--engine"), opt("--regime-feature"), math.log(float(opt("--regime-min")))
+    feats = args[args.index("--features") + 1: args.index("--out")]
+    out = Path(opt("--out"))
+    paths = [Path(a) for a in itertools.takewhile(lambda x: not x.startswith("--"), args)]
+    rows = [r for r in records(paths) if r["x"].get(rfeat) is not None and r["x"][rfeat] >= rmin]
+    X, y, cens = observations(rows, engine, feats)
+    print(f"{engine}: regime {rfeat} >= {math.exp(rmin):.1e}: n={len(y)}, timeouts={int(cens.sum())}")
+    beta, sigma = tobit(X, y, cens)
+    idx = np.random.RandomState(3).permutation(len(y))
+    oof = np.zeros(len(y))
+    for f in range(5):
+        te = idx[f::5]
+        tr = np.setdiff1d(idx, te)
+        b, sg = tobit(X[tr], y[tr], cens[tr])
+        oof[te] = 1.0 - phi((LN_T - X[te] @ b) / sg)
+    print("  out-of-fold P(timeout): at the timeouts", np.round(np.sort(oof[cens]), 2).tolist())
+    print("  at completed runs: p50 %.2f p90 %.2f p95 %.2f max %.2f" % tuple(np.percentile(oof[~cens], q) for q in (50, 90, 95, 100)))
+    for th in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6):
+        print(f"  threshold {th:.1f}: flags {int((oof[cens] >= th).sum())}/{int(cens.sum())} timeouts and {int((oof[~cens] >= th).sum())}/{int((~cens).sum())} completed runs")
+    env = {f: [float(X[:, 1 + i].min()), float(X[:, 1 + i].max())] for i, f in enumerate(feats)}
+    piece = {"regime_feature": rfeat, "regime_min_ln": rmin, "model": {"features": feats, "intercept": float(beta[0]), "coefficients": [float(b) for b in beta[1:]], "sigma": float(sigma), "envelope": env, "extrapolation_ln": 1.0},
+             "n": int(len(y)), "timeouts": int(cens.sum())}
+    out.write_text(json.dumps(piece, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return 0
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1]
     rest = sys.argv[2:]
-    sys.exit({"select": cmd_select, "fit": cmd_fit, "risk": cmd_risk}[cmd](rest))
+    sys.exit({"select": cmd_select, "fit": cmd_fit, "risk": cmd_risk, "fit-risk": cmd_fit_risk}[cmd](rest))

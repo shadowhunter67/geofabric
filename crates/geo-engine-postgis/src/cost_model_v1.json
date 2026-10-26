@@ -1,20 +1,22 @@
 {
-  "model_version": "postgis-cost-v2",
+  "model_version": "postgis-cost-v3",
   "engine": "postgis",
   "provenance": {
-    "benchmark_commit": "f1c504f",
+    "benchmark_commit": "0f1903c",
     "calibration_seed": 20261103,
     "calibration_seeds": [
       20261103,
       20261107,
-      20261111
+      20261111,
+      20261201,
+      20261205
     ],
     "calibration_cases": 720,
     "dataset_versions": "Overture 2026-09-23.1; PostGIS rows admin=325, buildings=3845734, landuse=13277, places=449849, transport=453550",
     "machine_class": "Intel(R) Core(TM) i7-14700, 31.8 GB RAM, Windows 11, loopback PostgreSQL + DuckDB on the same host (PostgreSQL 16.9; PostGIS 3.6.2)",
     "build_profile": "release (cargo --release); engine `execute` wall time, planning excluded",
     "fitted_at": "2026-10-26",
-    "method": "per workload class, non-negative coefficients minimising the mean squared log(pred/actual) (both floored at 1 ms: the gates' own metric), started from NNLS on relative error; DuckDB timeouts enter as censored observations at 60000 ms"
+    "method": "per workload class, non-negative coefficients minimising the mean squared log(pred/actual) (both floored at 1 ms: the gates' own metric), started from NNLS on relative error; DuckDB timeouts enter as censored observations at 60000 ms | postgis-cost-v3: the three metric semi-join classes use a pooled log-linear Tobit model (timeouts censored) on the histogram-based plan-time features of 680 measured metric semi joins (seeds [20261201, 20261205] + earlier sets re-planned); their timeout risk comes from a regime-restricted Tobit model; all other classes keep the postgis-cost-v2 coefficients | thresholds: elevated at P>=0.10, timeout_risk at P>=0.20, chosen on the out-of-fold probabilities of the non-confirmation data (0.20 flags 9 of 10 DuckDB timeouts with 2 of 53 completed runs flagged; 0.30 flags 8 of 10 with the same 2)"
   },
   "classes": {
     "indexed_bbox": {
@@ -81,9 +83,32 @@
         "probe": 44.516029,
         "right": 23.341771
       },
-      "n_calibration": 59,
-      "fit_ratio_median": 1.952,
-      "fit_ratio_p90": 5.857
+      "n_calibration": 680,
+      "fit_ratio_median": 1.553,
+      "fit_ratio_p90": 2.698,
+      "loglinear": {
+        "features": [
+          "ln_probes",
+          "ln_right_rows_filtered"
+        ],
+        "intercept": -1.9161932400774142,
+        "coefficients": [
+          0.7593465106052886,
+          0.1133403534639124
+        ],
+        "sigma": 0.6083790705942339,
+        "envelope": {
+          "ln_probes": [
+            1.343017587352221,
+            13.682702822430993
+          ],
+          "ln_right_rows_filtered": [
+            -2.4104963495326506,
+            11.673301618592754
+          ]
+        },
+        "extrapolation_ln": 1.0
+      }
     },
     "semijoin_metric_large": {
       "terms": {
@@ -93,9 +118,98 @@
         "probe": 0.0,
         "right": 278.578046
       },
-      "n_calibration": 104,
-      "fit_ratio_median": 1.658,
-      "fit_ratio_p90": 3.175
+      "n_calibration": 680,
+      "fit_ratio_median": 1.553,
+      "fit_ratio_p90": 2.698,
+      "loglinear": {
+        "features": [
+          "ln_probes",
+          "ln_right_rows_filtered"
+        ],
+        "intercept": -1.9161932400774142,
+        "coefficients": [
+          0.7593465106052886,
+          0.1133403534639124
+        ],
+        "sigma": 0.6083790705942339,
+        "envelope": {
+          "ln_probes": [
+            1.343017587352221,
+            13.682702822430993
+          ],
+          "ln_right_rows_filtered": [
+            -2.4104963495326506,
+            11.673301618592754
+          ]
+        },
+        "extrapolation_ln": 1.0
+      }
+    },
+    "semijoin_metric_medium": {
+      "terms": {
+        "startup": 0.0,
+        "scan": 0.0,
+        "result": 13.130479,
+        "probe": 44.516029,
+        "right": 23.341771
+      },
+      "n_calibration": 680,
+      "fit_ratio_median": 1.553,
+      "fit_ratio_p90": 2.698,
+      "loglinear": {
+        "features": [
+          "ln_probes",
+          "ln_right_rows_filtered"
+        ],
+        "intercept": -1.9161932400774142,
+        "coefficients": [
+          0.7593465106052886,
+          0.1133403534639124
+        ],
+        "sigma": 0.6083790705942339,
+        "envelope": {
+          "ln_probes": [
+            1.343017587352221,
+            13.682702822430993
+          ],
+          "ln_right_rows_filtered": [
+            -2.4104963495326506,
+            11.673301618592754
+          ]
+        },
+        "extrapolation_ln": 1.0
+      }
+    }
+  },
+  "timeout_risk": {
+    "version": "postgis-timeout-risk-v1",
+    "timeout_ms": 60000.0,
+    "elevated_at": 0.1,
+    "timeout_risk_at": 0.2,
+    "regime_feature": "ln_probes",
+    "regime_min_ln": 10.819778284410283,
+    "model": {
+      "features": [
+        "ln_probes",
+        "ln_right_rows_filtered"
+      ],
+      "intercept": -4.815300877302089,
+      "coefficients": [
+        1.0426379981552376,
+        0.06925271761612577
+      ],
+      "sigma": 0.5331686604567496,
+      "envelope": {
+        "ln_probes": [
+          10.824987585088401,
+          13.682702822430993
+        ],
+        "ln_right_rows_filtered": [
+          4.352362420536089,
+          11.673301618592754
+        ]
+      },
+      "extrapolation_ln": 1.0
     }
   }
 }

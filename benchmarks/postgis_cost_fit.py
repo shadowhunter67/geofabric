@@ -31,6 +31,8 @@ from postgis_cost_lib import compact, load_raw  # noqa: E402
 TERMS = ["startup", "scan", "result", "result_geometry", "probe", "right"]
 CARDINALITY_BROAD = 300_000  # mirror of geo_executor::cost_model (a Rust test pins both)
 PROBES_SMALL = 5_000.0
+PROBES_MEDIUM_MAX = 50_000.0
+PAIRS_HEAVY = 1.0e7  # mirror of geo_executor::cost_model (a Rust test pins both)
 LOG_FIT = True  # v2 method; v1 (NNLS on relative error) = False
 WEIGHT_FLOOR_MS = 1.0
 TIMEOUT_MS = 60_000.0  # a timed-out run is a censored observation: at least this long
@@ -51,7 +53,12 @@ def workload_class(r: dict) -> str:
     if sj:
         if sj["predicate"] == "intersects":
             return "semijoin_intersects"
-        return "semijoin_metric_small" if sj["expected_probes"] <= PROBES_SMALL else "semijoin_metric_large"
+        if sj["expected_probes"] <= PROBES_SMALL:
+            return "semijoin_metric_small"
+        pairs = sj.get("candidate_pairs")
+        if sj["expected_probes"] <= PROBES_MEDIUM_MAX and pairs is not None and pairs < PAIRS_HEAVY:
+            return "semijoin_metric_medium"
+        return "semijoin_metric_large"
     if scan_rows(r) > CARDINALITY_BROAD:
         return "broad_scan"
     if f["has_aggregate"]:

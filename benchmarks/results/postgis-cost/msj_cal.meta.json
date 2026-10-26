@@ -1,0 +1,26 @@
+{
+  "cases": "cases-msj_cal.json",
+  "out": "msj_cal.jsonl",
+  "commit": "0f1903cb62a52fc88f95f2f61a21385a36f59ad7",
+  "dirty": true,
+  "watchdog_before": {
+    "active": true,
+    "pids": [
+      24968,
+      23452
+    ],
+    "log_exists": true
+  },
+  "started": "2026-10-26T16:07:35",
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit": 0,
+      "class": "OK",
+      "seconds": 3398,
+      "watchdog_lines": []
+    }
+  ],
+  "finished": "2026-10-26T17:04:13",
+  "result": "OK"
+}

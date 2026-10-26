@@ -13,7 +13,7 @@
 //! from the catalog the operator loaded (`spatially_indexed`, `metric_indexes`).
 
 use crate::catalog::PostGisCatalog;
-use geo_executor::cost_model::{evaluate, timeout_verdict, workload_class, ModelFile, ValidationFile, CLASS_SEMIJOIN_METRIC_LARGE, CLASS_SEMIJOIN_METRIC_SMALL, PROBES_SMALL};
+use geo_executor::cost_model::{evaluate, timeout_verdict, workload_class, ModelFile, ValidationFile, CLASS_SEMIJOIN_METRIC_LARGE, CLASS_SEMIJOIN_METRIC_MEDIUM, CLASS_SEMIJOIN_METRIC_SMALL, PROBES_MEDIUM_MAX};
 use geo_executor::{EngineCostEstimate, ModelValidation, RiskVerdict, WorkloadFeatures};
 use geo_ir::{Plan, PlanNode};
 use geo_types::Crs;
@@ -23,7 +23,7 @@ use std::sync::OnceLock;
 /// Calibration: above ~5 k probes the winner flips with right-side density and distance; above 50 k PostGIS took 2-35 s in most measured cases where
 /// DuckDB took 0.3-20 s, and the largest known case (189,772 ids) took 12-17 s against 1.0-1.9 s. No validated efficient strategy exists for it
 /// (a two-stage bbox prefilter or a generated projected column were not part of this phase).
-pub const BLOCK_PROBES: f64 = 50_000.0;
+pub const BLOCK_PROBES: f64 = PROBES_MEDIUM_MAX;
 
 fn model() -> &'static ModelFile {
     static M: OnceLock<ModelFile> = OnceLock::new();
@@ -75,7 +75,7 @@ pub fn index_state(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) 
 /// a different number.
 fn risk(class: &str, f: &WorkloadFeatures, index: &str, timeout: Option<RiskVerdict>) -> RiskVerdict {
     let probes = f.semi_join.as_ref().map_or(0.0, |s| s.expected_probes);
-    let metric = class == CLASS_SEMIJOIN_METRIC_SMALL || class == CLASS_SEMIJOIN_METRIC_LARGE;
+    let metric = class == CLASS_SEMIJOIN_METRIC_SMALL || class == CLASS_SEMIJOIN_METRIC_MEDIUM || class == CLASS_SEMIJOIN_METRIC_LARGE;
     let mut v = timeout.unwrap_or_else(RiskVerdict::low);
     if metric && probes > BLOCK_PROBES {
         let why = format!(
@@ -89,7 +89,7 @@ fn risk(class: &str, f: &WorkloadFeatures, index: &str, timeout: Option<RiskVerd
         v.overridable = true;
         return v;
     }
-    if v.level == "low" && (class == CLASS_SEMIJOIN_METRIC_LARGE || (class == CLASS_SEMIJOIN_METRIC_SMALL && probes > PROBES_SMALL)) {
+    if v.level == "low" && class == CLASS_SEMIJOIN_METRIC_LARGE {
         return RiskVerdict::new("elevated", format!("~{probes:.0} right-side probes: the faster engine depends on right-side density and distance"));
     }
     if v.level == "low" && index != "available" {
@@ -116,6 +116,7 @@ pub fn estimate(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use geo_executor::cost_model::PROBES_SMALL;
     use geo_executor::SemiJoinFeatures;
 
     fn metric(probes: f64) -> WorkloadFeatures {

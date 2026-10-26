@@ -1,0 +1,29 @@
+{
+  "regime_feature": "ln_probes",
+  "regime_min_ln": 10.819778284410283,
+  "model": {
+    "features": [
+      "ln_probes",
+      "ln_right_rows_filtered"
+    ],
+    "intercept": -4.815300877302089,
+    "coefficients": [
+      1.0426379981552376,
+      0.06925271761612577
+    ],
+    "sigma": 0.5331686604567496,
+    "envelope": {
+      "ln_probes": [
+        10.824987585088401,
+        13.682702822430993
+      ],
+      "ln_right_rows_filtered": [
+        4.352362420536089,
+        11.673301618592754
+      ]
+    },
+    "extrapolation_ln": 1.0
+  },
+  "n": 221,
+  "timeouts": 0
+}

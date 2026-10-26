@@ -1,5 +1,5 @@
 {
-  "model_version": "duckdb-semijoin-cost-v2",
+  "model_version": "duckdb-semijoin-cost-v3",
   "heldout_seed": 20261115,
   "classes": {}
 }

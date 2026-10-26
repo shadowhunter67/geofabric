@@ -1,0 +1,26 @@
+{
+  "cases": "cases-msj_disc.json",
+  "out": "msj_disc.jsonl",
+  "commit": "e90aa9b340efc36b64770e0aa486a9e513161af2",
+  "dirty": true,
+  "watchdog_before": {
+    "active": true,
+    "pids": [
+      24968,
+      2788
+    ],
+    "log_exists": true
+  },
+  "started": "2026-10-26T15:15:14",
+  "attempts": [
+    {
+      "attempt": 1,
+      "exit": 0,
+      "class": "OK",
+      "seconds": 2728,
+      "watchdog_lines": []
+    }
+  ],
+  "finished": "2026-10-26T16:00:42",
+  "result": "OK"
+}

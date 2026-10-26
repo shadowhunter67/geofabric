@@ -17,6 +17,12 @@ use std::collections::BTreeMap;
 
 pub const CARDINALITY_BROAD: u64 = 300_000;
 pub const PROBES_SMALL: f64 = 5_000.0;
+/// Metric semi joins with more right-side probes than this are "large" whatever their candidate pairs (also the PostGIS repeated-probe block).
+pub const PROBES_MEDIUM_MAX: f64 = 50_000.0;
+/// Candidate pairs (probes x candidates per probe) from which a metric semi join is in the HEAVY regime: DuckDB's times left the 1-30 s range and all 6
+/// observed timeouts lie at or above 7.8e7 pairs (discovery data: 480 metric semi joins). Below it the engine-choice error of the log-linear models was
+/// small (P90 regret <= 1.32); above it, 7.2. Set from the discovery data, before the calibration and confirmation sets were run.
+pub const PAIRS_HEAVY: f64 = 1.0e7;
 
 pub const CLASS_INDEXED_BBOX: &str = "indexed_bbox";
 pub const CLASS_INDEXED_SPATIAL: &str = "indexed_spatial";
@@ -24,6 +30,7 @@ pub const CLASS_AGGREGATE: &str = "aggregate";
 pub const CLASS_BROAD_SCAN: &str = "broad_scan";
 pub const CLASS_SEMIJOIN_INTERSECTS: &str = "semijoin_intersects";
 pub const CLASS_SEMIJOIN_METRIC_SMALL: &str = "semijoin_metric_small";
+pub const CLASS_SEMIJOIN_METRIC_MEDIUM: &str = "semijoin_metric_medium";
 pub const CLASS_SEMIJOIN_METRIC_LARGE: &str = "semijoin_metric_large";
 
 /// Rows the engine has to read and filter. An UNORDERED, non-aggregate LIMIT stops at `limit` rows (measured: 16 ms at 900 k matching rows);
@@ -43,6 +50,9 @@ pub fn workload_class(f: &WorkloadFeatures) -> &'static str {
             CLASS_SEMIJOIN_INTERSECTS
         } else if sj.expected_probes <= PROBES_SMALL {
             CLASS_SEMIJOIN_METRIC_SMALL
+        } else if sj.expected_probes <= PROBES_MEDIUM_MAX && sj.candidate_pairs.is_some_and(|p| p < PAIRS_HEAVY) {
+            // candidate pairs UNKNOWN (no statistics) is never "medium": an unknown amount of work is not a moderate one
+            CLASS_SEMIJOIN_METRIC_MEDIUM
         } else {
             CLASS_SEMIJOIN_METRIC_LARGE
         };
@@ -155,7 +165,9 @@ impl LogLinear {
     }
 }
 
-/// Probability thresholds that turn a timeout probability into the risk states of the planner policy.
+/// The timeout-risk model of an engine for the metric semi-join classes: a log-linear model fitted ONLY on the regime where timeouts can happen, the
+/// feature that defines that regime, and the probability thresholds of the planner policy. Below the regime the verdict is `low` without a probability
+/// (no timeout was observed there and the model was not fitted there); a plan whose regime feature is unknown is `unknown`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct TimeoutRiskSpec {
     /// e.g. `duckdb-timeout-risk-v1`: versioned apart from the cost model and from the planner policy
@@ -163,6 +175,10 @@ pub struct TimeoutRiskSpec {
     pub timeout_ms: f64,
     pub elevated_at: f64,
     pub timeout_risk_at: f64,
+    /// Feature (a `feature_ln` name) and its minimum (ln units) that define the regime the model covers.
+    pub regime_feature: String,
+    pub regime_min_ln: f64,
+    pub model: LogLinear,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -205,8 +221,19 @@ impl ValidationFile {
 /// the class (then the engine states no timeout opinion at all - that is different from `unknown`, which means "I would, but I cannot for this plan").
 pub fn timeout_verdict(model: &ModelFile, class: &str, f: &WorkloadFeatures) -> Option<crate::RiskVerdict> {
     let spec = model.timeout_risk.as_ref()?;
-    let ll = model.classes.get(class)?.loglinear.as_ref()?;
-    let mut v = match ll.answer(f, spec.timeout_ms) {
+    if !class.starts_with("semijoin_metric") {
+        return None;
+    }
+    let Some(x) = feature_ln(&spec.regime_feature, f) else {
+        return Some(crate::RiskVerdict::new("unknown", format!("{}: '{}' could not be estimated at planning time; unknown is not low", spec.version, spec.regime_feature)));
+    };
+    if x < spec.regime_min_ln {
+        return Some(crate::RiskVerdict::new(
+            "low",
+            format!("{}: {} = {:.3e} is below the regime where timeouts were observed ({:.1e})", spec.version, spec.regime_feature, x.exp(), spec.regime_min_ln.exp()),
+        ));
+    }
+    Some(match spec.model.answer(f, spec.timeout_ms) {
         LogLinearAnswer::Known { time_ms, timeout_probability: p, .. } => {
             let level = if p >= spec.timeout_risk_at {
                 "timeout_risk"
@@ -223,9 +250,7 @@ pub fn timeout_verdict(model: &ModelFile, class: &str, f: &WorkloadFeatures) -> 
             v
         }
         LogLinearAnswer::Unknown(why) => crate::RiskVerdict::new("unknown", format!("{}: {why}; unknown is not low", spec.version)),
-    };
-    v.blocked = false;
-    Some(v)
+    })
 }
 
 /// `time_ms = sum(coefficient * term)` over the class' terms:
@@ -306,7 +331,18 @@ mod tests {
         assert_eq!(workload_class(&WorkloadFeatures { has_sort: true, ..big }), CLASS_BROAD_SCAN);
         assert_eq!(workload_class(&semi("intersects", 1e9)), CLASS_SEMIJOIN_INTERSECTS);
         assert_eq!(workload_class(&semi("within_distance", PROBES_SMALL)), CLASS_SEMIJOIN_METRIC_SMALL);
+        // unknown candidate pairs is never "medium"
         assert_eq!(workload_class(&semi("within_distance", PROBES_SMALL + 1.0)), CLASS_SEMIJOIN_METRIC_LARGE);
+        let with = |probes: f64, pairs: Option<f64>| {
+            let mut f = semi("within_distance", probes);
+            f.semi_join.as_mut().unwrap().candidate_pairs = pairs;
+            f
+        };
+        assert_eq!(workload_class(&with(PROBES_SMALL + 1.0, Some(PAIRS_HEAVY - 1.0))), CLASS_SEMIJOIN_METRIC_MEDIUM);
+        assert_eq!(workload_class(&with(PROBES_MEDIUM_MAX, Some(1.0))), CLASS_SEMIJOIN_METRIC_MEDIUM);
+        assert_eq!(workload_class(&with(PROBES_MEDIUM_MAX + 1.0, Some(1.0))), CLASS_SEMIJOIN_METRIC_LARGE);
+        assert_eq!(workload_class(&with(PROBES_SMALL + 1.0, Some(PAIRS_HEAVY))), CLASS_SEMIJOIN_METRIC_LARGE);
+        assert_eq!(workload_class(&with(10.0, None)), CLASS_SEMIJOIN_METRIC_SMALL);
     }
 
     #[test]
@@ -360,6 +396,35 @@ mod tests {
         assert!(matches!(m.answer(&with_pairs(20_000.0, None), 60_000.0), LogLinearAnswer::Unknown(r) if r.contains("ln_candidate_pairs")));
         // far outside the measured envelope is UNKNOWN too
         assert!(matches!(m.answer(&with_pairs(1e9, Some(1e6)), 60_000.0), LogLinearAnswer::Unknown(r) if r.contains("outside the measured range")));
+    }
+
+    fn risk_model(file_model: LogLinear) -> ModelFile {
+        let ml = ClassModel { terms: Default::default(), n_calibration: 1, fit_ratio_median: 1.0, fit_ratio_p90: 1.0, loglinear: None };
+        ModelFile {
+            model_version: "test".into(),
+            engine: "duckdb".into(),
+            provenance: Provenance { benchmark_commit: String::new(), calibration_seed: 0, calibration_seeds: vec![], calibration_cases: 0, dataset_versions: String::new(), machine_class: String::new(), build_profile: String::new(), fitted_at: String::new(), method: String::new() },
+            classes: [(CLASS_SEMIJOIN_METRIC_LARGE.to_string(), ml)].into(),
+            timeout_risk: Some(TimeoutRiskSpec { version: "test-risk-v1".into(), timeout_ms: 60_000.0, elevated_at: 0.2, timeout_risk_at: 0.5, regime_feature: "ln_candidate_pairs".into(), regime_min_ln: 1e7f64.ln(), model: file_model }),
+        }
+    }
+
+    #[test]
+    fn the_timeout_verdict_is_low_below_the_regime_unknown_when_unestimable_and_graded_inside_it() {
+        // ln(time) = 8 + 0.4 * (ln pairs - 16): 1e7 pairs -> 3 s; 1e8 pairs -> ~ 7.5 s; sigma large enough that the tail matters
+        let ll = LogLinear { features: vec!["ln_candidate_pairs".into()], intercept: 8.0 - 0.4 * 16.0, coefficients: vec![0.4], sigma: 1.0, envelope: [("ln_candidate_pairs".to_string(), [16.0, 20.0])].into(), extrapolation_ln: 1.0 };
+        let m = risk_model(ll);
+        let v = |pairs: Option<f64>| timeout_verdict(&m, CLASS_SEMIJOIN_METRIC_LARGE, &with_pairs(1000.0, pairs)).unwrap();
+        assert_eq!(v(Some(1e5)).level, "low");
+        assert!(v(Some(1e5)).timeout_probability.is_none(), "below the regime there is no probability to quote");
+        let inside = v(Some(5e8));
+        assert!(inside.timeout_probability.is_some_and(|p| p > 0.0 && p < 1.0), "{inside:?}");
+        assert_eq!(v(None).level, "unknown");
+        assert!(v(None).reason.contains("unknown is not low"));
+        assert!(timeout_verdict(&m, "indexed_bbox", &base()).is_none(), "no timeout opinion outside the metric classes");
+        // a higher P crosses the thresholds in order
+        let (lo, hi) = (v(Some(1.1e7)), v(Some(1.5e8)));
+        assert!(lo.timeout_probability.unwrap() < hi.timeout_probability.unwrap());
     }
 
     #[test]
