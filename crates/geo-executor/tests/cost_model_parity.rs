@@ -30,6 +30,7 @@ fn semi(sj: &Value) -> Option<SemiJoinFeatures> {
         predicate: sj["predicate"].as_str().unwrap_or("within_distance").to_string(),
         distance_m: sj["distance_m"].as_f64(),
         expected_probes: sj["expected_probes"].as_f64().unwrap(),
+        ..Default::default()
     })
 }
 
