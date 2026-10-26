@@ -13,7 +13,7 @@
 //! from the catalog the operator loaded (`spatially_indexed`, `metric_indexes`).
 
 use crate::catalog::PostGisCatalog;
-use geo_executor::cost_model::{evaluate, workload_class, ModelFile, ValidationFile, CLASS_SEMIJOIN_METRIC_LARGE, CLASS_SEMIJOIN_METRIC_SMALL, PROBES_SMALL};
+use geo_executor::cost_model::{evaluate, timeout_verdict, workload_class, ModelFile, ValidationFile, CLASS_SEMIJOIN_METRIC_LARGE, CLASS_SEMIJOIN_METRIC_SMALL, PROBES_SMALL};
 use geo_executor::{EngineCostEstimate, ModelValidation, RiskVerdict, WorkloadFeatures};
 use geo_ir::{Plan, PlanNode};
 use geo_types::Crs;
@@ -69,24 +69,33 @@ pub fn index_state(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) 
     "available"
 }
 
-fn risk(class: &str, f: &WorkloadFeatures, index: &str) -> RiskVerdict {
+/// The risk of PostGIS running `class` for these features: the engine's own TIMEOUT opinion (`timeout`, from its log-linear model; `None` outside the
+/// metric classes) plus the hard repeated-probe rule. The rule is a block on COST grounds (PostGIS usually loses large metric semi joins), so it is
+/// `overridable`: policy R5e lifts it only when the other engine is itself at timeout risk. The rule stays 50,000 probes: this phase found no evidence for
+/// a different number.
+fn risk(class: &str, f: &WorkloadFeatures, index: &str, timeout: Option<RiskVerdict>) -> RiskVerdict {
     let probes = f.semi_join.as_ref().map_or(0.0, |s| s.expected_probes);
-    if (class == CLASS_SEMIJOIN_METRIC_SMALL || class == CLASS_SEMIJOIN_METRIC_LARGE) && probes > BLOCK_PROBES {
-        return RiskVerdict {
-            blocked: true,
-            level: "high".into(),
-            reason: format!(
-                "repeated-probe risk: a metric semi join over ~{probes:.0} left rows makes that many right-side index probes (limit {BLOCK_PROBES:.0}); measured PostGIS times at this scale were seconds, often several times DuckDB's."
-            ),
-        };
+    let metric = class == CLASS_SEMIJOIN_METRIC_SMALL || class == CLASS_SEMIJOIN_METRIC_LARGE;
+    let mut v = timeout.unwrap_or_else(RiskVerdict::low);
+    if metric && probes > BLOCK_PROBES {
+        let why = format!(
+            "repeated-probe risk: a metric semi join over ~{probes:.0} left rows makes that many right-side index probes (limit {BLOCK_PROBES:.0}); measured PostGIS times at this scale were seconds, often several times DuckDB's."
+        );
+        v.reason = if v.reason.is_empty() { why } else { format!("{why} {}", v.reason) };
+        if v.level == "low" {
+            v.level = "high".into();
+        }
+        v.blocked = true;
+        v.overridable = true;
+        return v;
     }
-    if class == CLASS_SEMIJOIN_METRIC_LARGE || (class == CLASS_SEMIJOIN_METRIC_SMALL && probes > PROBES_SMALL) {
-        return RiskVerdict { blocked: false, level: "elevated".into(), reason: format!("~{probes:.0} right-side probes: the faster engine depends on right-side density and distance") };
+    if v.level == "low" && (class == CLASS_SEMIJOIN_METRIC_LARGE || (class == CLASS_SEMIJOIN_METRIC_SMALL && probes > PROBES_SMALL)) {
+        return RiskVerdict::new("elevated", format!("~{probes:.0} right-side probes: the faster engine depends on right-side density and distance"));
     }
-    if index != "available" {
-        return RiskVerdict { blocked: false, level: "elevated".into(), reason: format!("index state '{index}': the indexed access path is not guaranteed") };
+    if v.level == "low" && index != "available" {
+        return RiskVerdict::new("elevated", format!("index state '{index}': the indexed access path is not guaranteed"));
     }
-    RiskVerdict { blocked: false, level: "low".into(), reason: String::new() }
+    v
 }
 
 /// The model's verdict for `plan`; `None` when the class has no formula (the planner then uses its shared server model).
@@ -101,7 +110,7 @@ pub fn estimate(catalog: &PostGisCatalog, plan: &Plan, f: &WorkloadFeatures) -> 
     if let Some(v) = validation().classes.get(class) {
         notes.push(v.reason.clone());
     }
-    Some(EngineCostEstimate { model_version: model().model_version.clone(), workload_class: class.into(), validation: level, time_ms, terms, risk: risk(class, f, index), index_state: index.into(), notes })
+    Some(EngineCostEstimate { model_version: model().model_version.clone(), workload_class: class.into(), validation: level, time_ms, terms, risk: risk(class, f, index, timeout_verdict(model(), class, f)), index_state: index.into(), notes })
 }
 
 #[cfg(test)]
@@ -131,13 +140,13 @@ mod tests {
     #[test]
     fn the_repeated_probe_policy_is_a_hard_refusal_separate_from_the_cost() {
         let f = metric(BLOCK_PROBES + 1.0);
-        let r = risk(workload_class(&f), &f, "available");
+        let r = risk(workload_class(&f), &f, "available", None);
         assert!(r.blocked && r.level == "high" && r.reason.contains("repeated-probe"), "{r:?}");
         let f = metric(PROBES_SMALL + 1.0);
-        let r = risk(workload_class(&f), &f, "available");
+        let r = risk(workload_class(&f), &f, "available", None);
         assert!(!r.blocked && r.level == "elevated", "{r:?}");
         let f = metric(PROBES_SMALL);
-        let r = risk(workload_class(&f), &f, "available");
+        let r = risk(workload_class(&f), &f, "available", None);
         assert!(!r.blocked && r.level == "low", "{r:?}");
     }
 
@@ -145,10 +154,10 @@ mod tests {
     fn an_index_state_that_is_not_available_raises_the_risk_and_is_never_read_as_available() {
         let f = WorkloadFeatures::default();
         for state in ["unavailable", "unknown"] {
-            let r = risk(workload_class(&f), &f, state);
+            let r = risk(workload_class(&f), &f, state, None);
             assert!(!r.blocked && r.level == "elevated" && r.reason.contains(state), "{state}: {r:?}");
         }
-        assert_eq!(risk(workload_class(&f), &f, "available").level, "low");
+        assert_eq!(risk(workload_class(&f), &f, "available", None).level, "low");
     }
 
     #[test]

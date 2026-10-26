@@ -8,6 +8,8 @@ const PORT = 8798;
 
 export default defineConfig({
   testDir: "./e2e",
+  // refuses a stale gateway binary (identity from /api/health + binary mtime vs the Rust sources); see e2e/global-setup.ts
+  globalSetup: "./e2e/global-setup.ts",
   testIgnore: /(heldout|envelope|crossover)\.spec\.ts/,
   timeout: 60_000,
   workers: 1, // one browser at a time (RAM discipline)

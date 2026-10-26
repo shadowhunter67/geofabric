@@ -4,7 +4,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
 import { compile } from "./engine/lowering.ts";
 import { ensureLowering } from "./engine/lowering-loader.ts";
-import { summarizeCostModel } from "./ui/cost-model.ts";
+import { semiJoinLine, summarizeCostModel, uncertaintyLines } from "./ui/cost-model.ts";
 import type { PlanGraph } from "./engine/contract.ts";
 import { usable } from "./engine/probe.ts";
 import { createPlacement } from "./placement.ts";
@@ -1241,7 +1241,7 @@ function costModelLine(c: Candidate): HTMLElement {
   const m = summarizeCostModel(c.cost_model!);
   return el("div", { class: "dec cm", "data-testid": "cost-model", "data-engine": c.engine, "data-class": m.workload_class, "data-validation": m.validation },
     el("b", {}, ENGINE_LABEL[c.engine] ?? c.engine), `  ${t("dev.cm.predicted")}: ${m.predicted_ms.toFixed(0)} ms · ${t("dev.cm.class")}: ${m.workload_class} · `,
-    badge(`${t("dev.cm.validation")}: ${m.validation}`, m.level), ` · ${t("dev.cm.risk")}: ${m.risk} · ${t("dev.cm.index")}: ${m.index_state}`,
+    badge(`${t("dev.cm.validation")}: ${m.validation}`, m.level), ` · ${t("dev.cm.risk")}: ${m.risk}${m.timeout ? ` · ${t("dev.cm.timeout")}: ${m.timeout}` : ""} · ${t("dev.cm.index")}: ${m.index_state}`,
     m.top_terms ? ` · ${t("dev.cm.terms")}: ${m.top_terms}` : "", el("span", { class: "note" }, ` (${m.model_version})`),
     m.risk_reason ? el("div", { class: "note" }, m.risk_reason) : null);
 }
@@ -1264,6 +1264,9 @@ function plannerPanel(r: RunResp): HTMLElement {
     ...(sel?.reasons ?? []).map((x) => el("div", { class: "dec" }, "✓ ", x)),
     // Developer only: each candidate's engine cost model verdict (predicted time, workload class, validation level, hard risk policy)
     ...[...(sel ? [sel] : []), ...alts].filter((c) => c.cost_model).map(costModelLine),
+    // Developer only: the candidate-work features the models saw for a metric semi join, and the planner's own admission when it is not sure the chosen engine is safe
+    ...(semiJoinLine(p.workload?.semi_join) ? [el("div", { class: "note", "data-testid": "semijoin-features" }, semiJoinLine(p.workload?.semi_join)!.text)] : []),
+    ...uncertaintyLines(p.assessment?.uncertainty).map((u) => el("div", { class: "dec", "data-testid": "planner-uncertain" }, badge(t("dev.uncertain"), "warn"), " ", u)),
     ...alts.map((c: Candidate) => el("div", { class: "alt dev", "data-testid": "engine-alternative", "data-engine": c.engine },
       el("b", {}, `${t("dev.alternative")}: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",
       c.feasible ? `${t("dev.score")} ${c.score_ms?.toFixed(1)} ms` : t("dev.not_feasible"), c.feasible ? "" : ` — ${c.rejected_because.join("; ")}`)),

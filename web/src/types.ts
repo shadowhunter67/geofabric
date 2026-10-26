@@ -22,7 +22,7 @@ export interface Health { state: "healthy" | "degraded" | "unhealthy" | "unknown
 /** An engine's own cost model verdict for this plan (PostGIS cost model, ADR-015): class, validation level, terms and the hard risk policy. */
 export interface CostModelVerdict {
   model_version: string; workload_class: string; validation: "validated" | "limited" | "unvalidated"; time_ms: number;
-  terms: { name: string; ms: number }[]; risk: { blocked: boolean; level: string; reason: string }; index_state: string; notes: string[];
+  terms: { name: string; ms: number }[]; risk: { blocked: boolean; level: string; reason: string; timeout_probability?: number | null; overridable?: boolean }; index_state: string; notes: string[];
 }
 export interface Candidate {
   engine: string; kind: "server" | "browser"; feasible: boolean; score_ms: number | null;
@@ -47,6 +47,14 @@ export interface Assessment {
   probes: Record<string, { status: string; usable: boolean; age_ms: number | null; failed_checks: string[]; memory_class: string | null; engine_version: string | null; runtime_version: string | null }>;
   fallback: { engine: string; reason: string; max_fallbacks: number } | null; policy: string[];
   browser_access: BrowserAccessInfo[];
+  /** Present when the planner could not establish that the chosen engine is safe for this plan (policy metric-semijoin-policy-v1). */
+  uncertainty?: { state: string; policy_version: string; reasons: string[] } | null;
+}
+/** Plan-time candidate-work features of a metric semi join (null = the planner could not estimate it). */
+export interface SemiJoinInfo {
+  expected_probes: number; right_rows: number; metric: boolean; predicate: string; distance_m: number | null;
+  right_rows_filtered?: number | null; right_density_per_km2?: number | null; candidates_per_probe?: number | null; candidate_pairs?: number | null;
+  overlap_ratio?: number | null; right_filter_selectivity?: number | null; estimate_basis?: string;
 }
 export interface Scan {
   uri: string; total_bytes?: number; has_histogram?: boolean;
@@ -58,6 +66,7 @@ export interface Physical {
   assessment: Assessment;
   candidates?: Candidate[]; input_bytes_upper_bound?: number; result_rows_estimate?: number;
   scans: Scan[];
+  workload?: { shape?: string; semi_join?: SemiJoinInfo | null };
 }
 export interface Metric<T> { value: T | null; source: string }
 export interface Metrics {

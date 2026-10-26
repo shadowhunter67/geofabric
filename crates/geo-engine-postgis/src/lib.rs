@@ -21,6 +21,7 @@ pub mod engine;
 pub mod live;
 pub mod lower;
 pub mod probe;
+pub mod watch;
 
 pub use catalog::{CoveringCols, PgColType, PostGisCatalog, PostGisSource};
 pub use config::PostGisConfig;

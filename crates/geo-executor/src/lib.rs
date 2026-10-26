@@ -359,9 +359,24 @@ pub struct CostTerm {
 #[derive(Debug, Clone, Serialize)]
 pub struct RiskVerdict {
     pub blocked: bool,
-    /// `low | elevated | high`
+    /// `low | elevated | timeout_risk | unknown | high` (`unknown` = the model lacks a feature or the plan is outside its measured envelope; it is
+    /// NOT a synonym of `low`)
     pub level: String,
     pub reason: String,
+    /// Estimated probability that this plan hits the execution timeout on this engine (None = no estimate).
+    pub timeout_probability: Option<f64>,
+    /// `blocked` rests on COST grounds (the engine is expected to be slow), not on capability or safety: when every other feasible engine is itself at
+    /// `timeout_risk`, the planner may un-defer this candidate (policy `metric-semijoin-policy-v1`, R5e).
+    pub overridable: bool,
+}
+
+impl RiskVerdict {
+    pub fn new(level: &str, reason: impl Into<String>) -> Self {
+        RiskVerdict { blocked: false, level: level.into(), reason: reason.into(), timeout_probability: None, overridable: false }
+    }
+    pub fn low() -> Self {
+        Self::new("low", "")
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]

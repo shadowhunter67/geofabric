@@ -19,7 +19,6 @@ use arrow_schema::{DataType, Field, Schema};
 use geo_executor::CancelToken;
 use postgres::types::{ToSql, Type};
 use postgres::{Client, NoTls};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -165,29 +164,11 @@ impl PgConnector for LiveConnector {
         }
         // watcher: cancel the statement ON THE SERVER when the context is cancelled or the deadline passes
         let token = client.cancel_token();
-        // The watcher waits on a channel, not on a sleep loop: when the statement finishes the sender is dropped and the watcher wakes AT ONCE.
-        // (Found 2026-10-26: a `sleep(15 ms)` loop + `join()` added up to one Windows timer tick, ~15 ms, to EVERY PostGIS query; 55 % of all measured
-        // PostGIS times sat on 16 ms. That latency was in the cost model's startup term and hid how fast indexed queries really are.)
-        let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
-        let timed_out = Arc::new(AtomicBool::new(false));
-        let watcher = {
-            let (timed_out, cancel) = (timed_out.clone(), cancel.clone());
-            let deadline = Instant::now() + q.timeout;
-            std::thread::spawn(move || {
-                loop {
-                    let late = Instant::now() >= deadline;
-                    if cancel.is_cancelled() || late {
-                        timed_out.store(late && !cancel.is_cancelled(), Ordering::SeqCst);
-                        let _ = token.cancel_query(NoTls);
-                        return;
-                    }
-                    match stop_rx.recv_timeout(Duration::from_millis(15)) {
-                        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
-                        _ => return, // the statement finished (sender dropped)
-                    }
-                }
-            })
-        };
+        // The watcher (crate::watch) waits on a channel, never on a sleep loop: when the statement finishes it wakes AT ONCE. A sleep(15 ms) + join()
+        // here once added up to a Windows timer tick to every query (ADR-015 addendum); watch.rs carries the structural test that keeps it out.
+        let watcher = crate::watch::spawn(Instant::now() + q.timeout, cancel.clone(), Duration::from_millis(15), move || {
+            let _ = token.cancel_query(NoTls);
+        });
         let values: Vec<Box<dyn ToSql + Sync>> = q
             .params
             .iter()
@@ -202,8 +183,7 @@ impl PgConnector for LiveConnector {
             .collect();
         let refs: Vec<&(dyn ToSql + Sync)> = values.iter().map(|b| b.as_ref()).collect();
         let result = client.query(q.sql.as_str(), &refs);
-        drop(stop_tx);
-        let _ = watcher.join();
+        let timed_out = watcher.finish();
         match result {
             Ok(rows) => {
                 self.release(client, true);
@@ -211,7 +191,7 @@ impl PgConnector for LiveConnector {
             }
             Err(e) => {
                 let mut err = to_pg_error(&e);
-                if timed_out.load(Ordering::SeqCst) && err.kind == PgErrorKind::Cancelled {
+                if timed_out && err.kind == PgErrorKind::Cancelled {
                     err.kind = PgErrorKind::Timeout;
                 }
                 let healthy = err.kind != PgErrorKind::Connection;

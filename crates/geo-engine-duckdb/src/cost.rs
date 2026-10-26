@@ -1,11 +1,16 @@
-//! DuckDB cost model for the semi-join shapes only (`duckdb-semijoin-cost-v1`).
+//! DuckDB cost and timeout-risk model for the semi-join shapes only (`duckdb-semijoin-cost-v*`, risk `duckdb-timeout-risk-v*`).
 //!
 //! DuckDB keeps the planner's shared, measured server formula for every other shape (median error x1.4 on the calibration corpus). That formula
-//! was never fitted on spatial semi joins and was off by x26 (median) on the admin join, which made a fair comparison with PostGIS impossible: the
-//! planner believed DuckDB would answer in ~150 ms what it answers in 4-60 s. This module supplies the missing classes with the same
-//! interpretable per-class formulas (`geo_executor::cost_model`), fitted on the same calibration set, with provenance in the JSON.
+//! was never fitted on spatial semi joins and was off by x26 (median) on the admin join, which made a fair comparison with PostGIS impossible.
+//! This module supplies the missing classes with interpretable per-class formulas (`geo_executor::cost_model`), fitted on the calibration sets, with
+//! provenance in the JSON.
+//!
+//! For the METRIC semi-join classes the model is log-linear with timeouts as censored observations, so one fit answers two different questions:
+//! how long will it take (cost), and how likely is it to exceed the execution timeout (risk). They are reported separately: a slow-but-finishing plan is
+//! a cost; a plan likely to time out is a risk, and the planner must not treat "the other engine is not validated" as "this engine is safe"
+//! (policy `metric-semijoin-policy-v1`, ADR-015).
 
-use geo_executor::cost_model::{evaluate, workload_class, ModelFile, ValidationFile, CLASS_SEMIJOIN_METRIC_LARGE};
+use geo_executor::cost_model::{evaluate, timeout_verdict, workload_class, ModelFile, ValidationFile};
 use geo_executor::{EngineCostEstimate, RiskVerdict, WorkloadFeatures};
 use std::sync::OnceLock;
 
@@ -19,10 +24,6 @@ fn validation() -> &'static ValidationFile {
     V.get_or_init(|| serde_json::from_str(include_str!("cost_validation_v1.json")).expect("duckdb cost_validation_v1.json"))
 }
 
-/// Above this many right-side probes DuckDB hit the 60 s execution timeout in 2 of the 11 measured cases (calibration + A + B; PostGIS finished those in 12-18 s) and took 4-37 s in the others. This is a
-/// WARNING in the explanation, not a refusal: no threshold separates the engines cleanly in this regime (see ADR-015).
-pub const TIMEOUT_WARN_PROBES: f64 = 200_000.0;
-
 pub fn estimate(f: &WorkloadFeatures) -> Option<EngineCostEstimate> {
     let class = workload_class(f);
     let cm = model().classes.get(class)?;
@@ -31,19 +32,35 @@ pub fn estimate(f: &WorkloadFeatures) -> Option<EngineCostEstimate> {
     if let Some(v) = validation().classes.get(class) {
         notes.push(v.reason.clone());
     }
+    // DuckDB reads the files itself: no database index to rely on. Its risk is the TIMEOUT risk of the plan (a hazard, not just a cost): the execution timeout
+    // interrupts the query, and 11 of ~700 measured metric semi joins hit it.
+    let risk = timeout_verdict(model(), class, f).unwrap_or_else(RiskVerdict::low);
     Some(EngineCostEstimate {
         model_version: model().model_version.clone(),
         workload_class: class.into(),
         validation: validation().level(class),
         time_ms,
         terms,
-        // DuckDB reads the files itself: no database index to rely on, and a slow semi join is a cost, not a hazard (it is interrupted at the timeout)
-        risk: if class == CLASS_SEMIJOIN_METRIC_LARGE && f.semi_join.as_ref().is_some_and(|s| s.expected_probes > TIMEOUT_WARN_PROBES) {
-            RiskVerdict { blocked: false, level: "elevated".into(), reason: format!("over {TIMEOUT_WARN_PROBES:.0} right-side probes DuckDB exceeded the 60 s execution timeout in some measured cases; neither engine is reliably safe at this size") }
-        } else {
-            RiskVerdict { blocked: false, level: "low".into(), reason: String::new() }
-        },
+        risk,
         index_state: "available".into(),
         notes,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_shipped_model_parses_and_names_its_risk_spec_when_it_has_one() {
+        let m = model();
+        assert_eq!(m.engine, "duckdb");
+        if let Some(spec) = &m.timeout_risk {
+            assert!(spec.version.starts_with("duckdb-timeout-risk-v"), "{}", spec.version);
+            assert!(spec.elevated_at < spec.timeout_risk_at && spec.timeout_ms == 60_000.0);
+            for class in ["semijoin_metric_small", "semijoin_metric_large"] {
+                assert!(m.classes[class].loglinear.is_some(), "{class} needs the log-linear model the risk is derived from");
+            }
+        }
+    }
 }

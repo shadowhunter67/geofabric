@@ -177,7 +177,7 @@ impl geo_executor::EngineDescriptor for Injected {
             validation: self.validation,
             time_ms: self.time_ms,
             terms: vec![geo_executor::CostTerm { name: "startup".into(), ms: self.time_ms }],
-            risk: geo_executor::RiskVerdict { blocked: false, level: "low".into(), reason: String::new() },
+            risk: geo_executor::RiskVerdict::low(),
             index_state: "available".into(),
             notes: vec![],
         })
@@ -261,7 +261,7 @@ impl geo_executor::EngineDescriptor for RiskRefusing {
             validation: geo_executor::ModelValidation::Validated,
             time_ms: 1.0,
             terms: vec![],
-            risk: geo_executor::RiskVerdict { blocked: true, level: "high".into(), reason: "repeated-probe risk (test)".into() },
+            risk: geo_executor::RiskVerdict { blocked: true, ..geo_executor::RiskVerdict::new("high", "repeated-probe risk (test)") },
             index_state: "available".into(),
             notes: vec![],
         })

@@ -860,7 +860,7 @@ async fn stats(State(st): State<Shared>) -> Json<Value> {
 pub fn api_router(state: Shared) -> Router {
     let limit = state.config.max_body_bytes;
     Router::new()
-        .route("/api/health", get(|| async { Json(json!({"ok": true})) }))
+        .route("/api/health", get(|| async { Json(json!({"ok": true, "build": {"commit": env!("GF_GIT_COMMIT"), "dirty": env!("GF_GIT_DIRTY") == "true"}})) }))
         .route("/api/config", get(config))
         .route("/api/state", get(planner_state))
         .route("/api/stats", get(stats))

@@ -258,6 +258,8 @@ pub struct Candidate {
     pub calibration: EngineCalibration,
     /// The engine's own cost model verdict for this plan (version, class, validation, terms, risk), when the engine has one.
     pub cost_model: Option<EngineCostEstimate>,
+    /// Infeasible ONLY because its model's cost-based risk block applies (`RiskVerdict::overridable`); policy R5e may lift it.
+    pub deferred_by_risk: bool,
     pub health: HealthView,
     /// `fresh | stale | missing | not_required`
     pub probe_status: String,
@@ -412,7 +414,21 @@ pub struct Assessment {
     /// Policy decisions that overrode the lowest score, in words.
     pub policy: Vec<String>,
     pub browser_warm: Option<bool>,
+    /// `Some` when the planner could NOT establish that the chosen engine is safe for this plan (every option at timeout risk, or the risk of the chosen
+    /// engine unknown). Being unvalidated never implies that the other engine is safe; this is where that is said.
+    pub uncertainty: Option<Uncertainty>,
 }
+
+/// The planner's honest statement that it is unsure (policy `metric-semijoin-policy-v1`).
+#[derive(Debug, Clone, Serialize)]
+pub struct Uncertainty {
+    pub state: String,
+    pub policy_version: String,
+    pub reasons: Vec<String>,
+}
+
+/// Version of the planner's risk / uncertainty policy for metric semi joins (R5e). A change to the rules below bumps it.
+pub const METRIC_SEMIJOIN_POLICY_VERSION: &str = "metric-semijoin-policy-v1";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProbeSummary {
@@ -640,7 +656,7 @@ impl Planner {
         // R3 candidates: feasibility (hard limits) then score. Observed health is a hard filter unless it
         // would leave no engine at all (then it is ignored with a warning: a degraded answer beats none).
         let mut apply_health = true;
-        let candidates = loop {
+        let mut candidates = loop {
             let mut candidates: Vec<Candidate> = Vec::new();
             for e in engines {
                 let id = e.id().to_string();
@@ -698,7 +714,8 @@ impl Planner {
                 None => log.push(dec("hint", pref.clone(), Outcome::Warning, "preferred_engine ignored: not registered or infeasible for this plan")),
             }
         }
-        let cheapest = |keep: &dyn Fn(&Candidate) -> bool| {
+        // takes the candidate list as an argument (not captured): R5e below may edit a candidate (lift a deferred risk block)
+        let cheapest = |candidates: &[Candidate], keep: &dyn Fn(&Candidate) -> bool| {
             candidates
                 .iter()
                 .enumerate()
@@ -706,10 +723,10 @@ impl Planner {
                 .min_by(|(_, a), (_, b)| a.score_ms.partial_cmp(&b.score_ms).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(i, _)| i)
         };
-        let mut chosen = chosen.unwrap_or_else(|| cheapest(&|_| true).expect("a feasible candidate exists"));
+        let mut chosen = chosen.unwrap_or_else(|| cheapest(&candidates, &|_| true).expect("a feasible candidate exists"));
         // R5d: an engine whose cost model has never been measured here is not chosen on predicted cost while a measured engine can run the plan
         if !hinted && candidates[chosen].calibration == EngineCalibration::Unmeasured {
-            if let Some(ci) = cheapest(&|c| c.calibration == EngineCalibration::Measured) {
+            if let Some(ci) = cheapest(&candidates, &|c| c.calibration == EngineCalibration::Measured) {
                 let (u, m) = (&candidates[chosen], &candidates[ci]);
                 let basis = match &u.cost_model {
                     Some(cm) => format!("{} class '{}' is {:?}, not validated for automatic selection", cm.model_version, cm.workload_class, cm.validation),
@@ -726,8 +743,62 @@ impl Planner {
                 chosen = ci;
             }
         }
+        // R5e (metric-semijoin-policy-v1): "measured" is not "safe". R5d prefers the measured engine over an unvalidated one, but a measured engine whose
+        // OWN risk model says this plan is likely to hit the execution timeout is not a safe default, and the unvalidated engine is not thereby worse.
+        // Prefer an engine that is not at timeout risk (lifting a cost-based block if that is the only such engine); if every option is at risk, take the
+        // one least likely to time out and SAY the planner is uncertain. Never both-engines speculative execution, never a retry: selection only.
+        let mut uncertainty: Vec<String> = Vec::new();
+        if !hinted {
+            let level = |c: &Candidate| c.cost_model.as_ref().map(|m| m.risk.level.clone()).unwrap_or_default();
+            let at_risk = |c: &Candidate| level(c) == "timeout_risk";
+            let prob = |c: &Candidate| c.cost_model.as_ref().and_then(|m| m.risk.timeout_probability);
+            let by_score = |a: &(usize, &Candidate), b: &(usize, &Candidate)| a.1.score_ms.partial_cmp(&b.1.score_ms).unwrap_or(std::cmp::Ordering::Equal);
+            if at_risk(&candidates[chosen]) {
+                let safe_feasible = candidates.iter().enumerate().filter(|(i, c)| *i != chosen && c.feasible && !at_risk(c)).min_by(by_score).map(|(i, _)| i);
+                let safe_deferred = candidates.iter().enumerate().filter(|(_, c)| c.deferred_by_risk && !at_risk(c)).min_by(by_score).map(|(i, _)| i);
+                let fmt_p = |c: &Candidate| prob(c).map_or("unknown".to_string(), |p| format!("{:.0}%", p * 100.0));
+                if let Some(ai) = safe_feasible.or(safe_deferred) {
+                    let (from, to) = (&candidates[chosen], &candidates[ai]);
+                    policy.push(format!(
+                        "R5e timeout risk: {} is at timeout risk for this plan (p~{}; {}); {} is not (p~{}); {} chosen{}",
+                        from.engine, fmt_p(from), from.cost_model.as_ref().map(|m| m.risk.reason.as_str()).unwrap_or(""), to.engine, fmt_p(to), to.engine,
+                        if to.deferred_by_risk { ". Its cost-based block was lifted for this reason only." } else { "." }
+                    ));
+                    chosen = ai;
+                    if candidates[chosen].deferred_by_risk {
+                        candidates[chosen].feasible = true;
+                        candidates[chosen].deferred_by_risk = false;
+                        candidates[chosen].rejected_because.retain(|r| !r.starts_with("risk policy"));
+                    }
+                } else {
+                    // every option is at timeout risk (or the alternative is not available at all): the least likely to time out, honestly uncertain
+                    let best = candidates
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, c)| c.feasible || c.deferred_by_risk)
+                        .min_by(|a, b| prob(a.1).unwrap_or(1.0).partial_cmp(&prob(b.1).unwrap_or(1.0)).unwrap_or(std::cmp::Ordering::Equal))
+                        .map(|(i, _)| i)
+                        .unwrap_or(chosen);
+                    uncertainty.push(format!(
+                        "no engine is known to be safe for this plan: {}",
+                        candidates.iter().filter(|c| c.feasible || c.deferred_by_risk).map(|c| format!("{} at timeout risk (p~{})", c.engine, fmt_p(c)) ).collect::<Vec<_>>().join("; ")
+                    ));
+                    if best != chosen {
+                        policy.push(format!("R5e timeout risk: {} chosen because it is the least likely to time out", candidates[best].engine));
+                        chosen = best;
+                        if candidates[chosen].deferred_by_risk {
+                            candidates[chosen].feasible = true;
+                            candidates[chosen].deferred_by_risk = false;
+                            candidates[chosen].rejected_because.retain(|r| !r.starts_with("risk policy"));
+                        }
+                    }
+                }
+            } else if level(&candidates[chosen]) == "unknown" {
+                uncertainty.push(format!("{}: the timeout risk of this plan is UNKNOWN (a needed feature is missing or the plan is outside the measured envelope); unknown is not low", candidates[chosen].engine));
+            }
+        }
         if !hinted && candidates[chosen].kind == EngineKind::Browser {
-            if let Some(si) = cheapest(&|c| c.kind == EngineKind::Server) {
+            if let Some(si) = cheapest(&candidates, &|c| c.kind == EngineKind::Server) {
                 let (b, s) = (&candidates[chosen], &candidates[si]);
                 let (bs, ss) = (b.score_ms.unwrap_or(0.0), s.score_ms.unwrap_or(0.0));
                 let (bc, sc) = (b.confidence.as_ref().map_or(0.0, |c| c.score), s.confidence.as_ref().map_or(0.0, |c| c.score));
@@ -900,6 +971,7 @@ impl Planner {
             browser_access: access.clone(),
             policy,
             browser_warm: inputs.browser_warm,
+            uncertainty: (!uncertainty.is_empty()).then(|| Uncertainty { state: "uncertain".into(), policy_version: METRIC_SEMIJOIN_POLICY_VERSION.into(), reasons: uncertainty }),
         };
 
         let order = plan.topological_order().map_err(|e| PlanError::Other(e.to_string()))?;
@@ -929,6 +1001,7 @@ impl Planner {
         let result_rows = est.rows;
         let mut why_not: Vec<String> = Vec::new();
         let mut why: Vec<String> = Vec::new();
+        let mut deferred: Option<String> = None;
 
         let missing = caps.missing_ops(plan);
         if !missing.is_empty() {
@@ -952,7 +1025,12 @@ impl Planner {
         if let Some(m) = &e.cost_model {
             let hinted_here = plan.hints.preferred_engine.as_deref() == Some(e.id.0.as_str());
             if m.risk.blocked && !hinted_here {
-                why_not.push(format!("risk policy ({}): {} An explicit engine hint overrides this refusal.", m.model_version, m.risk.reason));
+                let msg = format!("risk policy ({}): {} An explicit engine hint overrides this refusal.", m.model_version, m.risk.reason);
+                if m.risk.overridable {
+                    deferred = Some(msg); // scored like any candidate, but not selectable unless R5e lifts it
+                } else {
+                    why_not.push(msg);
+                }
             } else if m.risk.blocked {
                 why.push(format!("risk policy ({}) would refuse this workload ({}); allowed because the engine was requested explicitly", m.model_version, m.risk.reason));
             }
@@ -1291,10 +1369,16 @@ impl Planner {
             ])
         });
 
+        let deferred_by_risk = feasible && deferred.is_some();
+        let feasible = feasible && deferred.is_none();
+        if let Some(d) = deferred {
+            why_not.push(d);
+        }
         Candidate {
             engine: e.id.clone(),
             kind: caps.kind,
             feasible,
+            deferred_by_risk,
             score_ms: score,
             cost,
             reasons: why,
