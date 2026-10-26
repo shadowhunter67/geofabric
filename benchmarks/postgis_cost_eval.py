@@ -185,6 +185,8 @@ def main() -> int:
     ap.add_argument("--set", type=Path, required=True)
     ap.add_argument("--validation", type=Path, help="report: the validation file whose classes count as validated")
     ap.add_argument("--plans", type=Path, help="plan-only JSONL (GF_COST_PLAN_ONLY=1): the planner view of the SAME cases under the current models; replaces the logged one")
+    ap.add_argument("--model-version", default="postgis-cost-v1")
+    ap.add_argument("--seed", type=int)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
     recs = load_raw(a.set)
@@ -193,7 +195,7 @@ def main() -> int:
         for r in recs:
             r["planner"] = plans.get(r["id"], r.get("planner"))
     if a.cmd == "decide":
-        out = {"model_version": "postgis-cost-v1", "heldout_seed": GATES["heldout_seed"], "classes": {}}
+        out = {"model_version": a.model_version, "heldout_seed": a.seed or GATES["heldout_seed"], "classes": {}}
         for cls in classes_of(recs):
             d = class_decision(recs, cls)
             out["classes"][cls] = {

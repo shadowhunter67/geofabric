@@ -1,0 +1,101 @@
+{
+  "model_version": "postgis-cost-v2",
+  "engine": "postgis",
+  "provenance": {
+    "benchmark_commit": "f1c504f",
+    "calibration_seed": 20261103,
+    "calibration_seeds": [
+      20261103,
+      20261107,
+      20261111
+    ],
+    "calibration_cases": 720,
+    "dataset_versions": "Overture 2026-09-23.1; PostGIS rows admin=325, buildings=3845734, landuse=13277, places=449849, transport=453550",
+    "machine_class": "Intel(R) Core(TM) i7-14700, 31.8 GB RAM, Windows 11, loopback PostgreSQL + DuckDB on the same host (PostgreSQL 16.9; PostGIS 3.6.2)",
+    "build_profile": "release (cargo --release); engine `execute` wall time, planning excluded",
+    "fitted_at": "2026-10-26",
+    "method": "per workload class, non-negative coefficients minimising the mean squared log(pred/actual) (both floored at 1 ms: the gates' own metric), started from NNLS on relative error; DuckDB timeouts enter as censored observations at 60000 ms"
+  },
+  "classes": {
+    "indexed_bbox": {
+      "terms": {
+        "startup": 1.118355,
+        "scan": 0.60689,
+        "result": 1.364296,
+        "result_geometry": 12.920549
+      },
+      "n_calibration": 224,
+      "fit_ratio_median": 1.355,
+      "fit_ratio_p90": 2.953
+    },
+    "indexed_spatial": {
+      "terms": {
+        "startup": 1.032881,
+        "scan": 6.242755,
+        "result": 0.27136,
+        "result_geometry": 0.0
+      },
+      "n_calibration": 62,
+      "fit_ratio_median": 1.577,
+      "fit_ratio_p90": 6.49
+    },
+    "aggregate": {
+      "terms": {
+        "startup": 1.168469,
+        "scan": 0.725827,
+        "result": 0.25064,
+        "result_geometry": 0.0
+      },
+      "n_calibration": 156,
+      "fit_ratio_median": 1.321,
+      "fit_ratio_p90": 3.644
+    },
+    "broad_scan": {
+      "terms": {
+        "startup": 25.476415,
+        "scan": 0.164769,
+        "result": 0.0,
+        "result_geometry": 0.0
+      },
+      "n_calibration": 43,
+      "fit_ratio_median": 1.212,
+      "fit_ratio_p90": 1.837
+    },
+    "semijoin_intersects": {
+      "terms": {
+        "startup": 11.262454,
+        "scan": 0.0,
+        "result": 0.0,
+        "probe": 4.426713,
+        "right": 0.024922
+      },
+      "n_calibration": 62,
+      "fit_ratio_median": 1.317,
+      "fit_ratio_p90": 2.101
+    },
+    "semijoin_metric_small": {
+      "terms": {
+        "startup": 0.0,
+        "scan": 0.0,
+        "result": 13.130479,
+        "probe": 44.516029,
+        "right": 23.341771
+      },
+      "n_calibration": 59,
+      "fit_ratio_median": 1.952,
+      "fit_ratio_p90": 5.857
+    },
+    "semijoin_metric_large": {
+      "terms": {
+        "startup": 0.0,
+        "scan": 0.0,
+        "result": 0.0,
+        "probe": 0.0,
+        "right": 278.578046
+      },
+      "n_calibration": 104,
+      "fit_ratio_median": 1.658,
+      "fit_ratio_p90": 3.175
+    }
+  }
+}

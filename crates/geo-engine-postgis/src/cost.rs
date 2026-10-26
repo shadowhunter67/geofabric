@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn the_shipped_model_covers_every_class_and_names_its_version() {
         let m = model();
-        assert!(m.model_version.starts_with("postgis-cost-v1"));
+        assert!(m.model_version.starts_with("postgis-cost-v"));
         for c in ["indexed_bbox", "indexed_spatial", "aggregate", "broad_scan", "semijoin_intersects", "semijoin_metric_small", "semijoin_metric_large"] {
             assert!(m.classes.contains_key(c), "class {c} has no formula");
         }

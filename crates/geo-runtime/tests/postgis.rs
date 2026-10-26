@@ -132,7 +132,7 @@ fn resident_sources(uri: &str) -> Vec<PostGisSource> {
 }
 
 #[test]
-fn postgis_is_chosen_on_predicted_cost_only_inside_a_validated_workload_class() {
+fn the_postgis_cost_model_reaches_the_planner_with_plan_time_features_and_catalog_index_state() {
     let (dir, uri) = fixture("compare");
     let rt = runtime(resident(&uri), Arc::new(Mock::default()));
     let ctx = ExecutionContext::new(vec![dir]);
@@ -143,16 +143,80 @@ fn postgis_is_chosen_on_predicted_cost_only_inside_a_validated_workload_class() 
     assert_eq!(p.workload.shape, "features");
     assert!(p.workload.has_bbox_filter && !p.workload.has_aggregate && p.workload.semi_join.is_none());
     assert_eq!(p.workload.limit, Some(50));
-    // the engine's cost model: class from the features, Validated for it, index state from the catalog - so the engine counts as MEASURED here
-    let cm = pg.cost_model.as_ref().expect("the PostGIS cost model reached the planner (SharedPostGis forwards cost_estimate)");
-    assert_eq!((cm.workload_class.as_str(), cm.validation, cm.index_state.as_str()), ("indexed_bbox", geo_executor::ModelValidation::Validated, "available"), "{cm:?}");
-    assert!(cm.model_version.starts_with("postgis-cost-v1") && !cm.risk.blocked && cm.risk.level == "low");
+    // SharedPostGis forwards `cost_estimate` (it once did not, which hid the model from the planner): class from the features, index from the catalog.
+    // Which validation level the shipped model has is DATA (cost_validation_v1.json), so it is not asserted here.
+    let cm = pg.cost_model.as_ref().expect("the PostGIS cost model reached the planner");
+    assert_eq!((cm.workload_class.as_str(), cm.index_state.as_str()), ("indexed_bbox", "available"), "{cm:?}");
+    assert!(cm.model_version.starts_with("postgis-cost-v") && !cm.risk.blocked && cm.time_ms >= 1.0);
+}
+
+/// A PostGIS stand-in whose model verdict is INJECTED: the planner's policy (class-scoped R5d) is tested independently of whatever validation data ships.
+struct Injected {
+    inner: Arc<PostGisEngine>,
+    validation: geo_executor::ModelValidation,
+    time_ms: f64,
+}
+
+impl geo_executor::EngineDescriptor for Injected {
+    fn id(&self) -> geo_executor::EngineId {
+        geo_executor::EngineId::new("postgis")
+    }
+    fn capabilities(&self) -> geo_executor::Capabilities {
+        self.inner.capabilities()
+    }
+    fn source_residency(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<(), String> {
+        self.inner.source_residency(plan, ctx)
+    }
+    fn calibration(&self) -> EngineCalibration {
+        EngineCalibration::Unmeasured
+    }
+    fn cost_estimate(&self, _: &Plan, _: &geo_executor::WorkloadFeatures) -> Option<geo_executor::EngineCostEstimate> {
+        Some(geo_executor::EngineCostEstimate {
+            model_version: "test-model".into(),
+            workload_class: "indexed_bbox".into(),
+            validation: self.validation,
+            time_ms: self.time_ms,
+            terms: vec![geo_executor::CostTerm { name: "startup".into(), ms: self.time_ms }],
+            risk: geo_executor::RiskVerdict { blocked: false, level: "low".into(), reason: String::new() },
+            index_state: "available".into(),
+            notes: vec![],
+        })
+    }
+    fn estimate(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<geo_executor::Estimate, geo_executor::EngineError> {
+        self.inner.estimate(plan, ctx)
+    }
+    fn explain(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<Vec<geo_executor::ExplainStep>, geo_executor::EngineError> {
+        self.inner.explain(plan, ctx)
+    }
+}
+
+fn plan_with_injected(validation: geo_executor::ModelValidation, tag: &str) -> geo_planner::PhysicalPlan {
+    let (dir, uri) = fixture(tag);
+    let engine = Arc::new(PostGisEngine::new(resident(&uri), Arc::new(Mock::default())));
+    let mut rt = Runtime::empty();
+    rt.register_client(Box::new(Injected { inner: engine, validation, time_ms: 2.0 }));
+    rt.register(Box::new(DuckDbEngine::new(DuckDbConfig::default())));
+    let ctx = ExecutionContext::new(vec![dir]);
+    rt.plan(&plan_for(&rt, &ctx, &uri, None), &ctx).unwrap()
+}
+
+#[test]
+fn postgis_is_chosen_on_predicted_cost_only_inside_a_validated_workload_class() {
+    use geo_executor::ModelValidation;
+    let p = plan_with_injected(ModelValidation::Validated, "validated");
+    let pg = candidate(&p, "postgis");
     assert_eq!(pg.calibration, EngineCalibration::Measured, "R5d is scoped by validated class, not blanket");
-    assert_eq!(candidate(&p, "duckdb").calibration, EngineCalibration::Measured);
-    // and it WINS on cost (a validated indexed window is where PostGIS measured 5-10x faster), with no R5d override
     assert_eq!(p.engine.0, "postgis", "decisions: {:?}", p.decisions);
     assert!(!p.assessment.policy.iter().any(|m| m.starts_with("R5d")), "{:?}", p.assessment.policy);
     assert!(pg.score_ms.unwrap() < candidate(&p, "duckdb").score_ms.unwrap());
+    // the same prediction in a class that is merely Limited or Unvalidated is explained but never chosen on cost
+    for level in [ModelValidation::Limited, ModelValidation::Unvalidated] {
+        let p = plan_with_injected(level, "notvalidated");
+        assert_eq!(candidate(&p, "postgis").calibration, EngineCalibration::Unmeasured, "{level:?}");
+        assert_eq!(p.engine.0, "duckdb", "{level:?}: {:?}", p.decisions);
+        let msg = p.assessment.policy.iter().find(|m| m.starts_with("R5d")).expect("R5d fired");
+        assert!(msg.contains("not validated for automatic selection"), "{msg}");
+    }
 }
 
 #[test]

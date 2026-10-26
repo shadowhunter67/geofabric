@@ -35,7 +35,7 @@ fn semi(sj: &Value) -> Option<SemiJoinFeatures> {
 
 #[test]
 fn rust_and_python_assign_the_same_class_to_every_calibration_case() {
-    let doc = read("benchmarks/results/postgis-cost/calibration-cases.json");
+    let doc = read("benchmarks/results/postgis-cost/calibration-cases-r2.json");
     let cases = doc["cases"].as_array().unwrap();
     assert_eq!(cases.len(), 240);
     for c in cases {
@@ -57,7 +57,7 @@ fn rust_and_python_assign_the_same_class_to_every_calibration_case() {
 #[test]
 fn the_rust_evaluation_reproduces_the_python_prediction_of_the_shipped_model() {
     let model: ModelFile = serde_json::from_value(read("crates/geo-engine-postgis/src/cost_model_v1.json")).unwrap();
-    assert_eq!(model.model_version, "postgis-cost-v1.1");
+    assert_eq!(model.model_version, "postgis-cost-v2");
     let fx = read("benchmarks/results/postgis-cost/model-fixtures.json");
     let rows = fx["rows"].as_array().unwrap();
     assert!(rows.len() >= 40);

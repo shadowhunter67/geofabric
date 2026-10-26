@@ -1,5 +1,5 @@
 {
- "model": "postgis-cost-v1.1",
+ "model": "postgis-cost-v2",
  "rows": [
   {
    "class": "indexed_bbox",
@@ -12,7 +12,7 @@
    "has_transform": false,
    "limit": 40,
    "semi_join": null,
-   "expected_ms": 23.09661874264786
+   "expected_ms": 16.453330174823556
   },
   {
    "class": "semijoin_metric_large",
@@ -29,7 +29,7 @@
     "right_rows": 2244.698679513276,
     "predicate": "within_distance"
    },
-   "expected_ms": 317.78647874477997
+   "expected_ms": 625.3237719975886
   },
   {
    "class": "indexed_bbox",
@@ -42,7 +42,7 @@
    "has_transform": false,
    "limit": 20000,
    "semi_join": null,
-   "expected_ms": 27.315921857557438
+   "expected_ms": 20.634836740450098
   },
   {
    "class": "indexed_spatial",
@@ -55,7 +55,7 @@
    "has_transform": true,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 90.55209450499999
+   "expected_ms": 223.19677307499998
   },
   {
    "class": "aggregate",
@@ -68,7 +68,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 58.31711208499999
+   "expected_ms": 99.67796008
   },
   {
    "class": "indexed_bbox",
@@ -81,7 +81,7 @@
    "has_transform": false,
    "limit": 5000,
    "semi_join": null,
-   "expected_ms": 19.3131239946431
+   "expected_ms": 6.886663446443425
   },
   {
    "class": "indexed_bbox",
@@ -94,7 +94,7 @@
    "has_transform": false,
    "limit": 40,
    "semi_join": null,
-   "expected_ms": 48.94517794864786
+   "expected_ms": 72.86314878482355
   },
   {
    "class": "indexed_bbox",
@@ -107,7 +107,7 @@
    "has_transform": false,
    "limit": 2000,
    "semi_join": null,
-   "expected_ms": 16.35225444068692
+   "expected_ms": 1.6455008349165736
   },
   {
    "class": "semijoin_metric_small",
@@ -124,7 +124,7 @@
     "right_rows": 160.800206396608,
     "predicate": "within_distance"
    },
-   "expected_ms": 16.87402033238032
+   "expected_ms": 11.91896163859616
   },
   {
    "class": "semijoin_metric_large",
@@ -141,7 +141,7 @@
     "right_rows": 19149.72354202192,
     "predicate": "within_distance"
    },
-   "expected_ms": 2663.0543353949683
+   "expected_ms": 5334.692565776664
   },
   {
    "class": "semijoin_metric_large",
@@ -158,7 +158,7 @@
     "right_rows": 1592.2801677004745,
     "predicate": "within_distance"
    },
-   "expected_ms": 217.18895314884043
+   "expected_ms": 443.57429780255046
   },
   {
    "class": "semijoin_metric_large",
@@ -175,7 +175,7 @@
     "right_rows": 9694.204493084704,
     "predicate": "within_distance"
    },
-   "expected_ms": 2104.4036340100433
+   "expected_ms": 2700.5925452079573
   },
   {
    "class": "aggregate",
@@ -188,7 +188,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 105.28649915499999
+   "expected_ms": 209.80769079
   },
   {
    "class": "aggregate",
@@ -201,7 +201,7 @@
    "has_transform": false,
    "limit": 50,
    "semi_join": null,
-   "expected_ms": 16.431494951
+   "expected_ms": 1.281890953
   },
   {
    "class": "indexed_bbox",
@@ -214,7 +214,7 @@
    "has_transform": false,
    "limit": 500,
    "semi_join": null,
-   "expected_ms": 16.981922266433454
+   "expected_ms": 2.7297736238120462
   },
   {
    "class": "semijoin_intersects",
@@ -231,7 +231,7 @@
     "right_rows": 0.001020139893625599,
     "predicate": "intersects"
    },
-   "expected_ms": 52.611391501701945
+   "expected_ms": 53.93037263059907
   },
   {
    "class": "semijoin_metric_large",
@@ -248,7 +248,7 @@
     "right_rows": 3460.451827962524,
     "predicate": "within_distance"
    },
-   "expected_ms": 818.1853917033932
+   "expected_ms": 964.005908510928
   },
   {
    "class": "semijoin_intersects",
@@ -265,7 +265,7 @@
     "right_rows": 5.7510596666561065e-05,
     "predicate": "intersects"
    },
-   "expected_ms": 14.923069113608392
+   "expected_ms": 11.802245758259023
   },
   {
    "class": "semijoin_metric_large",
@@ -282,7 +282,7 @@
     "right_rows": 1085.0951453489467,
     "predicate": "within_distance"
    },
-   "expected_ms": 276.38818542744633
+   "expected_ms": 302.28368531539553
   },
   {
    "class": "indexed_spatial",
@@ -295,7 +295,7 @@
    "has_transform": false,
    "limit": 20000,
    "semi_join": null,
-   "expected_ms": 21.937731180999997
+   "expected_ms": 21.233151614999997
   },
   {
    "class": "indexed_spatial",
@@ -308,7 +308,7 @@
    "has_transform": false,
    "limit": 500,
    "semi_join": null,
-   "expected_ms": 16.1815075
+   "expected_ms": 4.2899385
   },
   {
    "class": "semijoin_intersects",
@@ -325,7 +325,7 @@
     "right_rows": 8.085109677545316e-05,
     "predicate": "intersects"
    },
-   "expected_ms": 18.829888162111835
+   "expected_ms": 16.169300539206763
   },
   {
    "class": "indexed_spatial",
@@ -338,7 +338,7 @@
    "has_transform": false,
    "limit": 20000,
    "semi_join": null,
-   "expected_ms": 15.539714009999999
+   "expected_ms": 2.40084515
   },
   {
    "class": "semijoin_intersects",
@@ -355,7 +355,7 @@
     "right_rows": 0.0006973275695089596,
     "predicate": "intersects"
    },
-   "expected_ms": 29.449445995054234
+   "expected_ms": 28.039876136383064
   },
   {
    "class": "aggregate",
@@ -368,7 +368,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 20.672107947
+   "expected_ms": 7.612590791
   },
   {
    "class": "semijoin_metric_small",
@@ -385,7 +385,7 @@
     "right_rows": 372.1003943695465,
     "predicate": "within_distance"
    },
-   "expected_ms": 56.02079910000858
+   "expected_ms": 115.22799913673862
   },
   {
    "class": "aggregate",
@@ -398,7 +398,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 23.285095466
+   "expected_ms": 13.739296498000002
   },
   {
    "class": "aggregate",
@@ -411,7 +411,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 94.217444726
+   "expected_ms": 180.055295278
   },
   {
    "class": "broad_scan",
@@ -424,7 +424,7 @@
    "has_transform": false,
    "limit": 50,
    "semi_join": null,
-   "expected_ms": 162.314219375
+   "expected_ms": 164.397278125
   },
   {
    "class": "semijoin_intersects",
@@ -441,7 +441,7 @@
     "right_rows": 0.0005725617328192549,
     "predicate": "intersects"
    },
-   "expected_ms": 26.763985698715317
+   "expected_ms": 25.038060057583515
   },
   {
    "class": "semijoin_metric_small",
@@ -458,7 +458,7 @@
     "right_rows": 646.2672735449096,
     "predicate": "within_distance"
    },
-   "expected_ms": 101.7906085539894
+   "expected_ms": 231.73476832127503
   },
   {
    "class": "broad_scan",
@@ -471,7 +471,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 137.535545642
+   "expected_ms": 139.04278917399998
   },
   {
    "class": "indexed_spatial",
@@ -484,7 +484,7 @@
    "has_transform": true,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 16.101836583999997
+   "expected_ms": 4.05543036
   },
   {
    "class": "indexed_spatial",
@@ -497,7 +497,7 @@
    "has_transform": true,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 15.296275099999999
+   "expected_ms": 1.6842925
   },
   {
    "class": "semijoin_intersects",
@@ -514,7 +514,7 @@
     "right_rows": 0.00876458102066959,
     "predicate": "intersects"
    },
-   "expected_ms": 203.67671803607456
+   "expected_ms": 222.79167614969703
   },
   {
    "class": "broad_scan",
@@ -527,7 +527,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 78.25554894300001
+   "expected_ms": 78.385223821
   },
   {
    "class": "semijoin_metric_small",
@@ -544,7 +544,7 @@
     "right_rows": 203.55596198617107,
     "predicate": "within_distance"
    },
-   "expected_ms": 19.861734868495702
+   "expected_ms": 18.285618911436856
   },
   {
    "class": "broad_scan",
@@ -557,7 +557,7 @@
    "has_transform": false,
    "limit": 50,
    "semi_join": null,
-   "expected_ms": 92.72124846099999
+   "expected_ms": 93.187082167
   },
   {
    "class": "semijoin_metric_small",
@@ -574,7 +574,7 @@
     "right_rows": 2640.6112464425446,
     "predicate": "within_distance"
    },
-   "expected_ms": 100.19080261182899
+   "expected_ms": 300.7402709955537
   },
   {
    "class": "semijoin_metric_small",
@@ -591,7 +591,7 @@
     "right_rows": 8.221580670217783,
     "predicate": "within_distance"
    },
-   "expected_ms": 15.481662186127107
+   "expected_ms": 5.8555602507187245
   },
   {
    "class": "broad_scan",
@@ -604,7 +604,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 156.11387474
+   "expected_ms": 158.05284778
   },
   {
    "class": "broad_scan",
@@ -617,7 +617,7 @@
    "has_transform": false,
    "limit": null,
    "semi_join": null,
-   "expected_ms": 331.176793195
+   "expected_ms": 337.183937665
   }
  ]
 }

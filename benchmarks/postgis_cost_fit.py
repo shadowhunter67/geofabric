@@ -31,6 +31,8 @@ from postgis_cost_lib import compact, load_raw  # noqa: E402
 TERMS = ["startup", "scan", "result", "result_geometry", "probe", "right"]
 CARDINALITY_BROAD = 300_000  # mirror of geo_executor::cost_model (a Rust test pins both)
 PROBES_SMALL = 5_000.0
+LOG_FIT = True  # v2 method; v1 (NNLS on relative error) = False
+WEIGHT_FLOOR_MS = 1.0
 TIMEOUT_MS = 60_000.0  # a timed-out run is a censored observation: at least this long
 
 
@@ -113,12 +115,54 @@ def actual_ms(r: dict, engine: str) -> float | None:
     return TIMEOUT_MS if e["status"] == "timeout" else None
 
 
+def nelder_mead(f, x0, iters: int = 3000):
+    """Derivative-free minimiser (no scipy): the fit objective is a mean squared LOG ratio, which is not a least-squares problem."""
+    n = len(x0)
+    sim = [np.array(x0, float)]
+    for i in range(n):
+        x = np.array(x0, float)
+        x[i] = x[i] * 1.5 + 0.05
+        sim.append(x)
+    fs = [f(x) for x in sim]
+    for _ in range(iters):
+        o = np.argsort(fs)
+        sim = [sim[i] for i in o]
+        fs = [fs[i] for i in o]
+        c = np.mean(sim[:-1], axis=0)
+        xr = c + (c - sim[-1])
+        fr = f(xr)
+        if fr < fs[0]:
+            xe = c + 2 * (c - sim[-1])
+            fe = f(xe)
+            sim[-1], fs[-1] = (xe, fe) if fe < fr else (xr, fr)
+        elif fr < fs[-2]:
+            sim[-1], fs[-1] = xr, fr
+        else:
+            xc = c + 0.5 * (sim[-1] - c)
+            fc = f(xc)
+            if fc < fs[-1]:
+                sim[-1], fs[-1] = xc, fc
+            else:
+                sim = [sim[0]] + [sim[0] + 0.5 * (t - sim[0]) for t in sim[1:]]
+                fs = [fs[0]] + [f(t) for t in sim[1:]]
+    return sim[0]
+
+
 def fit_class(rows: list[dict], engine: str, active: list[str]) -> dict:
     cols = [TERMS.index(t) for t in active]
     A = np.array([[terms_of(r)[c] for c in cols] for r in rows], dtype=float)
     y = np.array([actual_ms(r, engine) for r in rows], dtype=float)
-    w = 1.0 / np.maximum(y, 5.0)  # relative error weighting with a 5 ms floor (timer noise)
-    coef = nnls(A * w[:, None], y * w)
+    w = 1.0 / np.maximum(y, WEIGHT_FLOOR_MS)  # relative error weighting; the floor matches the gates' 1 ms floor (v1 used 5 ms while PostGIS times were quantised to 16 ms)
+    coef = nnls(A * w[:, None], y * w)  # starting point
+    if LOG_FIT:
+        # the gates judge max(pred/actual, actual/pred) with both floored at 1 ms, so the fit minimises exactly that: the mean squared log ratio
+        yf = np.maximum(y, 1.0)
+
+        def obj(x):
+            p = np.maximum(A @ np.maximum(x, 0.0), 1.0)
+            return float(np.mean(np.log(p / yf) ** 2))
+
+        coef = np.maximum(nelder_mead(obj, coef), 0.0)
     return {"terms": dict(zip(active, [float(c) for c in coef])), "n": len(rows)}
 
 
@@ -183,6 +227,7 @@ def main(argv: list[str]) -> int:
     f = sub.add_parser("fit")
     f.add_argument("--cal", type=Path, required=True, nargs="+", help="one or more measured sets; all of them are CALIBRATION data for this model version")
     f.add_argument("--version-suffix", default="")
+    f.add_argument("--versions", nargs=2, metavar=("POSTGIS", "DUCKDB"), help="explicit model version names (default: the v1 names + suffix)")
     f.add_argument("--seeds", type=int, nargs="+", default=[20261103])
     f.add_argument("--out-dir", type=Path, required=True, help="directory receiving postgis-cost-v1.json and duckdb-semijoin-cost-v1.json")
     f.add_argument("--commit", required=True)
@@ -199,12 +244,12 @@ def main(argv: list[str]) -> int:
         "machine_class": f"{env['cpu']}, {env['ram_gb']} GB RAM, {env['os'].split(' (')[0]}, loopback PostgreSQL + DuckDB on the same host ({env['postgresql'].split(',')[0]}; PostGIS 3.6.2)",
         "build_profile": "release (cargo --release); engine `execute` wall time, planning excluded",
         "fitted_at": __import__("time").strftime("%Y-%m-%d", __import__("time").gmtime()),
-        "method": "non-negative least squares per workload class on relative error (weight 1/max(time,5 ms)); DuckDB timeouts enter as censored observations at 60000 ms",
+        "method": ("per workload class, non-negative coefficients minimising the mean squared log(pred/actual) (both floored at 1 ms: the gates' own metric), started from NNLS on relative error; " if LOG_FIT else "non-negative least squares per workload class on relative error; ") + "DuckDB timeouts enter as censored observations at 60000 ms",
     }
     a.out_dir.mkdir(parents=True, exist_ok=True)
     for eng in ("postgis", "duckdb"):
         model = build_model(rows, eng, meta)
-        model["model_version"] = MODEL_VERSION[eng] + a.version_suffix
+        model["model_version"] = (a.versions[0] if eng == "postgis" else a.versions[1]) if a.versions else MODEL_VERSION[eng] + a.version_suffix
         out = a.out_dir / f"{model['model_version']}.json"
         out.write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(out, {k: (v["n_calibration"], v["fit_ratio_median"], v["fit_ratio_p90"]) for k, v in model["classes"].items()})
