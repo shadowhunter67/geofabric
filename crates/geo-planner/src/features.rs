@@ -8,8 +8,8 @@
 use crate::estimator::{plan_shape, RowEstimate};
 use geo_executor::{SemiJoinFeatures, SourceFeatures, WorkloadFeatures};
 use geo_ir::{NodeId, Plan, PlanNode};
-use geo_source_geoparquet::SourceScan;
-use geo_types::{DistanceUnit, Crs};
+use geo_source_geoparquet::{predicate_selectivity, HistogramStore, SourceScan};
+use geo_types::{BoundingBox, Crs, DistanceUnit};
 use std::collections::BTreeSet;
 
 /// Source URIs reachable from `id` (the leaves of that sub-graph).
@@ -36,7 +36,57 @@ fn selected(s: &SourceScan) -> f64 {
     s.raw_selected_rows * (1.0 - s.null_fraction.unwrap_or(0.0))
 }
 
-pub fn extract(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, result_geom_bytes: f64, result_attr_bytes: f64) -> WorkloadFeatures {
+/// Every plan node reachable from `id` (the node itself included).
+fn subtree<'a>(plan: &'a Plan, id: &NodeId, out: &mut Vec<&'a PlanNode>) {
+    if let Some(n) = plan.nodes.get(id) {
+        out.push(n);
+        for i in n.inputs() {
+            subtree(plan, i, out);
+        }
+    }
+}
+
+/// Area of a window in km2, from its own degrees (longitude shrinks with cos(latitude)). `None` for a non-geographic CRS: no guess.
+fn bbox_area_km2(b: &BoundingBox) -> Option<f64> {
+    let geographic = matches!(b.crs(), Crs::OgcCrs84) || matches!(b.crs(), Crs::Epsg(4326));
+    geographic.then(|| {
+        let lat = (b.min_y() + b.max_y()) / 2.0;
+        ((b.max_x() - b.min_x()) * 111.320 * lat.to_radians().cos() * (b.max_y() - b.min_y()) * 110.574).max(1e-6)
+    })
+}
+
+/// What one side of a semi join looks like: the area of its (smallest) `BboxFilter`, and the selectivity of its attribute filters.
+struct Side {
+    window_km2: Option<f64>,
+    /// `Some(1.0)` no filter; `Some(s)` known from column statistics; `None` a filter without statistics.
+    filter_selectivity: Option<f64>,
+}
+
+fn side_info(plan: &Plan, id: &NodeId, uris: &BTreeSet<String>, scans: &[SourceScan], hists: Option<&HistogramStore>) -> Side {
+    let mut nodes = Vec::new();
+    subtree(plan, id, &mut nodes);
+    let window_km2 = nodes
+        .iter()
+        .filter_map(|n| if let PlanNode::BboxFilter { bbox, .. } = n { bbox_area_km2(bbox) } else { None })
+        .fold(None, |a: Option<f64>, v| Some(a.map_or(v, |x| x.min(v))));
+    let mut sel = Some(1.0);
+    for n in &nodes {
+        if let PlanNode::Filter { predicate, .. } = n {
+            let scan = scans.iter().find(|s| uris.contains(&s.uri));
+            let hist = scan.and_then(|s| hists.and_then(|h| h.get(std::path::Path::new(&s.source_path))));
+            let empty = std::collections::BTreeMap::new();
+            let cols = hist.as_ref().map_or(&empty, |h| &h.columns);
+            let one = predicate_selectivity(predicate, cols);
+            sel = if one.known { sel.map(|v| v * one.value) } else { None };
+            if sel.is_none() {
+                break;
+            }
+        }
+    }
+    Side { window_km2, filter_selectivity: sel }
+}
+
+pub fn extract(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, result_geom_bytes: f64, result_attr_bytes: f64, hists: Option<&HistogramStore>) -> WorkloadFeatures {
     let shape = plan_shape(plan);
     let nodes = || plan.nodes.values();
     let has = |f: &dyn Fn(&PlanNode) -> bool| nodes().any(|n| f(n));
@@ -63,7 +113,35 @@ pub fn extract(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, result_geom
                 geo_ir::SpatialPredicate::Intersects => ("intersects", None),
                 geo_ir::SpatialPredicate::WithinDistance { distance } => ("within_distance", if distance.unit() == DistanceUnit::Degree { None } else { distance.to_meters().ok() }),
             };
+            let (ls, rs) = (side_info(plan, left, &l, scans, hists), side_info(plan, right, &r, scans, hists));
+            let basis = if scans.iter().filter(|s| l.contains(&s.uri) || r.contains(&s.uri)).all(|s| s.has_histogram) { "histogram" } else { "uniform" };
+            let right_rows_filtered = rs.filter_selectivity.map(|f| right_rows * f);
+            let right_density = match (right_rows_filtered, rs.window_km2) {
+                (Some(rows), Some(a)) => Some(rows / a),
+                _ => None,
+            };
+            let cand_per_probe = match (right_density, distance_m) {
+                (Some(d), Some(m)) if pred == "within_distance" => Some(d * std::f64::consts::PI * (m / 1000.0).powi(2)),
+                _ => None,
+            };
+            let probes_eff = ls.filter_selectivity.map(|f| left_rows * f);
             Some(SemiJoinFeatures {
+                left_window_km2: ls.window_km2,
+                right_window_km2: rs.window_km2,
+                left_filter_selectivity: ls.filter_selectivity,
+                right_filter_selectivity: rs.filter_selectivity,
+                right_rows_filtered,
+                right_density_per_km2: right_density,
+                candidates_per_probe: cand_per_probe,
+                candidate_pairs: match (probes_eff, cand_per_probe) {
+                    (Some(p), Some(c)) => Some(p * c),
+                    _ => None,
+                },
+                overlap_ratio: match (ls.window_km2, rs.window_km2) {
+                    (Some(a), Some(b)) => Some(a / b),
+                    _ => None,
+                },
+                estimate_basis: basis.into(),
                 left_uri: l.iter().next().cloned().unwrap_or_default(),
                 right_uri: r.iter().next().cloned().unwrap_or_default(),
                 left_rows,
@@ -127,7 +205,7 @@ mod tests {
         WorkloadFeatures {
             semi_join: Some(SemiJoinFeatures {
                 left_uri: String::new(), right_uri: String::new(), left_rows: probes, right_rows: 1.0, left_total_rows: 1, right_total_rows: 1,
-                metric, predicate: "within_distance".into(), distance_m: Some(200.0), expected_probes: probes,
+                metric, predicate: "within_distance".into(), distance_m: Some(200.0), expected_probes: probes, ..Default::default()
             }),
             ..Default::default()
         }

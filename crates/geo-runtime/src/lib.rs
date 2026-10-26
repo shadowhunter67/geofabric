@@ -171,6 +171,34 @@ impl Runtime {
         Ok(GeoParquetSource::open_authorized(&a)?.to_ir_source())
     }
 
+    /// Make the spatial histogram (and column statistics) of one GeoParquet file available to the planner: load `.gf-cache/<stem>.hist.json` next to it
+    /// when it still describes the file, otherwise build it and write the sidecar. The gateway does this in the background for its data directories; a
+    /// benchmark harness calls it up front so that it measures the SAME planner the product runs (estimator v3), not the footer-only fallback.
+    /// Returns a note (`cached` / `built in N ms`).
+    pub fn ensure_histogram(&self, path: &std::path::Path, guard: &dyn geo_types::SourceAccessGuard) -> Result<String, String> {
+        use geo_source_geoparquet::SpatialHistogram;
+        let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let a = guard.authorize(&path.to_string_lossy()).map_err(|_| "not authorized".to_string())?;
+        let src = GeoParquetSource::open_authorized(&a).map_err(|e| e.to_string())?;
+        let side = path.parent().unwrap_or_else(|| std::path::Path::new(".")).join(".gf-cache").join(format!("{stem}.hist.json"));
+        if let Ok(text) = std::fs::read_to_string(&side) {
+            if let Ok(h) = serde_json::from_str::<SpatialHistogram>(&text) {
+                if h.matches(&src) {
+                    self.state.histograms().put(src.path(), h);
+                    return Ok("cached".into());
+                }
+            }
+        }
+        let h = SpatialHistogram::build(&src, geo_source_geoparquet::DEFAULT_GRID, geo_source_geoparquet::DEFAULT_GRID).map_err(|e| e.to_string())?;
+        let ms = h.build_ms;
+        if let Some(cache) = side.parent() {
+            let _ = std::fs::create_dir_all(cache);
+        }
+        let _ = std::fs::write(&side, serde_json::to_string(&h).unwrap_or_default());
+        self.state.histograms().put(src.path(), h);
+        Ok(format!("built in {ms} ms"))
+    }
+
     /// A failed execution is a statement about the engine that ran it: health must blame THAT engine (not a hard-coded one), with the
     /// planner's own failure classification. User errors, limits, authorization and cancellation say nothing about the engine.
     fn record_engine_failure(&self, engine: &str, plan: &Plan, e: &geo_executor::EngineError) {

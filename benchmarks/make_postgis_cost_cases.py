@@ -24,14 +24,21 @@ import math
 import random
 from pathlib import Path
 
-SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fresh": 20261115, "fresh2": 20261119}
-COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300}
+SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fresh": 20261115, "fresh2": 20261119,
+         # metric-semijoin-safety phase (2026-10-26): discovery / calibration are METRIC-ONLY; the confirmation set is balanced
+         "msj_disc": 20261201, "msj_cal": 20261205, "msj_conf": 20261209}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320}
+METRIC_ONLY = {"msj_disc", "msj_cal"}
+MSJ_CONF_WEIGHTS = {"near_count": 56, "near_ids": 40, "semi_admin": 20}  # ~36 % metric semi joins, every other class still present
 # "fresh" (2026-10-26): the validation set for model v2, after the PostGIS connector latency fix invalidated every earlier PostGIS timing; same semi-join
 # enrichment as the confirmation set, a new seed, drawn before any v2 measurement exists
 # the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
 # the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
 CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
-NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09}
+RADII = [25, 50, 100, 200, 500, 1000]
+# right-side (road) filters: none, selective, medium, dense - so the right-side density varies realistically
+ROAD_FILTERS = [None, None, ["motorway", "trunk", "primary"], ["motorway", "trunk"], ["primary", "secondary", "tertiary"], ["secondary", "tertiary"], ["residential", "service", "unclassified"], ["residential"]]
 COVERAGE = (106.35, 10.35, 107.05, 11.25)  # the PostGIS relation is a clipped copy: only windows INSIDE this are readable there
 INSET = 0.03  # windows (and the metric prefilter margin) stay this far inside the coverage
 EXTENT = (COVERAGE[0] + INSET, COVERAGE[1] + INSET, COVERAGE[2] - INSET, COVERAGE[3] - INSET)
@@ -73,7 +80,24 @@ def pick_filter(rng: random.Random, src: str) -> dict:
     return {"column": col, "op": op, "value": rng.choice(vals)}
 
 
+def make_metric_case(rng: random.Random, idx: int, split: str) -> dict:
+    """A buildings-near-roads semi join with the radius, window and right-side filter drawn independently (the discovery/calibration corpora)."""
+    base = {"id": f"{split}-{idx:04d}"}
+    dist = rng.choice(RADII)
+    hi = NEAR_HI[split] * (0.6 if dist >= 500 else 1.0)  # a 1 km radius over a 0.1 degree window is the 60 s timeout regime: keep a few, not most
+    bbox, kind = window(rng, 0.004, hi)
+    roads = rng.choice(ROAD_FILTERS)
+    if rng.random() < 0.5:
+        with_ = {"source": "transport", "distance_m": dist}
+        if roads:
+            with_["filter"] = {"column": "class", "op": "in", "values": roads}
+        return {**base, "template": "near_count", "kind": "request", "region": kind, "request": {"kind": "near_count", "source": "buildings", "bbox": bbox, "crs": "OGC:CRS84", "with": with_}}
+    return {**base, "template": "near_ids", "kind": "template", "region": kind, "name": "near_ids", "params": {"bbox": bbox, "distance_m": dist, "road_classes": roads}}
+
+
 def make_case(rng: random.Random, template: str, idx: int, split: str) -> dict:
+    if split in METRIC_ONLY or (split == "msj_conf" and template in ("near_count", "near_ids") and rng.random() < 0.9):
+        return make_metric_case(rng, idx, split)
     near_hi = NEAR_HI[split]
     base = {"id": f"{split[:3]}-{idx:04d}", "template": template}
     if template == "features_bbox":
@@ -141,7 +165,7 @@ def main() -> int:
     a = ap.parse_args()
     rng = random.Random(SEEDS[a.split])
     n = a.n or COUNTS[a.split]
-    table = [(n, CONFIRM_WEIGHTS.get(n, w) if a.split in ("confirm", "fresh", "fresh2") else w) for n, w in TEMPLATES]
+    table = [(n, MSJ_CONF_WEIGHTS.get(n, CONFIRM_WEIGHTS.get(n, w)) if a.split == "msj_conf" else (CONFIRM_WEIGHTS.get(n, w) if a.split in ("confirm", "fresh", "fresh2") else w)) for n, w in TEMPLATES]
     names, weights = zip(*table)
     total = sum(weights)
     # stratified: each template gets its proportional share first (at least 1), the remainder is drawn by weight

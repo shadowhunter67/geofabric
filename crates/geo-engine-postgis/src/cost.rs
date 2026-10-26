@@ -122,6 +122,7 @@ mod tests {
                 predicate: "within_distance".into(),
                 distance_m: Some(200.0),
                 expected_probes: probes,
+                ..Default::default()
             }),
             ..Default::default()
         }

@@ -776,7 +776,6 @@ async fn planner_state(State(st): State<Shared>) -> Json<Value> {
 /// Build (or load from `.gf-cache/`) the spatial histogram of every source in the data directory, smallest first, on a
 /// background thread: the planner estimates with footer statistics until a histogram is ready (estimator v3).
 pub fn spawn_histogram_builder(st: Shared) {
-    use geo_source_geoparquet::SpatialHistogram;
     use std::sync::atomic::Ordering::Relaxed;
     let mut by_id = std::collections::BTreeMap::new();
     for dir in &st.data_dirs {
@@ -796,27 +795,7 @@ pub fn spawn_histogram_builder(st: Shared) {
         let guard = st.ctx().guard;
         for p in files {
             let stem = p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-            let note = (|| -> Result<String, String> {
-                let a = guard.authorize(&p.to_string_lossy()).map_err(|_| "not authorized".to_string())?;
-                let src = GeoParquetSource::open_authorized(&a).map_err(|e| e.to_string())?;
-                let side = p.parent().unwrap_or_else(|| std::path::Path::new(".")).join(".gf-cache").join(format!("{stem}.hist.json"));
-                if let Ok(text) = std::fs::read_to_string(&side) {
-                    if let Ok(h) = serde_json::from_str::<SpatialHistogram>(&text) {
-                        if h.matches(&src) {
-                            st.rt.state().histograms().put(src.path(), h);
-                            return Ok("cached".into());
-                        }
-                    }
-                }
-                let h = SpatialHistogram::build(&src, geo_source_geoparquet::DEFAULT_GRID, geo_source_geoparquet::DEFAULT_GRID).map_err(|e| e.to_string())?;
-                let ms = h.build_ms;
-                if let Some(cache) = side.parent() {
-                    let _ = std::fs::create_dir_all(cache);
-                }
-                let _ = std::fs::write(&side, serde_json::to_string(&h).unwrap_or_default());
-                st.rt.state().histograms().put(src.path(), h);
-                Ok(format!("built in {ms} ms"))
-            })();
+            let note = st.rt.ensure_histogram(&p, guard.as_ref());
             if let Ok(mut g) = st.hist_notes.lock() {
                 g.insert(stem, note.unwrap_or_else(|e| format!("none: {e}")));
             }

@@ -167,6 +167,7 @@ mod tests {
                 predicate: predicate.into(),
                 distance_m: Some(200.0),
                 expected_probes: probes,
+                ..Default::default()
             }),
             ..base()
         }

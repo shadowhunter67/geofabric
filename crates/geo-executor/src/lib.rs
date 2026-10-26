@@ -297,7 +297,11 @@ pub struct SourceFeatures {
 }
 
 /// A SpatialSemiJoin: the shape that makes the cost of repeated right-side probes matter.
-#[derive(Debug, Clone, Serialize)]
+///
+/// The `Option` fields are the CANDIDATE-WORK features (metric-semijoin-features-v1): each is `Some` only when the planner could really estimate it
+/// (window area from the plan's own `BboxFilter`s, filter selectivity from the column statistics of the histogram sidecar). `None` means UNKNOWN -
+/// never zero and never one - and a model that needs a `None` feature must say so instead of guessing.
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct SemiJoinFeatures {
     pub left_uri: String,
     pub right_uri: String,
@@ -310,8 +314,27 @@ pub struct SemiJoinFeatures {
     /// `within_distance | intersects | other`
     pub predicate: String,
     pub distance_m: Option<f64>,
-    /// Right-side probes the join has to make: one per left row.
+    /// Right-side probes the join has to make: one per left row (after the left filter when its selectivity is known).
     pub expected_probes: f64,
+    /// Area (km2) of the left window and of the right window (the left window grown by the distance), from the plan's `BboxFilter`s.
+    pub left_window_km2: Option<f64>,
+    pub right_window_km2: Option<f64>,
+    /// Selectivity of the attribute filters on each side: `Some(1.0)` = no filter, `Some(s)` = estimated from column statistics, `None` = a filter exists
+    /// but the planner has no statistics for it.
+    pub left_filter_selectivity: Option<f64>,
+    pub right_filter_selectivity: Option<f64>,
+    /// Right rows after its spatial window AND its filter (None when the filter selectivity is unknown).
+    pub right_rows_filtered: Option<f64>,
+    /// Filtered right features per km2 of the right window.
+    pub right_density_per_km2: Option<f64>,
+    /// Expected right features within `distance` of one probe: density x pi x d^2.
+    pub candidates_per_probe: Option<f64>,
+    /// `expected_probes x candidates_per_probe`: the candidate pairs the join has to examine.
+    pub candidate_pairs: Option<f64>,
+    /// Left window area / right window area (1 = the distance is negligible against the window).
+    pub overlap_ratio: Option<f64>,
+    /// `histogram` when both sides' row counts came from a spatial histogram, `uniform` for the footer-only fallback.
+    pub estimate_basis: String,
 }
 
 /// How much evidence stands behind an engine's cost model for ONE workload class.

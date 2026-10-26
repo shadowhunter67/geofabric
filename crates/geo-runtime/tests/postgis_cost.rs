@@ -159,6 +159,18 @@ fn env() -> Option<Env> {
     let roots: Vec<std::path::PathBuf> = uris.values().map(|u| std::path::Path::new(u).parent().unwrap().to_path_buf()).collect();
     let mut ctx = ExecutionContext::new(roots);
     ctx.timeout = std::time::Duration::from_secs(get("GF_COST_TIMEOUT_S").and_then(|v| v.parse().ok()).unwrap_or(60));
+    // The product's planner always runs with spatial histograms + column statistics (the gateway builds them in the background). The earlier
+    // evidence (up to 2026-10-26) was planned WITHOUT them, i.e. with the footer-only fallback; from here on the harness measures what ships.
+    // GF_COST_NO_HIST=1 reproduces the old behaviour.
+    if get("GF_COST_NO_HIST").as_deref() != Some("1") {
+        for uri in uris.values() {
+            let t0 = std::time::Instant::now();
+            match rt.ensure_histogram(std::path::Path::new(uri), ctx.guard.as_ref()) {
+                Ok(note) => eprintln!("histogram {:<40} {note} ({:.1} s)", std::path::Path::new(uri).file_name().unwrap().to_string_lossy(), t0.elapsed().as_secs_f64()),
+                Err(e) => eprintln!("histogram {uri}: NOT available ({e}); estimates fall back to footer statistics"),
+            }
+        }
+    }
     Some(Env { rt, ctx, uris })
 }
 

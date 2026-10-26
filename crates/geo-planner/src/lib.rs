@@ -617,7 +617,7 @@ impl Planner {
                 if est.notes.is_empty() { String::new() } else { format!("; {}", est.notes.join("; ")) }
             ),
         ));
-        let workload = features::extract(plan, &scans, &est, result_geom_bytes, result_attr_bytes);
+        let workload = features::extract(plan, &scans, &est, result_geom_bytes, result_attr_bytes, inputs.histograms.as_deref());
         let access = browser_access(plan, &scans, &est, &cfg.cost);
         let source_keys: Vec<String> = scans.iter().map(|s| source_key(&s.uri)).collect();
         let read_classes: Vec<ReadClass> = scans.iter().map(|s| s.read_class).collect();
