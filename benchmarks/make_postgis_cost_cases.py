@@ -24,12 +24,14 @@ import math
 import random
 from pathlib import Path
 
-SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111}
-COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260}
+SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fresh": 20261115}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300}
+# "fresh" (2026-10-26): the validation set for model v2, after the PostGIS connector latency fix invalidated every earlier PostGIS timing; same semi-join
+# enrichment as the confirmation set, a new seed, drawn before any v2 measurement exists
 # the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
 # the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
 CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
-NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07}
 COVERAGE = (106.35, 10.35, 107.05, 11.25)  # the PostGIS relation is a clipped copy: only windows INSIDE this are readable there
 INSET = 0.03  # windows (and the metric prefilter margin) stay this far inside the coverage
 EXTENT = (COVERAGE[0] + INSET, COVERAGE[1] + INSET, COVERAGE[2] - INSET, COVERAGE[3] - INSET)
@@ -139,7 +141,7 @@ def main() -> int:
     a = ap.parse_args()
     rng = random.Random(SEEDS[a.split])
     n = a.n or COUNTS[a.split]
-    table = [(n, CONFIRM_WEIGHTS.get(n, w) if a.split == "confirm" else w) for n, w in TEMPLATES]
+    table = [(n, CONFIRM_WEIGHTS.get(n, w) if a.split in ("confirm", "fresh") else w) for n, w in TEMPLATES]
     names, weights = zip(*table)
     total = sum(weights)
     # stratified: each template gets its proportional share first (at least 1), the remainder is drawn by weight

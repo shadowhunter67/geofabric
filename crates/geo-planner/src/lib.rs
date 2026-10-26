@@ -682,6 +682,10 @@ impl Planner {
 
         // R4 hint, then R5 lowest score (ties: first registered), then R5b confidence policy
         let mut policy: Vec<String> = Vec::new();
+        if let Some(w) = features::scale_warning(&workload) {
+            log.push(dec("scale", "workload", Outcome::Warning, w.clone()));
+            policy.push(format!("Scale warning: {w}"));
+        }
         let mut chosen: Option<usize> = None;
         let mut hinted = false;
         if let Some(pref) = &plan.hints.preferred_engine {

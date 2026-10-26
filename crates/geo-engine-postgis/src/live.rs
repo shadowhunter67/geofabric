@@ -165,20 +165,26 @@ impl PgConnector for LiveConnector {
         }
         // watcher: cancel the statement ON THE SERVER when the context is cancelled or the deadline passes
         let token = client.cancel_token();
-        let done = Arc::new(AtomicBool::new(false));
+        // The watcher waits on a channel, not on a sleep loop: when the statement finishes the sender is dropped and the watcher wakes AT ONCE.
+        // (Found 2026-10-26: a `sleep(15 ms)` loop + `join()` added up to one Windows timer tick, ~15 ms, to EVERY PostGIS query; 55 % of all measured
+        // PostGIS times sat on 16 ms. That latency was in the cost model's startup term and hid how fast indexed queries really are.)
+        let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
         let timed_out = Arc::new(AtomicBool::new(false));
         let watcher = {
-            let (done, timed_out, cancel) = (done.clone(), timed_out.clone(), cancel.clone());
+            let (timed_out, cancel) = (timed_out.clone(), cancel.clone());
             let deadline = Instant::now() + q.timeout;
             std::thread::spawn(move || {
-                while !done.load(Ordering::SeqCst) {
+                loop {
                     let late = Instant::now() >= deadline;
                     if cancel.is_cancelled() || late {
                         timed_out.store(late && !cancel.is_cancelled(), Ordering::SeqCst);
                         let _ = token.cancel_query(NoTls);
-                        break;
+                        return;
                     }
-                    std::thread::sleep(Duration::from_millis(15));
+                    match stop_rx.recv_timeout(Duration::from_millis(15)) {
+                        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                        _ => return, // the statement finished (sender dropped)
+                    }
                 }
             })
         };
@@ -196,7 +202,7 @@ impl PgConnector for LiveConnector {
             .collect();
         let refs: Vec<&(dyn ToSql + Sync)> = values.iter().map(|b| b.as_ref()).collect();
         let result = client.query(q.sql.as_str(), &refs);
-        done.store(true, Ordering::SeqCst);
+        drop(stop_tx);
         let _ = watcher.join();
         match result {
             Ok(rows) => {

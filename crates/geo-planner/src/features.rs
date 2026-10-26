@@ -102,3 +102,42 @@ pub fn extract(plan: &Plan, scans: &[SourceScan], est: &RowEstimate, result_geom
         estimate_quality: format!("{:?}", est.quality).to_lowercase(),
     }
 }
+
+/// Right-side probes above which NEITHER engine is reliably safe for a metric semi join: in the 2026-10 evidence DuckDB hit the 60 s execution timeout
+/// in 2 of 11 such cases and PostGIS took 10-37 s in most. A warning for the user, not a refusal (a refusal would need a better predictor than the
+/// features give; ADR-015). Pure so it is unit tested.
+pub const SCALE_WARN_PROBES: f64 = 250_000.0;
+
+pub fn scale_warning(f: &WorkloadFeatures) -> Option<String> {
+    let s = f.semi_join.as_ref().filter(|s| s.metric)?;
+    (s.expected_probes > SCALE_WARN_PROBES).then(|| {
+        format!(
+            "very large metric semi join (~{:.0} right-side probes): in measurements neither engine was reliably safe at this size (tens of seconds, and DuckDB sometimes exceeded its 60 s timeout). Narrow the window, the distance or the road classes, or expect a long run.",
+            s.expected_probes
+        )
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use geo_executor::SemiJoinFeatures;
+
+    fn semi(metric: bool, probes: f64) -> WorkloadFeatures {
+        WorkloadFeatures {
+            semi_join: Some(SemiJoinFeatures {
+                left_uri: String::new(), right_uri: String::new(), left_rows: probes, right_rows: 1.0, left_total_rows: 1, right_total_rows: 1,
+                metric, predicate: "within_distance".into(), distance_m: Some(200.0), expected_probes: probes,
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn only_very_large_metric_semi_joins_warn() {
+        assert!(scale_warning(&semi(true, SCALE_WARN_PROBES + 1.0)).unwrap().contains("neither engine"));
+        assert!(scale_warning(&semi(true, SCALE_WARN_PROBES)).is_none());
+        assert!(scale_warning(&semi(false, 1e9)).is_none(), "an intersects semi join is a different regime (it has a validated PostGIS class)");
+        assert!(scale_warning(&WorkloadFeatures::default()).is_none());
+    }
+}

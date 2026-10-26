@@ -75,3 +75,6 @@ data/public-demo-build/
 
 # raw PostGIS cost-model traces (EXPLAIN text, per-run timings): reproducible from the corpus + seed, kept out of Git; compact summaries are committed
 benchmarks/results/postgis-cost/raw/
+
+# per-run scratch of the DuckDB engine (profile dir) created next to test binaries
+**/.tmp/
