@@ -1,0 +1,147 @@
+{
+  "captured_at": "2026-10-26T04:31:46Z",
+  "machine": "THANHNT-DLC",
+  "os": "Windows 11 (10.0.26200)",
+  "cpu": "Intel(R) Core(TM) i7-14700",
+  "logical_cpus": 28,
+  "ram_gb": 31.8,
+  "postgresql": "PostgreSQL 16.9, compiled by Visual C++ build 1943, 64-bit",
+  "postgis": "POSTGIS=\"3.6.2 3.6.2\" [EXTENSION] PGSQL=\"160\" GEOS=\"3.14.1dev-CAPI-1.20.4\" PROJ=\"8.2.1 NETWORK_ENABLED=OFF URL_ENDPOINT= USER_WRITABLE_DIRECTORY=C:\\Users\\Admin\\AppData\\Local/proj\" (compiled against PROJ 8.2.1) LIBXML=\"2.12.5\" LIBJSON=\"0.12\" LIBPROTOBUF=\"1.2.1\" WAGYU=\"0.5.0 (Internal)\"",
+  "duckdb": "duckdb-1.5.6",
+  "geofabric_commit": "ea377662f69bb5e0b4cfcf51089ea9d1227f6c00",
+  "geofabric_dirty": false,
+  "dataset_versions": {
+    "overture_admin_hcm": {},
+    "overture_buildings_vn_south": {},
+    "overture_landuse_hcm": {},
+    "overture_places_hcm": {},
+    "overture_transport_hcm": {}
+  },
+  "dataset_row_counts": {
+    "admin": 325,
+    "buildings": 3845734,
+    "fx_admin": 2,
+    "fx_buildings": 65,
+    "fx_roads": 3,
+    "landuse": 13277,
+    "places": 449849,
+    "transport": 453550
+  },
+  "analyze_last": {
+    "admin": null,
+    "buildings": null,
+    "fx_admin": null,
+    "fx_buildings": null,
+    "fx_roads": null,
+    "landuse": null,
+    "places": null,
+    "transport": null
+  },
+  "indexes": [
+    {
+      "table": "admin",
+      "index": "admin_covering_gix",
+      "def": "CREATE INDEX admin_covering_gix ON geofabric.admin USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "admin",
+      "index": "admin_geometry_gix",
+      "def": "CREATE INDEX admin_geometry_gix ON geofabric.admin USING gist (geometry)"
+    },
+    {
+      "table": "buildings",
+      "index": "buildings_covering_gix",
+      "def": "CREATE INDEX buildings_covering_gix ON geofabric.buildings USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "buildings",
+      "index": "buildings_geometry_gix",
+      "def": "CREATE INDEX buildings_geometry_gix ON geofabric.buildings USING gist (geometry)"
+    },
+    {
+      "table": "buildings",
+      "index": "buildings_utm32648_gix",
+      "def": "CREATE INDEX buildings_utm32648_gix ON geofabric.buildings USING gist (st_transform(st_setsrid(geometry, 4326), 32648))"
+    },
+    {
+      "table": "fx_admin",
+      "index": "fx_admin_covering_gix",
+      "def": "CREATE INDEX fx_admin_covering_gix ON geofabric.fx_admin USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "fx_admin",
+      "index": "fx_admin_geometry_gix",
+      "def": "CREATE INDEX fx_admin_geometry_gix ON geofabric.fx_admin USING gist (geometry)"
+    },
+    {
+      "table": "fx_buildings",
+      "index": "fx_buildings_covering_gix",
+      "def": "CREATE INDEX fx_buildings_covering_gix ON geofabric.fx_buildings USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "fx_buildings",
+      "index": "fx_buildings_geometry_gix",
+      "def": "CREATE INDEX fx_buildings_geometry_gix ON geofabric.fx_buildings USING gist (geometry)"
+    },
+    {
+      "table": "fx_roads",
+      "index": "fx_roads_covering_gix",
+      "def": "CREATE INDEX fx_roads_covering_gix ON geofabric.fx_roads USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "fx_roads",
+      "index": "fx_roads_geometry_gix",
+      "def": "CREATE INDEX fx_roads_geometry_gix ON geofabric.fx_roads USING gist (geometry)"
+    },
+    {
+      "table": "landuse",
+      "index": "landuse_covering_gix",
+      "def": "CREATE INDEX landuse_covering_gix ON geofabric.landuse USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "landuse",
+      "index": "landuse_geometry_gix",
+      "def": "CREATE INDEX landuse_geometry_gix ON geofabric.landuse USING gist (geometry)"
+    },
+    {
+      "table": "places",
+      "index": "places_covering_gix",
+      "def": "CREATE INDEX places_covering_gix ON geofabric.places USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "places",
+      "index": "places_geometry_gix",
+      "def": "CREATE INDEX places_geometry_gix ON geofabric.places USING gist (geometry)"
+    },
+    {
+      "table": "transport",
+      "index": "transport_covering_gix",
+      "def": "CREATE INDEX transport_covering_gix ON geofabric.transport USING gist (st_makeenvelope(bbox_xmin, bbox_ymin, bbox_xmax, bbox_ymax, 4326))"
+    },
+    {
+      "table": "transport",
+      "index": "transport_geom_utm32648_gix",
+      "def": "CREATE INDEX transport_geom_utm32648_gix ON geofabric.transport USING gist (geometry_utm32648)"
+    },
+    {
+      "table": "transport",
+      "index": "transport_geometry_gix",
+      "def": "CREATE INDEX transport_geometry_gix ON geofabric.transport USING gist (geometry)"
+    },
+    {
+      "table": "transport",
+      "index": "transport_utm32648_gix",
+      "def": "CREATE INDEX transport_utm32648_gix ON geofabric.transport USING gist (st_transform(st_setsrid(geometry, 4326), 32648))"
+    }
+  ],
+  "postgres_settings": {
+    "effective_cache_size": "524288",
+    "jit": "on",
+    "max_parallel_workers_per_gather": "2",
+    "random_page_cost": "4",
+    "shared_buffers": "65536",
+    "work_mem": "65536"
+  },
+  "model_version": "postgis-cost-v1",
+  "cache_terminology": "process-cold = PostgreSQL restarted just before; the OS file cache is NOT controlled (never called 'cold cache'). warm-repeat = repetitions after the first run."
+}

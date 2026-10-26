@@ -1,0 +1,366 @@
+{
+  "validated_classes": [
+    "aggregate",
+    "indexed_bbox",
+    "semijoin_intersects"
+  ],
+  "overall": {
+    "n": 298,
+    "p50_regret": 1.0,
+    "p90_regret": 3.11,
+    "p95_regret": 29.453,
+    "max_regret": 121.41,
+    "max_penalty_ms": 52185.0,
+    "mean_penalty_ms": 473.4,
+    "optimal": 213,
+    "pg_chosen": 166
+  },
+  "baselines": {
+    "always_duckdb": {
+      "n": 298,
+      "p50_regret": 12.192,
+      "p90_regret": 124.078,
+      "p95_regret": 145.259,
+      "max_regret": 536.71,
+      "max_penalty_ms": 59810.6,
+      "mean_penalty_ms": 3121.3,
+      "optimal": 50,
+      "pg_chosen": 0,
+      "failed_or_capped": 0
+    },
+    "always_postgis": {
+      "n": 298,
+      "p50_regret": 1.0,
+      "p90_regret": 1.592,
+      "p95_regret": 2.542,
+      "max_regret": 15.9,
+      "max_penalty_ms": 13152.5,
+      "mean_penalty_ms": 260.3,
+      "optimal": 252,
+      "pg_chosen": 298,
+      "failed_or_capped": 0
+    },
+    "existing_planner_R5d_everywhere": {
+      "n": 298,
+      "p50_regret": 12.192,
+      "p90_regret": 124.078,
+      "p95_regret": 145.259,
+      "max_regret": 536.71,
+      "max_penalty_ms": 59810.6,
+      "mean_penalty_ms": 3121.3,
+      "optimal": 50,
+      "pg_chosen": 0,
+      "failed_or_capped": 0
+    }
+  },
+  "pg_prediction": {
+    "n": 298,
+    "median": 1.17,
+    "p90": 2.67,
+    "p95": 3.13,
+    "max": 4.5
+  },
+  "by_class": {
+    "aggregate": {
+      "planner": {
+        "n": 61,
+        "p50_regret": 1.0,
+        "p90_regret": 1.0,
+        "p95_regret": 1.455,
+        "max_regret": 4.91,
+        "max_penalty_ms": 376.3,
+        "mean_penalty_ms": 11.8,
+        "optimal": 56,
+        "pg_chosen": 55
+      },
+      "prediction_ratio": {
+        "n": 61,
+        "median": 1.0,
+        "p90": 2.77,
+        "p95": 3.0,
+        "max": 4.5
+      }
+    },
+    "broad_scan": {
+      "planner": {
+        "n": 18,
+        "p50_regret": 1.537,
+        "p90_regret": 2.64,
+        "p95_regret": 3.22,
+        "max_regret": 3.22,
+        "max_penalty_ms": 171.1,
+        "mean_penalty_ms": 56.7,
+        "optimal": 7,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 18,
+        "median": 1.2,
+        "p90": 1.81,
+        "p95": 3.72,
+        "max": 3.7
+      }
+    },
+    "indexed_bbox": {
+      "planner": {
+        "n": 82,
+        "p50_regret": 1.0,
+        "p90_regret": 1.0,
+        "p95_regret": 1.0,
+        "max_regret": 1.0,
+        "max_penalty_ms": 0.0,
+        "mean_penalty_ms": 0.0,
+        "optimal": 82,
+        "pg_chosen": 82
+      },
+      "prediction_ratio": {
+        "n": 82,
+        "median": 1.0,
+        "p90": 2.25,
+        "p95": 2.99,
+        "max": 4.5
+      }
+    },
+    "indexed_spatial": {
+      "planner": {
+        "n": 25,
+        "p50_regret": 29.453,
+        "p90_regret": 114.864,
+        "p95_regret": 118.234,
+        "max_regret": 121.41,
+        "max_penalty_ms": 205.2,
+        "mean_penalty_ms": 85.6,
+        "optimal": 6,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 25,
+        "median": 1.01,
+        "p90": 2.83,
+        "p95": 3.03,
+        "max": 3.0
+      }
+    },
+    "semijoin_intersects": {
+      "planner": {
+        "n": 29,
+        "p50_regret": 1.0,
+        "p90_regret": 1.0,
+        "p95_regret": 1.0,
+        "max_regret": 1.0,
+        "max_penalty_ms": 0.0,
+        "mean_penalty_ms": 0.0,
+        "optimal": 29,
+        "pg_chosen": 29
+      },
+      "prediction_ratio": {
+        "n": 29,
+        "median": 1.31,
+        "p90": 2.37,
+        "p95": 3.22,
+        "max": 3.9
+      }
+    },
+    "semijoin_metric_large": {
+      "planner": {
+        "n": 52,
+        "p50_regret": 1.0,
+        "p90_regret": 2.794,
+        "p95_regret": 7.678,
+        "max_regret": 14.12,
+        "max_penalty_ms": 52185.0,
+        "mean_penalty_ms": 2481.3,
+        "optimal": 30,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 52,
+        "median": 1.49,
+        "p90": 2.75,
+        "p95": 3.55,
+        "max": 4.0
+      }
+    },
+    "semijoin_metric_small": {
+      "planner": {
+        "n": 31,
+        "p50_regret": 2.458,
+        "p90_regret": 8.691,
+        "p95_regret": 80.522,
+        "max_regret": 85.92,
+        "max_penalty_ms": 3713.7,
+        "mean_penalty_ms": 263.6,
+        "optimal": 3,
+        "pg_chosen": 0
+      },
+      "prediction_ratio": {
+        "n": 31,
+        "median": 1.56,
+        "p90": 2.55,
+        "p95": 3.6,
+        "max": 3.7
+      }
+    }
+  },
+  "scope": {
+    "in_auto_select_scope": {
+      "n": 172,
+      "p50_regret": 1.0,
+      "p90_regret": 1.0,
+      "p95_regret": 1.0,
+      "max_regret": 4.91,
+      "max_penalty_ms": 376.3,
+      "mean_penalty_ms": 4.2,
+      "optimal": 167,
+      "pg_chosen": 166
+    },
+    "outside_scope_R5d_or_risk_policy": {
+      "n": 126,
+      "p50_regret": 1.773,
+      "p90_regret": 48.883,
+      "p95_regret": 80.522,
+      "max_regret": 121.41,
+      "max_penalty_ms": 52185.0,
+      "mean_penalty_ms": 1113.9,
+      "optimal": 46,
+      "pg_chosen": 0
+    }
+  },
+  "unsafe_selections": [
+    {
+      "id": "fre-0078",
+      "reason": "duckdb selected but it timeout while the other completed"
+    }
+  ],
+  "correctness_mismatches": 0,
+  "worst_penalties": [
+    {
+      "id": "fre-0078",
+      "cls": "semijoin_metric_large",
+      "template": "near_ids",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 60000.0,
+      "best_ms": 7815.0,
+      "regret": 7.7,
+      "penalty_ms": 52185.0,
+      "best_engine": "postgis",
+      "pg_pred": 8569.7,
+      "pg_act": 7815.0,
+      "dd_pred": 5413.0,
+      "dd_act": 60000.0
+    },
+    {
+      "id": "fre-0109",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 40454.2,
+      "best_ms": 2864.4,
+      "regret": 14.1,
+      "penalty_ms": 37589.8,
+      "best_engine": "postgis",
+      "pg_pred": 2968.6,
+      "pg_act": 2864.4,
+      "dd_pred": 1858.0,
+      "dd_act": 40454.2
+    },
+    {
+      "id": "fre-0181",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 8715.6,
+      "best_ms": 753.7,
+      "regret": 11.6,
+      "penalty_ms": 7961.9,
+      "best_engine": "postgis",
+      "pg_pred": 1223.1,
+      "pg_act": 753.7,
+      "dd_pred": 831.4,
+      "dd_act": 8715.6
+    },
+    {
+      "id": "fre-0283",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 16324.8,
+      "best_ms": 9761.4,
+      "regret": 1.7,
+      "penalty_ms": 6563.4,
+      "best_engine": "postgis",
+      "pg_pred": 8873.5,
+      "pg_act": 9761.4,
+      "dd_pred": 5590.4,
+      "dd_act": 16324.8
+    },
+    {
+      "id": "fre-0141",
+      "cls": "semijoin_metric_large",
+      "template": "near_ids",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 10457.7,
+      "best_ms": 5290.2,
+      "regret": 2.0,
+      "penalty_ms": 5167.6,
+      "best_engine": "postgis",
+      "pg_pred": 4487.5,
+      "pg_act": 5290.2,
+      "dd_pred": 2867.0,
+      "dd_act": 10457.7
+    },
+    {
+      "id": "fre-0278",
+      "cls": "semijoin_metric_large",
+      "template": "near_ids",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 14665.1,
+      "best_ms": 10122.2,
+      "regret": 1.4,
+      "penalty_ms": 4542.9,
+      "best_engine": "postgis",
+      "pg_pred": 3909.5,
+      "pg_act": 10122.2,
+      "dd_pred": 2598.3,
+      "dd_act": 14665.1
+    },
+    {
+      "id": "fre-0148",
+      "cls": "semijoin_metric_small",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "R5d",
+      "sel_ms": 4294.6,
+      "best_ms": 581.0,
+      "regret": 7.4,
+      "penalty_ms": 3713.7,
+      "best_engine": "postgis",
+      "pg_pred": 256.6,
+      "pg_act": 581.0,
+      "dd_pred": 347.6,
+      "dd_act": 4294.6
+    },
+    {
+      "id": "fre-0273",
+      "cls": "semijoin_metric_large",
+      "template": "near_count",
+      "engine": "duckdb",
+      "why": "cost",
+      "sel_ms": 9372.4,
+      "best_ms": 6110.3,
+      "regret": 1.5,
+      "penalty_ms": 3262.1,
+      "best_engine": "postgis",
+      "pg_pred": 3242.1,
+      "pg_act": 6110.3,
+      "dd_pred": 2083.7,
+      "dd_act": 9372.4
+    }
+  ]
+}

@@ -41,3 +41,25 @@ Not validated for: large metric semi-joins, unknown index state, remote PostgreS
 ## Not done (P1)
 
 A two-stage bbox prefilter or generated projected column for the metric semi-join (would change the physical design); promotion of `semijoin_metric_small` (needs a better numeric fit or a documented gate amendment confirmed on a fresh set); a second physical machine; a remote database with real latency; TLS; PostGIS-only source planning (the planner still reads Parquet footers; the PostGIS relation lacks nested columns, so `near` returning every column is not PostGIS-eligible).
+
+## Addendum (2026-10-26): connector latency bug, remeasurement, model v2 — supersedes the class table above
+
+**What changed.** While investigating an unexplained process exit I found that the PostGIS connector's cancel-watcher slept in 15 ms steps and the query path `join()`ed it, so **every PostGIS query was padded by up to one Windows timer tick (~15 ms)**: 55 % of all measured PostGIS times sat on 16 ms. Fixed (the watcher now waits on a channel and wakes at once). After the fix indexed queries take **1-3 ms** (0.8 % of times at 16 ms). Every PostGIS timing and every coefficient above was therefore wrong in its fast range, so the three sets were re-measured (720 cases, 0 correctness mismatches), a model **`postgis-cost-v2`** was refit (objective: mean squared log(pred/actual), the gates' own metric), and validation was **reset to empty** and re-earned on sets that did not exist at fit time.
+
+**The unexplained exit was not an engine crash.** Both aborts (exit `0xffffffff`) coincide with entries in the machine's RAM emergency-killer log ("killed postgis_cost-... (2.1 GB)" 2026-10-23 14:08:43 and 2026-10-26 11:20:59). A separate 44-case DuckDB stress run at the 60 s boundary (7 timeouts, one process) did not crash. One real defect was fixed on that path (an interrupted statement was executed a second time).
+
+**Evidence (all fresh data, 0 mismatches):** fresh set seed 20261115 (300 cases): under the gates as committed, only `semijoin_intersects` validated; `indexed_bbox` and `aggregate` had P90 regret 1.00 but P90 prediction ratio 3.29 / 3.12 (> 3.0). That ratio, with times of 1-3 ms floored at 1 ms, measures timer noise: DuckDB was never faster than 64 ms in these classes, so no decision turns on it. **Gate amendment, made after seeing that result** (`postgis_cost_gates.json`, "amendments"): both times are floored at 10 ms for the prediction ratio; everything else is unchanged, the amendment was committed before a new independent set (seed 20261119, 300 cases) was generated, and the fresh set is not allowed to promote anything under it. On 20261119 aggregate, broad_scan, indexed_bbox, indexed_spatial and semijoin_intersects passed; metric_small (prediction P90 3.41, median 1.68) and metric_large (P90 regret 4.4, one unsafe selection) did not. Because the two independent sets disagreed on two classes (indexed_spatial P90 regret 1.59 and broad_scan 2.09 on 20261115), **a class is validated only if it passes on both**.
+
+| Class | PostGIS model | Auto-select | Evidence (20261119 / 20261115, amended gates) |
+|---|---|---|---|
+| `indexed_bbox` | validated | **yes** | n=81 / 82, regret P90 1.00 / 1.00, prediction P90 1.49 / 2.25 |
+| `aggregate` | validated | **yes** | n=61 / 61, regret P90 1.28 / 1.00, prediction P90 2.74 / 2.77 |
+| `semijoin_intersects` | validated | **yes** | n=29 / 29, regret 1.00 / 1.00, prediction P90 1.99 / 2.37 |
+| `indexed_spatial` | limited | no | passed 20261119 (n=22), failed 20261115 (regret P90 1.59) |
+| `broad_scan` | limited | no | passed 20261119 (n=18), failed 20261115 (regret P90 2.09) |
+| `semijoin_metric_small` | limited | no | prediction P90 3.41 / median 1.68 on 20261119 |
+| `semijoin_metric_large` | limited (+ block > 50k probes) | no | regret P90 4.4 / 2.6, one unsafe selection per set |
+
+**Planner results with this validation** (replayed on the stored cases): inside the validated scope (n=171 / 172) P90 regret **1.00**, max 4.28 / 4.91, **max absolute penalty 134 ms / 376 ms**. Over *all* cases P90 regret is 6.99 / 3.11 and the primary gate "P90 <= 1.5" is **not met**: with PostGIS answering in 1-3 ms, every case that R5d leaves on DuckDB (limited classes, ~40 % of these enriched sets) shows a large *ratio* (DuckDB 70-100 ms vs 2 ms) and the metric semi-joins show multi-second penalties (max 53 s). Mean absolute penalty is 396 / 473 ms against 2.5 / 3.1 s for always-DuckDB, but **always-PostGIS (154 / 260 ms) is better on this corpus** for the reason above; it is not a shippable policy (unsupported plans, clipped relation, the risk block). One unsafe selection per set, both from the R5d/DuckDB path (a huge metric semi-join on which DuckDB hit its 60 s timeout while PostGIS finished).
+
+**Open P1s changed:** the DuckDB-abort P1 is closed (cause: the RAM killer); a scale warning above 250,000 probes now exists in the planner's decisions; a second machine / remote PostgreSQL was NOT possible (no second device or remote server available) and remains P1.

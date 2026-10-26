@@ -72,10 +72,10 @@ The DuckDB engine's JSON profiler is **off by default** and only on when `GEOFAB
 | Workload class | PostGIS model | Automatic choice |
 |---|---|---|
 | selective indexed window (`indexed_bbox`) | validated | yes |
-| intersects / projected column (`indexed_spatial`) | validated | yes |
+| intersects / projected column (`indexed_spatial`) | limited (passed one independent set, failed another) | no |
 | aggregates up to 300,000 matching rows (`aggregate`) | validated | yes |
 | admin-style intersects semi join (`semijoin_intersects`) | validated | yes |
-| broad scans (> 300,000 rows read) | limited | no |
+| broad scans (> 300,000 rows read) | limited (passed one independent set, failed another) | no |
 | metric semi join, <= 5,000 probes | limited | no |
 | metric semi join, > 5,000 probes | limited | no; refused for automatic choice above 50,000 probes (hard risk policy) |
 
@@ -97,3 +97,5 @@ python benchmarks/postgis_cost_fit.py fit --cal <raw sets> ...      # coefficien
 python benchmarks/postgis_cost_eval.py decide|report ...             # gates in benchmarks/postgis_cost_gates.json
 ```
 `GF_COST_PLAN_ONLY=1` re-plans stored cases with the current models without executing anything. Raw traces (EXPLAIN text, every run) stay out of Git (`benchmarks/results/postgis-cost/raw/`); the compact per-case files and the evaluations are committed.
+
+**Update 2026-10-26 (model `postgis-cost-v2`, ADR-015 addendum).** The table above is the current state: after a connector latency bug (+~15 ms on every PostGIS query) was fixed and everything re-measured, three classes are validated on two independent sets (`indexed_bbox`, `aggregate`, `semijoin_intersects`); the rest stay on policy R5d. Indexed queries now run in 1-3 ms. The planner adds a *scale warning* (not a refusal) for metric semi-joins above 250,000 probes.

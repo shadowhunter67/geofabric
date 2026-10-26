@@ -1,0 +1,76 @@
+{
+  "model_version": "postgis-cost-v2",
+  "heldout_seed": 20261119,
+  "classes": {
+    "aggregate": {
+      "level": "validated",
+      "heldout_cases": 61,
+      "p90_regret": 1.278,
+      "p90_prediction_ratio": 2.74,
+      "p90_prediction_ratio_1ms_floor": 4.42,
+      "median_prediction_ratio": 1.0,
+      "unsafe_selections": 0,
+      "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "broad_scan": {
+      "level": "validated",
+      "heldout_cases": 18,
+      "p90_regret": 1.367,
+      "p90_prediction_ratio": 1.48,
+      "p90_prediction_ratio_1ms_floor": 1.48,
+      "median_prediction_ratio": 1.27,
+      "unsafe_selections": 0,
+      "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "indexed_bbox": {
+      "level": "validated",
+      "heldout_cases": 81,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 1.49,
+      "p90_prediction_ratio_1ms_floor": 2.5,
+      "median_prediction_ratio": 1.0,
+      "unsafe_selections": 0,
+      "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "indexed_spatial": {
+      "level": "validated",
+      "heldout_cases": 22,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 2.7,
+      "p90_prediction_ratio_1ms_floor": 8.39,
+      "median_prediction_ratio": 1.0,
+      "unsafe_selections": 0,
+      "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "semijoin_intersects": {
+      "level": "validated",
+      "heldout_cases": 29,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 1.99,
+      "p90_prediction_ratio_1ms_floor": 1.99,
+      "median_prediction_ratio": 1.24,
+      "unsafe_selections": 0,
+      "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+    },
+    "semijoin_metric_large": {
+      "level": "limited",
+      "heldout_cases": 44,
+      "p90_regret": 4.402,
+      "p90_prediction_ratio": 2.47,
+      "p90_prediction_ratio_1ms_floor": 2.47,
+      "median_prediction_ratio": 1.42,
+      "unsafe_selections": 1,
+      "reason": "P90 regret 4.402 > 1.5; 1 unsafe selection(s)"
+    },
+    "semijoin_metric_small": {
+      "level": "limited",
+      "heldout_cases": 40,
+      "p90_regret": 1.114,
+      "p90_prediction_ratio": 3.41,
+      "p90_prediction_ratio_1ms_floor": 5.76,
+      "median_prediction_ratio": 1.68,
+      "unsafe_selections": 0,
+      "reason": "P90 prediction ratio 3.41 > 3.0; median prediction ratio 1.68 > 1.6"
+    }
+  }
+}

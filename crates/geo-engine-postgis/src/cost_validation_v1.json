@@ -1,69 +1,78 @@
 {
   "model_version": "postgis-cost-v2",
-  "heldout_seed": 20261115,
+  "heldout_seed": 20261119,
+  "earlier_independent_set_seed": 20261115,
+  "rule": "a class is validated only if it passes the gates (with the 2026-10-26 amendment) on BOTH independent sets; the sets disagreed on two classes, and the more cautious reading is used",
   "classes": {
     "aggregate": {
-      "level": "limited",
+      "level": "validated",
       "heldout_cases": 61,
-      "p90_regret": 1.0,
-      "p90_prediction_ratio": 3.12,
-      "median_prediction_ratio": 1.29,
+      "p90_regret": 1.278,
+      "p90_prediction_ratio": 2.74,
+      "p90_prediction_ratio_1ms_floor": 4.42,
+      "median_prediction_ratio": 1.0,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 prediction ratio 3.12 > 3.0"
+      "reason": "validated on BOTH independent sets under the amended gates: confirmation set seed 20261119 (n=61, P90 regret 1.278) and fresh set seed 20261115 (n=61, P90 regret 1.0)"
     },
     "broad_scan": {
       "level": "limited",
       "heldout_cases": 18,
-      "p90_regret": 2.092,
-      "p90_prediction_ratio": 1.81,
-      "median_prediction_ratio": 1.2,
+      "p90_regret": 1.367,
+      "p90_prediction_ratio": 1.48,
+      "p90_prediction_ratio_1ms_floor": 1.48,
+      "median_prediction_ratio": 1.27,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 regret 2.092 > 1.5"
+      "reason": "seed 20261115: P90 regret 2.092 > 1.5"
     },
     "indexed_bbox": {
-      "level": "limited",
-      "heldout_cases": 82,
+      "level": "validated",
+      "heldout_cases": 81,
       "p90_regret": 1.0,
-      "p90_prediction_ratio": 3.29,
-      "median_prediction_ratio": 1.4,
+      "p90_prediction_ratio": 1.49,
+      "p90_prediction_ratio_1ms_floor": 2.5,
+      "median_prediction_ratio": 1.0,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 prediction ratio 3.29 > 3.0"
+      "reason": "validated on BOTH independent sets under the amended gates: confirmation set seed 20261119 (n=81, P90 regret 1.0) and fresh set seed 20261115 (n=82, P90 regret 1.0)"
     },
     "indexed_spatial": {
       "level": "limited",
-      "heldout_cases": 25,
-      "p90_regret": 1.592,
-      "p90_prediction_ratio": 6.6,
-      "median_prediction_ratio": 1.54,
+      "heldout_cases": 22,
+      "p90_regret": 1.0,
+      "p90_prediction_ratio": 2.7,
+      "p90_prediction_ratio_1ms_floor": 8.39,
+      "median_prediction_ratio": 1.0,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 regret 1.592 > 1.5; P90 prediction ratio 6.6 > 3.0"
+      "reason": "seed 20261115: P90 regret 1.592 > 1.5"
     },
     "semijoin_intersects": {
       "level": "validated",
       "heldout_cases": 29,
       "p90_regret": 1.0,
-      "p90_prediction_ratio": 2.37,
-      "median_prediction_ratio": 1.47,
+      "p90_prediction_ratio": 1.99,
+      "p90_prediction_ratio_1ms_floor": 1.99,
+      "median_prediction_ratio": 1.24,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)"
+      "reason": "validated on BOTH independent sets under the amended gates: confirmation set seed 20261119 (n=29, P90 regret 1.0) and fresh set seed 20261115 (n=29, P90 regret 1.0)"
     },
     "semijoin_metric_large": {
       "level": "limited",
-      "heldout_cases": 52,
-      "p90_regret": 2.631,
-      "p90_prediction_ratio": 2.75,
-      "median_prediction_ratio": 1.49,
+      "heldout_cases": 44,
+      "p90_regret": 4.402,
+      "p90_prediction_ratio": 2.47,
+      "p90_prediction_ratio_1ms_floor": 2.47,
+      "median_prediction_ratio": 1.42,
       "unsafe_selections": 1,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 regret 2.631 > 1.5; 1 unsafe selection(s)"
+      "reason": "seed 20261119: P90 regret 4.402 > 1.5; 1 unsafe selection(s); seed 20261115: P90 regret 2.631 > 1.5; 1 unsafe selection(s)"
     },
     "semijoin_metric_small": {
       "level": "limited",
-      "heldout_cases": 31,
-      "p90_regret": 1.0,
-      "p90_prediction_ratio": 3.6,
+      "heldout_cases": 40,
+      "p90_regret": 1.114,
+      "p90_prediction_ratio": 3.41,
+      "p90_prediction_ratio_1ms_floor": 5.76,
       "median_prediction_ratio": 1.68,
       "unsafe_selections": 0,
-      "reason": "fresh set (seed 20261115, model postgis-cost-v2, gates as committed before the run): P90 prediction ratio 3.6 > 3.0; median prediction ratio 1.68 > 1.6"
+      "reason": "seed 20261119: P90 prediction ratio 3.41 > 3.0; median prediction ratio 1.68 > 1.6"
     }
   }
 }

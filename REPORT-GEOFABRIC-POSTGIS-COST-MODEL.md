@@ -2,6 +2,8 @@
 
 Repository <https://github.com/shadowhunter67/geofabric> · Live demo <https://shadowhunter67.github.io/geofabric/>. Base `f44c6ef`; this phase `a5dd14b` … `801d776` and the report commit. 2026-10-23. Decision record: `adr/ADR-015-postgis-cost-model.md`. No engine added, no UI redesign, no IR change, no change to data hosting or the shared lowering.
 
+> **SUPERSEDED IN PART (2026-10-26) — read "Follow-up" first.** The timings, coefficients and class table in this report were measured with a PostGIS connector that added up to ~15 ms to every query. After the fix everything was re-measured and the model refit (`postgis-cost-v2`); the validated classes are now `indexed_bbox`, `aggregate` and `semijoin_intersects`, and the DuckDB "abort" described below turned out to be the machine's RAM killer. Correctness results (0 mismatches, Demo B, wide semi-join) are unaffected. Details: ADR-015 addendum.
+
 ## Executive Summary
 
 * **PostGIS is now chosen automatically, on measured evidence, for four workload classes**; everywhere else policy R5d still applies. R5d is **scoped by validated class** (option B), not removed (option C).
@@ -147,7 +149,14 @@ CI green on `801d776` (repository guard, architecture, web, Rust workspace, Duck
 
 1. Single machine, loopback database, one dataset family; no hardware-independence claim. 2. No remote latency calibration, no TLS (production/self-host debt). 3. The cost model's cardinality input is Parquet-footer based; the planner still reads footers for PostGIS sources (PostGIS-only source planning is P1). 4. DuckDB's metric semi-join model underestimates large cases by ×10–60; the first DuckDB abort of the whole benchmark process (one occurrence, exit code `0xffffffff` at the 60 s boundary of a 250 k-probe semi-join, not reproduced in isolation or on rerun) shows the engine can take the gateway process down at the timeout limit — it should be investigated before exposing huge semi-joins to untrusted users. 5. Two class thresholds (300,000 rows; 5,000 probes) and the 50,000-probe block are machine-calibrated constants.
 
-## Follow-up (2026-10-25): the DuckDB abort at the timeout boundary
+## Follow-up (2026-10-26): connector latency bug, remeasurement, model v2, and the "abort" explained
+
+* **The abort was the RAM killer.** `C:\Users\Admin\Scripts\ram-emergency-killer.log` records "killed postgis_cost-... (2.1 GB)" at 2026-10-23 14:08:43 and 2026-10-26 11:20:59, matching both exits (`0xffffffff` is the exit code of a killed process). A 44-case DuckDB stress run (7 timeouts at 60 s, one process) did not crash. The statement below ("not root-caused") was my first conclusion and is wrong; the P1 is closed. The defect fixed along the way (an interrupted statement was run a second time) was real but not the cause.
+* **Connector latency bug** (+ up to 15 ms on every PostGIS query) found, fixed, all three sets re-measured (720 cases, 0 mismatches), model v2 refit, validation reset and re-earned on two new independent sets (seeds 20261115 and 20261119, 300 cases each, 0 mismatches). One gate amendment, made after seeing a result, is documented in `postgis_cost_gates.json` and ADR-015 and was confirmed on a set created after it. Final validated classes: `indexed_bbox`, `aggregate`, `semijoin_intersects`. In scope the planner's P90 regret is 1.00 (max absolute penalty 134 / 376 ms); over all cases P90 regret is 6.99 / 3.11, so the primary gate is still not met, and always-PostGIS beats the planner on mean penalty (154 / 260 ms vs 396 / 473 ms).
+* **Scale warning** above 250,000 probes implemented (planner decision log + policy list; a warning, not a refusal).
+* **Not done:** a second physical machine and a remote PostgreSQL — none is available to me.
+
+### Original follow-up text (2026-10-25, superseded)
 
 Investigated, **not reproduced and not root-caused**. The one abort (exit `0xffffffff`, case hel-0170, ~250k probes, at the 60 s boundary after 170 cases in one process) did not recur in isolation or on rerun, nor in 15 fresh-process runs of the same case with a 3 s timeout (0/15). One real defect was found on that path and fixed: when a statement was interrupted by the timeout or a cancel, the engine **ran the whole statement a second time** (to read DuckDB's error message) while the watchdog kept interrupting it. An interrupted statement is no longer re-run (`geo-engine-duckdb`, the existing timeout/cancel tests pass). Whether that second execution was the trigger is unknown; the P1 stays open until a 60 s-boundary stress run (many cases, one process) is clean, which I have not run because it takes tens of minutes.
 
