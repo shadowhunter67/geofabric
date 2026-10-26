@@ -134,14 +134,15 @@ def baselines(recs: list[dict]) -> dict:
     return out
 
 
-def pred_ratio(recs: list[dict], cls: str | None = None) -> dict:
+def pred_ratio(recs: list[dict], cls: str | None = None, floor: float | None = None) -> dict:
+    floor = GATES["class_auto_select_requires"].get("prediction_ratio_floor_ms", 1.0) if floor is None else floor
     v = []
     for r in recs:
         cm = (cands(r).get("postgis") or {}).get("cost_model")
         a = actual(r, "postgis")
         if not cm or a is None or (cls and cm["workload_class"] != cls):
             continue
-        p, t = max(cm["time_ms"], 1.0), max(a, 1.0)
+        p, t = max(cm["time_ms"], floor), max(a, floor)
         v.append(max(p / t, t / p))
     if not v:
         return {"n": 0}
@@ -159,6 +160,7 @@ def class_decision(recs: list[dict], cls: str) -> dict:
     m = metrics_for(sub, {cls})
     s = summarize(m["rows"])
     pr = pred_ratio(sub, cls)
+    pr1 = pred_ratio(sub, cls, floor=1.0)
     index = {((cands(r).get("postgis") or {}).get("cost_model") or {}).get("index_state") for r in sub}
     fails = []
     if s.get("n", 0) < g["min_heldout_cases"]:
@@ -176,7 +178,7 @@ def class_decision(recs: list[dict], cls: str) -> dict:
         fails.append(f"{m['mismatches']} correctness mismatch(es)")
     if index != {"available"}:
         fails.append(f"index state {sorted(i for i in index if i)} is not 'available'")
-    return {"n": s.get("n", 0), "summary": s, "prediction_ratio": pr, "unsafe": m["unsafe"], "fails": fails, "validated": not fails}
+    return {"n": s.get("n", 0), "summary": s, "prediction_ratio": pr, "prediction_ratio_1ms": pr1, "unsafe": m["unsafe"], "fails": fails, "validated": not fails}
 
 
 def main() -> int:
@@ -200,7 +202,7 @@ def main() -> int:
             d = class_decision(recs, cls)
             out["classes"][cls] = {
                 "level": "validated" if d["validated"] else ("limited" if d["n"] else "unvalidated"),
-                "heldout_cases": d["n"], "p90_regret": d["summary"].get("p90_regret"), "p90_prediction_ratio": d["prediction_ratio"].get("p90"),
+                "heldout_cases": d["n"], "p90_regret": d["summary"].get("p90_regret"), "p90_prediction_ratio": d["prediction_ratio"].get("p90"), "p90_prediction_ratio_1ms_floor": d["prediction_ratio_1ms"].get("p90"),
                 "median_prediction_ratio": d["prediction_ratio"].get("median"), "unsafe_selections": len(d["unsafe"]),
                 "reason": "passes the gates (n, P90 regret, prediction error, no unsafe selection, index available)" if d["validated"] else "; ".join(d["fails"]),
             }
