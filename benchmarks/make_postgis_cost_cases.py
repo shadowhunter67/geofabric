@@ -26,16 +26,18 @@ from pathlib import Path
 
 SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fresh": 20261115, "fresh2": 20261119,
          # metric-semijoin-safety phase (2026-10-26): discovery / calibration are METRIC-ONLY; the confirmation set is balanced
-         "msj_disc": 20261201, "msj_cal": 20261205, "msj_conf": 20261209}
-COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320}
-METRIC_ONLY = {"msj_disc", "msj_cal"}
+         "msj_disc": 20261201, "msj_cal": 20261205, "msj_conf": 20261209,
+         # second confirmation, enriched in the HEAVY regime (>= 1e7 candidate pairs) because the balanced one had only 10 such cases: models and thresholds frozen
+         "msj_heavy": 20261213}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320, "msj_heavy": 70}
+METRIC_ONLY = {"msj_disc", "msj_cal", "msj_heavy"}
 MSJ_CONF_WEIGHTS = {"near_count": 56, "near_ids": 40, "semi_admin": 20}  # ~36 % metric semi joins, every other class still present
 # "fresh" (2026-10-26): the validation set for model v2, after the PostGIS connector latency fix invalidated every earlier PostGIS timing; same semi-join
 # enrichment as the confirmation set, a new seed, drawn before any v2 measurement exists
 # the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
 # the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
 CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
-NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09, "msj_heavy": 0.10}
 RADII = [25, 50, 100, 200, 500, 1000]
 # right-side (road) filters: none, selective, medium, dense - so the right-side density varies realistically
 ROAD_FILTERS = [None, None, ["motorway", "trunk", "primary"], ["motorway", "trunk"], ["primary", "secondary", "tertiary"], ["secondary", "tertiary"], ["residential", "service", "unclassified"], ["residential"]]
@@ -85,7 +87,14 @@ def make_metric_case(rng: random.Random, idx: int, split: str) -> dict:
     base = {"id": f"{split}-{idx:04d}"}
     dist = rng.choice(RADII)
     hi = NEAR_HI[split] * (0.6 if dist >= 500 else 1.0)  # a 1 km radius over a 0.1 degree window is the 60 s timeout regime: keep a few, not most
-    bbox, kind = window(rng, 0.004, hi)
+    lo = 0.004
+    if split == "msj_heavy":
+        # the heavy regime on purpose: large radii over large windows in the denser areas
+        dist = rng.choices([200, 500, 1000], [2, 3, 5])[0]
+        hi, lo = NEAR_HI[split], 0.03
+        bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "medium"]))
+    else:
+        bbox, kind = window(rng, lo, hi)
     roads = rng.choice(ROAD_FILTERS)
     if rng.random() < 0.5:
         with_ = {"source": "transport", "distance_m": dist}

@@ -157,3 +157,25 @@ fn the_metric_models_answer_in_rust_exactly_what_the_python_fit_says() {
     }
     assert!(levels.contains("duckdb:timeout_risk") && levels.contains("duckdb:low"), "the sample must exercise both ends: {levels:?}");
 }
+
+/// The ten DuckDB executions that hit the 60 s timeout among the non-confirmation metric semi joins (including the two held-out cases on which the previous
+/// planner chose DuckDB, DuckDB timed out and PostGIS finished in 12-18 s). They are FIXED regression cases: the shipped models must keep calling each of
+/// them a DuckDB timeout risk, and must never call PostGIS a timeout risk for them (it completed all ten in 4.6-18 s).
+#[test]
+fn every_observed_duckdb_timeout_is_rated_timeout_risk_and_postgis_is_not() {
+    use geo_executor::cost_model::timeout_verdict;
+    let fx = read("benchmarks/results/postgis-cost/timeout-regression-cases.json");
+    let load = |f: &str| -> ModelFile { serde_json::from_value(read(f)).unwrap() };
+    let (duck, pg) = (load("crates/geo-engine-duckdb/src/cost_model_v1.json"), load("crates/geo-engine-postgis/src/cost_model_v1.json"));
+    let rows = fx["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 10);
+    for r in rows {
+        let f = features_of(&r["sj"]);
+        let class = workload_class(&f);
+        let d = timeout_verdict(&duck, class, &f).unwrap();
+        assert_eq!(d.level, "timeout_risk", "{} ({class}): {d:?}", r["id"]);
+        assert!(d.timeout_probability.unwrap() >= duck.timeout_risk.as_ref().unwrap().timeout_risk_at);
+        let p = timeout_verdict(&pg, class, &f).unwrap();
+        assert_ne!(p.level, "timeout_risk", "{}: PostGIS completed this case in {} ms: {p:?}", r["id"], r["postgis_actual_ms"]);
+    }
+}

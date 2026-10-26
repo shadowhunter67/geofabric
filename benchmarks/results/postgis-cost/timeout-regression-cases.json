@@ -1,0 +1,195 @@
+{
+ "note": "every DuckDB execution timeout (60 s) among the non-confirmation metric semi joins, with the plan-time features the planner produced; PostGIS completed every one of them",
+ "rows": [
+  {
+   "id": "historical-r3:hel:hel-0013",
+   "sj": {
+    "expected_probes": 622125.0425624466,
+    "right_rows": 105473.26726319037,
+    "right_rows_filtered": 84671.859957656,
+    "distance_m": 1000.0,
+    "candidate_pairs": 269223331.4771147,
+    "candidates_per_probe": 432.7479414238353,
+    "right_density_per_km2": 137.74794798089073,
+    "overlap_ratio": 0.8420321874756539,
+    "right_window_km2": 614.6869060394439,
+    "left_window_km2": 517.5861601050347,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 18268.6856
+  },
+  {
+   "id": "historical-r3:hel:hel-0170",
+   "sj": {
+    "expected_probes": 327871.5974241776,
+    "right_rows": 63044.49433540131,
+    "right_rows_filtered": 63044.49433540131,
+    "distance_m": 500.0,
+    "candidate_pairs": 78144540.2167658,
+    "candidates_per_probe": 238.3388522540054,
+    "right_density_per_km2": 303.46245173659105,
+    "overlap_ratio": 0.8628317357989664,
+    "right_window_km2": 207.7505601586738,
+    "left_window_km2": 179.25377643491612,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 11724.5436
+  },
+  {
+   "id": "historical-r3:fre:fre-0078",
+   "sj": {
+    "expected_probes": 266726.13725949725,
+    "right_rows": 50267.90038277035,
+    "right_rows_filtered": 50267.90038277035,
+    "distance_m": 1000.0,
+    "candidate_pairs": 159580430.5262889,
+    "candidates_per_probe": 598.2931862843028,
+    "right_density_per_km2": 190.4426360306939,
+    "overlap_ratio": 0.7629834461412625,
+    "right_window_km2": 263.95297518707207,
+    "left_window_km2": 201.3917506274714,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 7814.9977
+  },
+  {
+   "id": "historical-r3:fr2:fre-0048",
+   "sj": {
+    "expected_probes": 340218.2246372555,
+    "right_rows": 70652.05538270228,
+    "right_rows_filtered": 56718.07742673858,
+    "distance_m": 1000.0,
+    "candidate_pairs": 249851795.8515351,
+    "candidates_per_probe": 734.3868663059715,
+    "right_density_per_km2": 233.7625998287245,
+    "overlap_ratio": 0.7551939143963098,
+    "right_window_km2": 242.63110295785273,
+    "left_window_km2": 183.23353239703485,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 6900.916
+  },
+  {
+   "id": "msj_disc:msj_disc-0053",
+   "sj": {
+    "expected_probes": 271858.9200337784,
+    "right_rows": 47528.56622330848,
+    "right_rows_filtered": 39152.09524437795,
+    "distance_m": 1000.0,
+    "candidate_pairs": 142999987.43765834,
+    "candidates_per_probe": 526.0080758795431,
+    "right_density_per_km2": 167.4335707649721,
+    "overlap_ratio": 0.7495876844319175,
+    "right_window_km2": 233.83659003089696,
+    "left_window_km2": 175.28102805671566,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 7667.5854
+  },
+  {
+   "id": "msj_disc:msj_disc-0069",
+   "sj": {
+    "expected_probes": 329500.68067212694,
+    "right_rows": 70337.81266957827,
+    "right_rows_filtered": 57941.422595870696,
+    "distance_m": 1000.0,
+    "candidate_pairs": 250066787.50242263,
+    "candidates_per_probe": 758.9264671390897,
+    "right_density_per_km2": 241.57379737691002,
+    "overlap_ratio": 0.7520981825175881,
+    "right_window_km2": 239.8497818265816,
+    "left_window_km2": 180.39058498901204,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 10583.7747
+  },
+  {
+   "id": "msj_cal:msj_cal-0046",
+   "sj": {
+    "expected_probes": 226146.39508235408,
+    "right_rows": 54537.142585916255,
+    "right_rows_filtered": 54537.142585916255,
+    "distance_m": 1000.0,
+    "candidate_pairs": 236279477.31601444,
+    "candidates_per_probe": 1044.8076222040606,
+    "right_density_per_km2": 332.5725953077315,
+    "overlap_ratio": 0.7038208923712168,
+    "right_window_km2": 163.9856781808877,
+    "left_window_km2": 115.41654635337156,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 8395.621200000001
+  },
+  {
+   "id": "msj_cal:msj_cal-0062",
+   "sj": {
+    "expected_probes": 89197.41124849167,
+    "right_rows": 27441.81485356996,
+    "right_rows_filtered": 27441.81485356996,
+    "distance_m": 1000.0,
+    "candidate_pairs": 109733459.28575312,
+    "candidates_per_probe": 1230.2314355295678,
+    "right_density_per_km2": 391.59482822313817,
+    "overlap_ratio": 0.5703047474871822,
+    "right_window_km2": 70.07706148236741,
+    "left_window_km2": 39.96528085334529,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 4628.7113
+  },
+  {
+   "id": "msj_cal:msj_cal-0074",
+   "sj": {
+    "expected_probes": 141198.96142736304,
+    "right_rows": 30418.09390095145,
+    "right_rows_filtered": 30418.09390095145,
+    "distance_m": 1000.0,
+    "candidate_pairs": 92841916.34970285,
+    "candidates_per_probe": 657.5254903518784,
+    "right_density_per_km2": 209.29686399684755,
+    "overlap_ratio": 0.6894846379970055,
+    "right_window_km2": 145.3346854800921,
+    "left_window_km2": 100.20603300664996,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 5512.7973
+  },
+  {
+   "id": "msj_cal:msj_cal-0096",
+   "sj": {
+    "expected_probes": 201252.2676930871,
+    "right_rows": 46007.433345807294,
+    "right_rows_filtered": 46007.433345807294,
+    "distance_m": 1000.0,
+    "candidate_pairs": 218355201.5035541,
+    "candidates_per_probe": 1084.9825644526363,
+    "right_density_per_km2": 345.360676602316,
+    "overlap_ratio": 0.6776472969674686,
+    "right_window_km2": 133.2156104117928,
+    "left_window_km2": 90.27319830942275,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level": "timeout_risk",
+   "postgis_actual_ms": 5262.0463
+  }
+ ]
+}
