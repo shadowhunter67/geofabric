@@ -63,3 +63,31 @@ A two-stage bbox prefilter or generated projected column for the metric semi-joi
 **Planner results with this validation** (replayed on the stored cases): inside the validated scope (n=171 / 172) P90 regret **1.00**, max 4.28 / 4.91, **max absolute penalty 134 ms / 376 ms**. Over *all* cases P90 regret is 6.99 / 3.11 and the primary gate "P90 <= 1.5" is **not met**: with PostGIS answering in 1-3 ms, every case that R5d leaves on DuckDB (limited classes, ~40 % of these enriched sets) shows a large *ratio* (DuckDB 70-100 ms vs 2 ms) and the metric semi-joins show multi-second penalties (max 53 s). Mean absolute penalty is 396 / 473 ms against 2.5 / 3.1 s for always-DuckDB, but **always-PostGIS (154 / 260 ms) is better on this corpus** for the reason above; it is not a shippable policy (unsupported plans, clipped relation, the risk block). One unsafe selection per set, both from the R5d/DuckDB path (a huge metric semi-join on which DuckDB hit its 60 s timeout while PostGIS finished).
 
 **Open P1s changed:** the DuckDB-abort P1 is closed (cause: the RAM killer); a scale warning above 250,000 probes now exists in the planner's decisions; a second machine / remote PostgreSQL was NOT possible (no second device or remote server available) and remains P1.
+
+## Addendum 2 (2026-10-26/27): metric semi-join safety, uncertainty policy `metric-semijoin-policy-v1`
+
+**Problem.** Two held-out cases: R5d kept DuckDB because PostGIS was unvalidated for the class, DuckDB hit its 60 s timeout, PostGIS finished in 12-18 s. "PostGIS is unvalidated" had been read as "DuckDB is safe".
+
+**Decision.**
+1. **Cost, validation and risk are separate for every engine.** An engine's model reports a risk level (`low | elevated | timeout_risk | unknown | high`), a timeout probability, and whether a block is cost-based and `overridable`.
+2. **R5e** (RFC-003): if the selected engine is at `timeout_risk`, the planner chooses an engine that is not (lifting a cost-based block for that reason alone); if every option is at risk it takes the least likely to time out and attaches `Assessment.uncertainty`; `unknown` risk is reported as uncertainty and never read as low. Explicit engine requests bypass R5e. No speculative dual execution, no extra retries or fallbacks.
+3. **Plan-time candidate-work features** (histogram based; `null` = unknown, never zero): right side after its attribute filter, density, candidates per probe, **candidate pairs**, overlap. They exist because the footer-only estimates the earlier models were fitted on were far off (left rows P90 x5.3, right x13; with histograms x1.3-1.8 and x1.6-4.6). The benchmark harness now builds the histograms (`Runtime::ensure_histogram`, shared with the gateway), so it measures the planner that ships.
+4. **Classes** by plan-time features: `semijoin_metric_small` (<= 5,000 probes), `semijoin_metric_medium` (<= 50,000 probes and < 1e7 candidate pairs), `semijoin_metric_large` (the rest, and any plan whose pairs are unknown). The 1e7 threshold is where DuckDB left the 1-30 s range: all 26 observed timeouts have >= 7.8e7 pairs.
+5. **Risk models** (separate versions): `duckdb-timeout-risk-v1` and `postgis-timeout-risk-v1`, log-linear Tobit models (timeouts censored) fitted only on the regime where timeouts occur (>= 1e7 candidate pairs for DuckDB, >= 50,000 probes for PostGIS); P >= 0.10 `elevated`, P >= 0.20 `timeout_risk`. PostGIS' repeated-probe block (> 50,000 probes) stays, as an overridable cost-based block.
+6. **Cost models** `postgis-cost-v3`, `duckdb-semijoin-cost-v3`: pooled log-linear for the three metric classes; every other class keeps its v2 coefficients and evidence (the validated classes were not refitted).
+
+**Evidence (all stages separated).** Discovery: 480 metric semi joins (earlier sets re-planned with histograms + 150 new, seed 20261201). Calibration: 200 new (20261205). Everything frozen at commit `4a174f0`. Confirmation: 320 balanced cases (20261209) and 70 heavy-regime cases (20261213, generated after the balanced set showed only 10 heavy cases), 0 correctness mismatches in all. Gates unchanged (`postgis_cost_gates.json`).
+
+| Result | Value |
+|---|---|
+| Heavy set (70): DuckDB timeouts | 16 of 70; all 16 rated `timeout_risk` in advance, PostGIS chosen, 0 timeouts; previous policy: 18 timeouts, 41 plans on a `timeout_risk` engine |
+| Heavy set: the one miss | a DuckDB run that completed at 61.0 s (P = 0.14, below the 0.20 threshold) |
+| False alarms | 7 plans rated `timeout_risk` where DuckDB completed; PostGIS was 4-15x faster in them, so no loss |
+| Balanced set (320): metric timeouts | none; 3 plans rated `timeout_risk` (P 0.44-0.47), PostGIS chosen 4-15x faster. The 8 DuckDB timeouts of that set were all admin semi joins, already routed to PostGIS by the validated class |
+| Fixed regression | all 10 earlier DuckDB timeouts are rated `timeout_risk` by the shipped model (CI test); both earlier "unsafe" held-out cases now plan on PostGIS (11.3-11.7 s) |
+
+**Promotion experiments** (plan as if the class were validated; fresh balanced set; gates as committed): `semijoin_metric_small` regret P90 1.00 but prediction P90 x3.48 / median x1.70 (gate 3.0 / 1.6) - not promoted; `semijoin_metric_medium` regret P90 1.77 - not promoted; `semijoin_metric_large` regret P90 1.61 - not promoted. Validated scope is unchanged: `indexed_bbox`, `aggregate`, `semijoin_intersects`.
+
+**Not achieved.** The global P90 regret gate (<= 1.5): balanced set 8.23, heavy set 4.42. The ratio is dominated by limited classes where PostGIS answers in 1-5 ms and DuckDB in 70-600 ms (absolute penalty <= 0.6 s there); the multi-second penalties are metric semi joins. Inside the validated scope: P90 1.00, max 3.0, max penalty 81 ms.
+
+**Consequences / not done.** Cardinality estimation is no longer the main source of model error (with TRUE counts PostGIS' error P90 falls x3.09 -> x2.45, DuckDB's does not change: its variance is intrinsic); DuckDB's expected time in the heavy regime is only good to P90 x9, which is why the *risk* model, not the cost model, carries the safety. A second machine, a remote PostgreSQL and a physical-design change for PostGIS remain open (P1).
