@@ -1,0 +1,22 @@
+{
+  "frozen_at": "2026-10-28, BEFORE the heavy confirmation set (pool seed 20261301, selection seed 20261302) is run",
+  "model": "duckdb-timeout-risk-v1 (unchanged by this phase's comparison: the Tobit fit and its P(timeout) are not touched, only the P level at which the planner treats DuckDB as timeout_risk)",
+  "candidate_timeout_risk_thresholds": [0.10, 0.15, 0.20],
+  "current": 0.20,
+  "elevated_at": "unchanged (0.10); `elevated` is reported, it never moves execution",
+  "no_candidate_may_be_added_after_the_confirmation_set_ran": true,
+  "unnecessary_reroute": {
+    "definition": "DuckDB would have completed (< 60 s) AND R5e moved the plan to PostGIS AND PostGIS was materially slower",
+    "materially_slower": "t_postgis >= 2 x t_duckdb AND t_postgis - t_duckdb >= 1000 ms",
+    "note": "a reroute where PostGIS is slower by milliseconds, or by less than a factor 2, is a reroute but not an unnecessary one"
+  },
+  "selection_gate": {
+    "primary": "unsafe choices == 0 on the fresh heavy confirmation set",
+    "secondary": "chosen-engine timeouts == 0",
+    "then": "among thresholds that pass both, the LEAST aggressive (highest) one with the fewest unnecessary reroutes; never the lowest by default",
+    "if_none_passes": "keep 0.20 and report RISK MODEL NEEDS FEATURE IMPROVEMENT"
+  },
+  "unsafe_definition": "the chosen engine timed out at 60 s while the other engine completed, or the chosen engine was rated timeout_risk without an uncertainty note (benchmarks/metric_safety_eval.py)",
+  "timeouts": "censored lower bounds at 60 s, never exact timings",
+  "context_sets_not_used_for_selection": ["msj_conf", "msj_heavy"]
+}

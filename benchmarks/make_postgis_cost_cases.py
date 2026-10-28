@@ -28,16 +28,19 @@ SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fre
          # metric-semijoin-safety phase (2026-10-26): discovery / calibration are METRIC-ONLY; the confirmation set is balanced
          "msj_disc": 20261201, "msj_cal": 20261205, "msj_conf": 20261209,
          # second confirmation, enriched in the HEAVY regime (>= 1e7 candidate pairs) because the balanced one had only 10 such cases: models and thresholds frozen
-         "msj_heavy": 20261213}
-COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320, "msj_heavy": 70}
-METRIC_ONLY = {"msj_disc", "msj_cal", "msj_heavy"}
+         "msj_heavy": 20261213,
+         # risk-threshold confirmation phase (2026-10-28): a POOL of heavy-regime candidates (planned only; the confirmation set is selected from it by
+         # plan-time features) and three metric_small stages (discovery / calibration / confirmation pool). All seeds new.
+         "thr_pool": 20261301, "thr_pool2": 20261303, "ms_disc": 20261401, "ms_cal": 20261405, "ms_conf": 20261409}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320, "msj_heavy": 70, "thr_pool": 900, "thr_pool2": 4000, "ms_disc": 260, "ms_cal": 260, "ms_conf": 130}
+METRIC_ONLY = {"msj_disc", "msj_cal", "msj_heavy", "thr_pool", "thr_pool2", "ms_disc", "ms_cal", "ms_conf"}
 MSJ_CONF_WEIGHTS = {"near_count": 56, "near_ids": 40, "semi_admin": 20}  # ~36 % metric semi joins, every other class still present
 # "fresh" (2026-10-26): the validation set for model v2, after the PostGIS connector latency fix invalidated every earlier PostGIS timing; same semi-join
 # enrichment as the confirmation set, a new seed, drawn before any v2 measurement exists
 # the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
 # the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
 CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
-NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09, "msj_heavy": 0.10}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09, "msj_heavy": 0.10, "thr_pool": 0.11, "thr_pool2": 0.11, "ms_disc": 0.03, "ms_cal": 0.03, "ms_conf": 0.03}
 RADII = [25, 50, 100, 200, 500, 1000]
 # right-side (road) filters: none, selective, medium, dense - so the right-side density varies realistically
 ROAD_FILTERS = [None, None, ["motorway", "trunk", "primary"], ["motorway", "trunk"], ["primary", "secondary", "tertiary"], ["secondary", "tertiary"], ["residential", "service", "unclassified"], ["residential"]]
@@ -93,6 +96,23 @@ def make_metric_case(rng: random.Random, idx: int, split: str) -> dict:
         dist = rng.choices([200, 500, 1000], [2, 3, 5])[0]
         hi, lo = NEAR_HI[split], 0.03
         bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "medium"]))
+    elif split == "thr_pool2":
+        # second pool (the first one had only 8 / 8 / 3 cases in the three borderline probability bands): same regime, but only the radii that can reach
+        # 1e7 candidate pairs and large windows in the dense and medium areas; STILL plan-only - nothing here depends on a measured time
+        dist = rng.choices([200, 500, 1000], [2, 4, 4])[0]
+        hi, lo = NEAR_HI[split], 0.03
+        bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "medium"]))
+    elif split == "thr_pool":
+        # heavy-regime pool, wider than msj_heavy: every radius (100 m over a big window reaches 1e7 pairs too) and also the medium/sparse areas, so that
+        # probes (10 k - 500 k), candidate pairs (1e7 - 1e9), density and overlap vary independently
+        dist = rng.choices([100, 200, 500, 1000], [2, 3, 3, 3])[0]
+        hi, lo = NEAR_HI[split], 0.015
+        bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "dense", "medium", "medium", "sparse"]))
+    elif split in ("ms_disc", "ms_cal", "ms_conf"):
+        # metric_small research: small windows (the class is decided afterwards from the PLAN, <= 5,000 probes), every radius and every region
+        dist = rng.choice(RADII)
+        hi, lo = NEAR_HI[split], 0.0025
+        bbox, kind = window(rng, lo, hi)
     else:
         bbox, kind = window(rng, lo, hi)
     roads = rng.choice(ROAD_FILTERS)

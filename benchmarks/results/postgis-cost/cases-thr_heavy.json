@@ -1,0 +1,3175 @@
+{
+ "split": "thr_heavy",
+ "pool_seeds": [
+  20261301,
+  20261303
+ ],
+ "selection_seed": 20261302,
+ "generator": "benchmarks/select_thr_set.py",
+ "selected_from": {
+  "pool_cases": 4900,
+  "heavy_regime_in_pool": 2663
+ },
+ "cases": [
+  {
+   "id": "thr_pool-0017",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.638503,
+     10.767007,
+     106.681497,
+     10.812993
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0041",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.643058,
+     10.778133,
+     106.676942,
+     10.801867
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0087",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.678346,
+     10.863598,
+     106.781654,
+     10.936402
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0147",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.582598,
+     10.717469,
+     106.737402,
+     10.862531
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0244",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.757964,
+     10.825654,
+     106.802036,
+     10.874346
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0349",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.684315,
+     10.765653,
+     106.715685,
+     10.794347
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0378",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.672533,
+     10.73798,
+     106.707467,
+     10.78202
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0420",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.70805,
+     10.883994,
+     106.75195,
+     10.916006
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0446",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.762662,
+     10.834391,
+     106.797338,
+     10.865609
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0459",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.632974,
+     10.719785,
+     106.747026,
+     10.800215
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0478",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.629072,
+     10.81283,
+     106.830928,
+     10.98717
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0500",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.757616,
+     10.833608,
+     106.802384,
+     10.866392
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0552",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.760587,
+     10.829926,
+     106.799413,
+     10.870074
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0598",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.669333,
+     10.742996,
+     106.710667,
+     10.777004
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0628",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.681338,
+     10.76191,
+     106.718662,
+     10.79809
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0661",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.734351,
+     10.791544,
+     106.825649,
+     10.908456
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0662",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.682899,
+     10.75863,
+     106.717101,
+     10.80137
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0703",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.611104,
+     10.749035,
+     106.708896,
+     10.830965
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0762",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.704184,
+     10.780356,
+     106.735816,
+     10.819644
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0791",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.490083,
+     10.604903,
+     106.709917,
+     10.855097
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0797",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.629319,
+     10.713763,
+     106.810681,
+     10.886237
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool-0799",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.679435,
+     10.761853,
+     106.720565,
+     10.798147
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0813",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.522849,
+     10.676858,
+     106.717151,
+     10.923142
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool-0818",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.637818,
+     10.767476,
+     106.682182,
+     10.812524
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0841",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.671888,
+     10.746443,
+     106.728112,
+     10.813557
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0852",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.694083,
+     10.771463,
+     106.745917,
+     10.828537
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool-0867",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696143,
+     10.780387,
+     106.743857,
+     10.819613
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0043",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.688322,
+     10.773205,
+     106.751678,
+     10.826795
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0119",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.589524,
+     10.776568,
+     106.650476,
+     10.823432
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0247",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.626373,
+     10.67985,
+     106.753627,
+     10.84015
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0253",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.620734,
+     10.74352,
+     106.699266,
+     10.83648
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0281",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.552139,
+     10.685137,
+     106.647861,
+     10.774863
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0283",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.56314,
+     10.698606,
+     106.75686,
+     10.881394
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0290",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.664111,
+     10.754377,
+     106.735889,
+     10.805623
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0328",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.557472,
+     10.693473,
+     106.642528,
+     10.766527
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0349",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.685769,
+     10.769803,
+     106.754231,
+     10.830197
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0421",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.609942,
+     10.75256,
+     106.710058,
+     10.82744
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0427",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.566502,
+     10.745539,
+     106.673498,
+     10.854461
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0439",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.632517,
+     10.7262,
+     106.807483,
+     10.8738
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0555",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.590399,
+     10.635428,
+     106.789601,
+     10.884572
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0565",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.622374,
+     10.750738,
+     106.697626,
+     10.829262
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0579",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.626474,
+     10.755888,
+     106.693526,
+     10.824112
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0612",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.731703,
+     10.790888,
+     106.828297,
+     10.909112
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0636",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.65835,
+     10.725739,
+     106.72165,
+     10.794261
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0656",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.638751,
+     10.727918,
+     106.761249,
+     10.832082
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0664",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.725535,
+     10.807854,
+     106.834465,
+     10.892146
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0665",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.554536,
+     10.67838,
+     106.645464,
+     10.78162
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0726",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.510683,
+     10.672599,
+     106.729317,
+     10.927401
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0743",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.585051,
+     10.7717,
+     106.654949,
+     10.8283
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0779",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.676325,
+     10.837975,
+     106.783675,
+     10.962025
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0822",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.632148,
+     10.731042,
+     106.807852,
+     10.868958
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0826",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.615162,
+     10.687438,
+     106.784838,
+     10.872562
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-0845",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.595111,
+     10.700196,
+     106.804889,
+     10.859804
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0875",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.660105,
+     10.739118,
+     106.739895,
+     10.820882
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-0924",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.650192,
+     10.72085,
+     106.749808,
+     10.83915
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-0958",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.606105,
+     10.721613,
+     106.713895,
+     10.858387
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1068",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.656961,
+     10.735508,
+     106.783039,
+     10.864492
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1103",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.634011,
+     10.690566,
+     106.745989,
+     10.829434
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1106",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.689194,
+     10.76238,
+     106.750806,
+     10.83762
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-1179",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.629681,
+     10.68924,
+     106.770319,
+     10.87076
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1226",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.649978,
+     10.73347,
+     106.750022,
+     10.82653
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1244",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.688097,
+     10.767401,
+     106.751903,
+     10.832599
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1274",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.563304,
+     10.695105,
+     106.756696,
+     10.884895
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1304",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.635393,
+     10.69251,
+     106.744607,
+     10.82749
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1379",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.641167,
+     10.737297,
+     106.758833,
+     10.822703
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-1483",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.691717,
+     10.770059,
+     106.868283,
+     10.929941
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1498",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.645332,
+     10.837389,
+     106.814668,
+     10.962611
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-1550",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.658667,
+     10.733328,
+     106.721333,
+     10.786672
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1603",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.591931,
+     10.660209,
+     106.788069,
+     10.859791
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1653",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.62888,
+     10.689092,
+     106.77112,
+     10.870908
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1681",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.699948,
+     10.77518,
+     106.860052,
+     10.92482
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1716",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.620205,
+     10.740053,
+     106.699795,
+     10.839947
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1722",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.578093,
+     10.725173,
+     106.741907,
+     10.854827
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1733",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.656087,
+     10.739222,
+     106.743913,
+     10.820778
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1767",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.524304,
+     10.730534,
+     106.715696,
+     10.869466
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1780",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.612041,
+     10.710567,
+     106.787959,
+     10.849433
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1808",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.627404,
+     10.703989,
+     106.772596,
+     10.856011
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1840",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.663464,
+     10.754799,
+     106.776536,
+     10.845201
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-1901",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.556516,
+     10.681226,
+     106.643484,
+     10.778774
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1916",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.621109,
+     10.742523,
+     106.698891,
+     10.837477
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-1940",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.70043,
+     10.780382,
+     106.85957,
+     10.919618
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-1960",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.651087,
+     10.719849,
+     106.728913,
+     10.800151
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2051",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.655243,
+     10.723003,
+     106.744757,
+     10.836997
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2063",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.659456,
+     10.736753,
+     106.720544,
+     10.783247
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2096",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.585004,
+     10.765287,
+     106.654996,
+     10.834713
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2107",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.610645,
+     10.727185,
+     106.709355,
+     10.852815
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2148",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.679131,
+     10.769932,
+     106.760869,
+     10.830068
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2166",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.667392,
+     10.742154,
+     106.732608,
+     10.817846
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2180",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.734028,
+     10.791523,
+     106.825972,
+     10.908477
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2220",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.633389,
+     10.708784,
+     106.806611,
+     10.891216
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2243",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.562063,
+     10.724852,
+     106.677937,
+     10.875148
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2275",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.672916,
+     10.7248,
+     106.887084,
+     10.9752
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2294",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.559878,
+     10.701433,
+     106.640122,
+     10.758567
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2378",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.68645,
+     10.767577,
+     106.75355,
+     10.832423
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2395",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.638109,
+     10.728967,
+     106.761891,
+     10.831033
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2406",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.618885,
+     10.7417,
+     106.701115,
+     10.8383
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2462",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.616824,
+     10.759052,
+     106.703176,
+     10.820948
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2477",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.540757,
+     10.679189,
+     106.659243,
+     10.780811
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2500",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.544365,
+     10.735812,
+     106.695635,
+     10.864188
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2577",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.629524,
+     10.760582,
+     106.690476,
+     10.819418
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2600",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.556235,
+     10.661999,
+     106.763765,
+     10.918001
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2693",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.701311,
+     10.753487,
+     106.858689,
+     10.946513
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2694",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.687156,
+     10.769333,
+     106.752844,
+     10.830667
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2769",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.586977,
+     10.726838,
+     106.733023,
+     10.853162
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2839",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.594774,
+     10.681153,
+     106.805226,
+     10.878847
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2857",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.612307,
+     10.660091,
+     106.827693,
+     10.939909
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2872",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.682032,
+     10.757237,
+     106.757968,
+     10.842763
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2941",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.623529,
+     10.715179,
+     106.816471,
+     10.884821
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2948",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.611969,
+     10.735916,
+     106.708031,
+     10.844084
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-2957",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.676253,
+     10.764571,
+     106.763747,
+     10.835429
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-2980",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.610574,
+     10.754209,
+     106.709426,
+     10.825791
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-2991",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.688271,
+     10.771097,
+     106.751729,
+     10.828903
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3013",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.633365,
+     10.692028,
+     106.746635,
+     10.827972
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3083",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.656513,
+     10.721923,
+     106.783487,
+     10.878077
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3092",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.639666,
+     10.712958,
+     106.800334,
+     10.887042
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3106",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.61759,
+     10.735923,
+     106.70241,
+     10.844077
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-3115",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.687561,
+     10.769224,
+     106.752439,
+     10.830776
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3166",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.511073,
+     10.666529,
+     106.728927,
+     10.933471
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-3190",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.502604,
+     10.655384,
+     106.697396,
+     10.804616
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3214",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.649936,
+     10.709425,
+     106.730064,
+     10.810575
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3220",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.620469,
+     10.73882,
+     106.699531,
+     10.84118
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3236",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.662815,
+     10.749839,
+     106.737185,
+     10.810161
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3280",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.572828,
+     10.761681,
+     106.667172,
+     10.838319
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3315",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.523503,
+     10.632942,
+     106.676497,
+     10.827058
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3329",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.67959,
+     10.766052,
+     106.76041,
+     10.833948
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3336",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.662555,
+     10.829942,
+     106.797445,
+     10.970058
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3352",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.505702,
+     10.620926,
+     106.694298,
+     10.839074
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3376",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.568151,
+     10.704078,
+     106.631849,
+     10.755922
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3386",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.554706,
+     10.681845,
+     106.645294,
+     10.778155
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3424",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.625811,
+     10.718205,
+     106.774189,
+     10.841795
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-3427",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.612835,
+     10.683333,
+     106.767165,
+     10.836667
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3473",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.638964,
+     10.83309,
+     106.821036,
+     10.96691
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3485",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.653995,
+     10.730379,
+     106.786005,
+     10.869621
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3588",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.693292,
+     10.862419,
+     106.766708,
+     10.937581
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "thr_pool2-3659",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.58815,
+     10.760457,
+     106.65185,
+     10.839543
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-3715",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.610508,
+     10.743129,
+     106.709492,
+     10.836871
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3755",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.544378,
+     10.742228,
+     106.695622,
+     10.857772
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3903",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.591851,
+     10.730514,
+     106.728149,
+     10.849486
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "thr_pool2-3911",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.685814,
+     10.850318,
+     106.774186,
+     10.949682
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "thr_pool2-3941",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.672968,
+     10.752598,
+     106.767032,
+     10.847402
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  }
+ ]
+}

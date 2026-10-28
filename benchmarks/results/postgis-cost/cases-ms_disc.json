@@ -1,0 +1,3482 @@
+{
+ "split": "ms_disc",
+ "seed": 20261401,
+ "generator": "benchmarks/make_postgis_cost_cases.py",
+ "selection": "class semijoin_metric_small decided from the PLAN (<= 5,000 expected probes); first 200 in pool order",
+ "cases": [
+  {
+   "id": "ms_disc-0002",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.591974,
+     10.720525,
+     106.608026,
+     10.739475
+    ],
+    "distance_m": 100,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0004",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.654556,
+     10.785591,
+     106.665444,
+     10.794409
+    ],
+    "distance_m": 25,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0006",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.439734,
+     10.938202,
+     106.460266,
+     10.961798
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0007",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.555523,
+     10.595944,
+     106.564477,
+     10.604056
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0009",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.715811,
+     10.794777,
+     106.724189,
+     10.805223
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0010",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.686726,
+     10.757466,
+     106.693274,
+     10.762534
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0011",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.554215,
+     10.592799,
+     106.565785,
+     10.607201
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0013",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.683114,
+     10.755112,
+     106.696886,
+     10.764888
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0015",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.722591,
+     10.891496,
+     106.737409,
+     10.908504
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0016",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.775762,
+     10.844758,
+     106.784238,
+     10.855242
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0017",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.497058,
+     11.046842,
+     106.502942,
+     11.053158
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0020",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.775,
+     10.846147,
+     106.785,
+     10.853853
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0021",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.494218,
+     11.043216,
+     106.505782,
+     11.056784
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0022",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696254,
+     10.795414,
+     106.703746,
+     10.804586
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0023",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.887717,
+     10.440407,
+     106.912283,
+     10.459593
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0024",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.772955,
+     10.843936,
+     106.787045,
+     10.856064
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0026",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.693555,
+     10.794378,
+     106.706445,
+     10.805622
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0029",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.693636,
+     10.794152,
+     106.706364,
+     10.805848
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0032",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.696957,
+     10.796064,
+     106.703043,
+     10.803936
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0036",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.896107,
+     10.446916,
+     106.903893,
+     10.453084
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0037",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.873425,
+     10.693202,
+     106.886575,
+     10.706798
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0039",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.870856,
+     10.692397,
+     106.889144,
+     10.707603
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0040",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.723291,
+     10.893281,
+     106.736709,
+     10.906719
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0041",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.86926,
+     10.686945,
+     106.89074,
+     10.713055
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0042",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.445921,
+     10.945835,
+     106.454079,
+     10.954165
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0043",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.494265,
+     11.045772,
+     106.505735,
+     11.054228
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0048",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.59511,
+     10.723655,
+     106.60489,
+     10.736345
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0050",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.487946,
+     11.037065,
+     106.512054,
+     11.062935
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0051",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.655117,
+     10.78429,
+     106.664883,
+     10.79571
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0052",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.495978,
+     11.046851,
+     106.504022,
+     11.053149
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0053",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.556642,
+     10.596594,
+     106.563358,
+     10.603406
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0054",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.590099,
+     10.721811,
+     106.609901,
+     10.738189
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0055",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.55588,
+     10.595613,
+     106.56412,
+     10.604387
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0056",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.496825,
+     11.047617,
+     106.503175,
+     11.052383
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0057",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696276,
+     10.795167,
+     106.703724,
+     10.804833
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0058",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.495024,
+     11.046118,
+     106.504976,
+     11.053882
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0061",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.657216,
+     10.786712,
+     106.662784,
+     10.793288
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0062",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.684704,
+     10.755181,
+     106.695296,
+     10.764819
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0064",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.55524,
+     10.594375,
+     106.56476,
+     10.605625
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0065",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.443842,
+     10.943968,
+     106.456158,
+     10.956032
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0072",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.44352,
+     10.944009,
+     106.45648,
+     10.955991
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0073",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.875457,
+     10.696376,
+     106.884543,
+     10.703624
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0074",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.695863,
+     10.775474,
+     106.704137,
+     10.784526
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0077",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.49706,
+     11.047907,
+     106.50294,
+     11.052093
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0079",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.6556,
+     10.78511,
+     106.6644,
+     10.79489
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0080",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.874624,
+     10.695454,
+     106.885376,
+     10.704546
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0082",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.687195,
+     10.75765,
+     106.692805,
+     10.76235
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0085",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.485575,
+     11.03613,
+     106.514425,
+     11.06387
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0086",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.497219,
+     11.047649,
+     106.502781,
+     11.052351
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0087",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.488091,
+     11.035103,
+     106.511909,
+     11.064897
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0090",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.443282,
+     10.94326,
+     106.456718,
+     10.95674
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0091",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.494512,
+     11.044229,
+     106.505488,
+     11.055771
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0093",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.557117,
+     10.597071,
+     106.562883,
+     10.602929
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0094",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.556802,
+     10.596323,
+     106.563198,
+     10.603677
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0096",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.895798,
+     10.44637,
+     106.904202,
+     10.45363
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0097",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.727426,
+     10.897313,
+     106.732574,
+     10.902687
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0098",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.556552,
+     10.597145,
+     106.563448,
+     10.602855
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0099",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.614438,
+     10.794165,
+     106.625562,
+     10.805835
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0100",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.722329,
+     10.891619,
+     106.737671,
+     10.908381
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0102",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.686454,
+     10.757172,
+     106.693546,
+     10.762828
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0106",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.488801,
+     11.03997,
+     106.511199,
+     11.06003
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0108",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.494746,
+     11.044539,
+     106.505254,
+     11.055461
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0109",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.655738,
+     10.785924,
+     106.664262,
+     10.794076
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0112",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.716686,
+     10.795739,
+     106.723314,
+     10.804261
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0113",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.445374,
+     10.94568,
+     106.454626,
+     10.95432
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0115",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.696506,
+     10.776025,
+     106.703494,
+     10.783975
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0120",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.776423,
+     10.846016,
+     106.783577,
+     10.853984
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0123",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.435925,
+     10.932848,
+     106.464075,
+     10.967152
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0124",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.71513,
+     10.795475,
+     106.72487,
+     10.804525
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0127",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.594964,
+     10.725848,
+     106.605036,
+     10.734152
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0128",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.887489,
+     10.440725,
+     106.912511,
+     10.459275
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0129",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.655094,
+     10.78638,
+     106.664906,
+     10.79362
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0131",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696219,
+     10.776744,
+     106.703781,
+     10.783256
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0134",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.695642,
+     10.796826,
+     106.704358,
+     10.803174
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0136",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.726887,
+     10.897598,
+     106.733113,
+     10.902402
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0137",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.44661,
+     10.947572,
+     106.45339,
+     10.952428
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential",
+       "service",
+       "unclassified"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0138",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.614757,
+     10.793268,
+     106.625243,
+     10.806732
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0139",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.441759,
+     10.943896,
+     106.458241,
+     10.956104
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0141",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.616514,
+     10.796691,
+     106.623486,
+     10.803309
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0142",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.725432,
+     10.895352,
+     106.734568,
+     10.904648
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0143",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.876185,
+     10.431479,
+     106.923815,
+     10.468521
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0145",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.877109,
+     10.69755,
+     106.882891,
+     10.70245
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0148",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.893067,
+     10.443496,
+     106.906933,
+     10.456504
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0149",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.615615,
+     10.794821,
+     106.624385,
+     10.805179
+    ],
+    "distance_m": 50,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0150",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.554345,
+     10.592758,
+     106.565655,
+     10.607242
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0151",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.617192,
+     10.79718,
+     106.622808,
+     10.80282
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0153",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.49656,
+     11.047512,
+     106.50344,
+     11.052488
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0158",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.879771,
+     10.430812,
+     106.920229,
+     10.469188
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0159",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.867616,
+     10.685944,
+     106.892384,
+     10.714056
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0160",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.869367,
+     10.687542,
+     106.890633,
+     10.712458
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0161",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.713689,
+     10.795338,
+     106.726311,
+     10.804662
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0162",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.693966,
+     10.794268,
+     106.706034,
+     10.805732
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0163",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.725612,
+     10.894586,
+     106.734388,
+     10.905414
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0165",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.695034,
+     10.775851,
+     106.704966,
+     10.784149
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0166",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.872786,
+     10.426655,
+     106.927214,
+     10.473345
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0170",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.490702,
+     11.039342,
+     106.509298,
+     11.060658
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0172",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.893536,
+     10.442003,
+     106.906464,
+     10.457997
+    ],
+    "distance_m": 25,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0173",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.875161,
+     10.423066,
+     106.924839,
+     10.476934
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0174",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.775138,
+     10.844309,
+     106.784862,
+     10.855691
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0175",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.723072,
+     10.894402,
+     106.736928,
+     10.905598
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0176",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.895162,
+     10.446161,
+     106.904838,
+     10.453839
+    ],
+    "distance_m": 25,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0179",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.686294,
+     10.757046,
+     106.693706,
+     10.762954
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0181",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.59698,
+     10.727392,
+     106.60302,
+     10.732608
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0182",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.712433,
+     10.79285,
+     106.727567,
+     10.80715
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0186",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.694453,
+     10.793679,
+     106.705547,
+     10.806321
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0187",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.555141,
+     10.593795,
+     106.564859,
+     10.606205
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0190",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.87463,
+     10.693401,
+     106.88537,
+     10.706599
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0192",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.593895,
+     10.725454,
+     106.606105,
+     10.734546
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0194",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.687396,
+     10.757719,
+     106.692604,
+     10.762281
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0195",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.717207,
+     10.798029,
+     106.722793,
+     10.801971
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0197",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.486805,
+     11.034673,
+     106.513195,
+     11.065327
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0199",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.488878,
+     11.041421,
+     106.511122,
+     11.058579
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0200",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.616655,
+     10.796617,
+     106.623345,
+     10.803383
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0201",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.597104,
+     10.727255,
+     106.602896,
+     10.732745
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0203",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.777405,
+     10.846764,
+     106.782595,
+     10.853236
+    ],
+    "distance_m": 50,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0204",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.686009,
+     10.755133,
+     106.693991,
+     10.764867
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "motorway",
+     "trunk"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0205",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.714077,
+     10.792931,
+     106.725923,
+     10.807069
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0207",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.497133,
+     11.047905,
+     106.502867,
+     11.052095
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0210",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.872938,
+     10.693304,
+     106.887062,
+     10.706696
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0211",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.553466,
+     10.594362,
+     106.566534,
+     10.605638
+    ],
+    "distance_m": 500,
+    "road_classes": [
+     "motorway",
+     "trunk",
+     "primary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0212",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.657453,
+     10.787665,
+     106.662547,
+     10.792335
+    ],
+    "distance_m": 25,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0214",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.445407,
+     10.945876,
+     106.454593,
+     10.954124
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0218",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.594423,
+     10.722784,
+     106.605577,
+     10.737216
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0219",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "broad",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.696029,
+     10.795534,
+     106.703971,
+     10.804466
+    ],
+    "distance_m": 100,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0220",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.683044,
+     10.754442,
+     106.696956,
+     10.765558
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0222",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.88175,
+     10.430892,
+     106.91825,
+     10.469108
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 500
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0223",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.694828,
+     10.794414,
+     106.705172,
+     10.805586
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0224",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.55579,
+     10.597048,
+     106.56421,
+     10.602952
+    ],
+    "distance_m": 1000,
+    "road_classes": [
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0226",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.715124,
+     10.796048,
+     106.724876,
+     10.803952
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0227",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.594785,
+     10.724967,
+     106.605215,
+     10.735033
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0228",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.776303,
+     10.847251,
+     106.783697,
+     10.852749
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0229",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.694036,
+     10.793675,
+     106.705964,
+     10.806325
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0234",
+   "template": "near_count",
+   "kind": "request",
+   "region": "broad",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.69741,
+     10.797638,
+     106.70259,
+     10.802362
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0235",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.49749,
+     11.047558,
+     106.50251,
+     11.052442
+    ],
+    "distance_m": 25,
+    "road_classes": [
+     "residential",
+     "service",
+     "unclassified"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0236",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.859214,
+     10.679672,
+     106.900786,
+     10.720328
+    ],
+    "distance_m": 200,
+    "road_classes": [
+     "residential"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0237",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.617132,
+     10.79696,
+     106.622868,
+     10.80304
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0238",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.557194,
+     10.597644,
+     106.562806,
+     10.602356
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0239",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.695755,
+     10.776167,
+     106.704245,
+     10.783833
+    ],
+    "distance_m": 100,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0241",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "dense",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.712911,
+     10.794058,
+     106.727089,
+     10.805942
+    ],
+    "distance_m": 100,
+    "road_classes": [
+     "primary",
+     "secondary",
+     "tertiary"
+    ]
+   }
+  },
+  {
+   "id": "ms_disc-0243",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.776055,
+     10.845991,
+     106.783945,
+     10.854009
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0244",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.592215,
+     10.723321,
+     106.607785,
+     10.736679
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0245",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.653825,
+     10.784936,
+     106.666175,
+     10.795064
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 50,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0248",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.713986,
+     10.795744,
+     106.726014,
+     10.804256
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk",
+       "primary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0249",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.897109,
+     10.447724,
+     106.902891,
+     10.452276
+    ],
+    "distance_m": 1000,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0251",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.889242,
+     10.437244,
+     106.910758,
+     10.462756
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0253",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.726289,
+     10.896178,
+     106.733711,
+     10.903822
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 25,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "motorway",
+       "trunk"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0254",
+   "template": "near_count",
+   "kind": "request",
+   "region": "sparse",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.494321,
+     11.044291,
+     106.505679,
+     11.055709
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 1000
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0256",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "sparse",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.485326,
+     11.037657,
+     106.514674,
+     11.062343
+    ],
+    "distance_m": 500,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0257",
+   "template": "near_count",
+   "kind": "request",
+   "region": "medium",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.614669,
+     10.794798,
+     106.625331,
+     10.805202
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 100,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "primary",
+       "secondary",
+       "tertiary"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "ms_disc-0258",
+   "template": "near_ids",
+   "kind": "template",
+   "region": "medium",
+   "name": "near_ids",
+   "params": {
+    "bbox": [
+     106.726977,
+     10.89683,
+     106.733023,
+     10.90317
+    ],
+    "distance_m": 200,
+    "road_classes": null
+   }
+  },
+  {
+   "id": "ms_disc-0259",
+   "template": "near_count",
+   "kind": "request",
+   "region": "dense",
+   "request": {
+    "kind": "near_count",
+    "source": "buildings",
+    "bbox": [
+     106.71486,
+     10.793472,
+     106.72514,
+     10.806528
+    ],
+    "crs": "OGC:CRS84",
+    "with": {
+     "source": "transport",
+     "distance_m": 200,
+     "filter": {
+      "column": "class",
+      "op": "in",
+      "values": [
+       "residential"
+      ]
+     }
+    }
+   }
+  }
+ ]
+}
