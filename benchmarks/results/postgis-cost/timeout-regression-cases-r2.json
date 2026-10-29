@@ -1,0 +1,236 @@
+{
+ "note": "DuckDB executions that hit 60 s (or finished at ~61 s) with a DuckDB timeout probability in [0.10, 0.20) under duckdb-timeout-risk-v1: the cases the 0.20 threshold missed. Under duckdb-timeout-risk-v2 (timeout_risk_at 0.10) each must be a timeout_risk; PostGIS completed every one (2.6-22 s) and must not be timeout_risk. Source: thr_heavy (seed 20261301/20261303 selection 20261302) + msj_heavy-0025.",
+ "rows": [
+  {
+   "id": "thr_heavy:thr_pool-0791",
+   "sj": {
+    "expected_probes": 782564.2142747475,
+    "right_rows": 125079.66049750023,
+    "right_rows_filtered": 15608.000144452702,
+    "distance_m": 1000.0,
+    "candidate_pairs": 49522007.47443149,
+    "candidates_per_probe": 63.28171742471857,
+    "right_density_per_km2": 20.143196270976972,
+    "overlap_ratio": 0.8584568726350578,
+    "right_window_km2": 774.8522098720381,
+    "left_window_km2": 665.1772048411133,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1012,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 19400.0
+  },
+  {
+   "id": "thr_heavy:thr_pool2-2991",
+   "sj": {
+    "expected_probes": 83479.03331623404,
+    "right_rows": 22951.98041066306,
+    "right_rows_filtered": 22951.98041066306,
+    "distance_m": 1000.0,
+    "candidate_pairs": 79503028.45722759,
+    "candidates_per_probe": 952.3712158483603,
+    "right_density_per_km2": 303.14917332140993,
+    "overlap_ratio": 0.5858146765940245,
+    "right_window_km2": 75.71183572494365,
+    "left_window_km2": 44.35310455954778,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.11,
+   "duckdb_actual_ms": 61249,
+   "postgis_actual_ms": 3012.0
+  },
+  {
+   "id": "msj_heavy:msj_heavy-0025",
+   "sj": {
+    "expected_probes": 618511.6101515499,
+    "right_rows": 114764.88173860294,
+    "right_rows_filtered": 14320.875861267716,
+    "distance_m": 1000.0,
+    "candidate_pairs": 57248101.825843014,
+    "candidates_per_probe": 92.55784513376537,
+    "right_density_per_km2": 29.46207714994578,
+    "overlap_ratio": 0.8234752903657468,
+    "right_window_km2": 486.0782825454678,
+    "left_window_km2": 400.2734548596126,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1387,
+   "duckdb_actual_ms": 60982,
+   "postgis_actual_ms": 11251.8
+  },
+  {
+   "id": "thr_heavy:thr_pool2-0253",
+   "sj": {
+    "expected_probes": 212263.0045045635,
+    "right_rows": 46572.56301977567,
+    "right_rows_filtered": 46572.56301977567,
+    "distance_m": 500.0,
+    "candidate_pairs": 71520779.22159298,
+    "candidates_per_probe": 336.9441575018097,
+    "right_density_per_km2": 429.0106256987771,
+    "overlap_ratio": 0.813129768362499,
+    "right_window_km2": 108.55806413633177,
+    "left_window_km2": 88.27179354505675,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1422,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 7176.5
+  },
+  {
+   "id": "thr_heavy:thr_pool2-0726",
+   "sj": {
+    "expected_probes": 948184.7188111068,
+    "right_rows": 146819.3935816434,
+    "right_rows_filtered": 14007.971818891976,
+    "distance_m": 1000.0,
+    "candidate_pairs": 53222621.42586237,
+    "candidates_per_probe": 56.131068524913815,
+    "right_density_per_km2": 17.867074033539872,
+    "overlap_ratio": 0.8591390039513112,
+    "right_window_km2": 784.0103977067744,
+    "left_window_km2": 673.5739121732695,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1441,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 21977.3
+  },
+  {
+   "id": "thr_heavy:thr_pool2-3190",
+   "sj": {
+    "expected_probes": 435688.0569410292,
+    "right_rows": 71800.07127090864,
+    "right_rows_filtered": 71800.07127090864,
+    "distance_m": 500.0,
+    "candidate_pairs": 62809933.858075865,
+    "candidates_per_probe": 144.1626247436414,
+    "right_density_per_km2": 183.5535546964201,
+    "overlap_ratio": 0.8987452443462827,
+    "right_window_km2": 391.16687982239864,
+    "left_window_km2": 351.55937298615464,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1485,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 17716.7
+  },
+  {
+   "id": "thr_heavy:thr_pool2-0427",
+   "sj": {
+    "expected_probes": 305492.2704533394,
+    "right_rows": 57397.597955539415,
+    "right_rows_filtered": 47281.80125180644,
+    "distance_m": 500.0,
+    "candidate_pairs": 68268760.36905429,
+    "candidates_per_probe": 223.47131817032863,
+    "right_density_per_km2": 284.5325194085559,
+    "overlap_ratio": 0.8479803153991122,
+    "right_window_km2": 166.17362876513675,
+    "left_window_km2": 140.91196613127565,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.154,
+   "duckdb_actual_ms": 60091,
+   "postgis_actual_ms": 4819.3
+  },
+  {
+   "id": "thr_heavy:thr_pool2-0665",
+   "sj": {
+    "expected_probes": 148774.06520318583,
+    "right_rows": 33624.48605295317,
+    "right_rows_filtered": 27698.48083157348,
+    "distance_m": 1000.0,
+    "candidate_pairs": 80273210.27512474,
+    "candidates_per_probe": 539.5645414776619,
+    "right_density_per_km2": 171.74872778656376,
+    "overlap_ratio": 0.7039613546220318,
+    "right_window_km2": 161.27328096424122,
+    "left_window_km2": 113.53015733192679,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1622,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 3091.7
+  },
+  {
+   "id": "thr_heavy:thr_pool-0797",
+   "sj": {
+    "expected_probes": 613741.8527154421,
+    "right_rows": 116862.89708898349,
+    "right_rows_filtered": 14582.67561161528,
+    "distance_m": 1000.0,
+    "candidate_pairs": 60893011.33658611,
+    "candidates_per_probe": 99.21599947465015,
+    "right_density_per_km2": 31.581433500386925,
+    "overlap_ratio": 0.8190855819431635,
+    "right_window_km2": 461.74837540026857,
+    "left_window_km2": 378.2114367760393,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1659,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 12101.2
+  },
+  {
+   "id": "thr_heavy:thr_pool-0703",
+   "sj": {
+    "expected_probes": 236180.92693094685,
+    "right_rows": 49113.47579586126,
+    "right_rows_filtered": 49113.47579586126,
+    "distance_m": 500.0,
+    "candidate_pairs": 77161846.68577655,
+    "candidates_per_probe": 326.7065113532079,
+    "right_density_per_km2": 415.9756497773717,
+    "overlap_ratio": 0.820526665331436,
+    "right_window_km2": 118.06815091735916,
+    "left_window_km2": 96.87806615406944,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1886,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 10943.7
+  },
+  {
+   "id": "thr_heavy:thr_pool2-0743",
+   "sj": {
+    "expected_probes": 105293.05715549571,
+    "right_rows": 27298.38988844687,
+    "right_rows_filtered": 22487.30070898901,
+    "distance_m": 1000.0,
+    "candidate_pairs": 92567103.56639908,
+    "candidates_per_probe": 879.1377709709476,
+    "right_density_per_km2": 279.8382438176338,
+    "overlap_ratio": 0.5952722606260021,
+    "right_window_km2": 80.35821123735907,
+    "left_window_km2": 47.83501406312455,
+    "predicate": "within_distance",
+    "metric": true
+   },
+   "duckdb_level_at_0.20": "below",
+   "duckdb_p": 0.1992,
+   "duckdb_actual_ms": 60000,
+   "postgis_actual_ms": 2559.4
+  }
+ ]
+}

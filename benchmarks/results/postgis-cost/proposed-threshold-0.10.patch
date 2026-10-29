@@ -1,0 +1,74 @@
+diff --git a/benchmarks/results/postgis-cost/metric-fixtures.json b/benchmarks/results/postgis-cost/metric-fixtures.json
+index fa8a46b..8d0980f 100644
+--- a/benchmarks/results/postgis-cost/metric-fixtures.json
++++ b/benchmarks/results/postgis-cost/metric-fixtures.json
+@@ -960,7 +960,7 @@
+    "duckdb": {
+     "time_ms": 5030.584008841839,
+     "risk": {
+-     "level": "elevated",
++     "level": "timeout_risk",
+      "p": 0.12568248489379608
+     }
+    }
+diff --git a/crates/geo-engine-duckdb/src/cost_model_v1.json b/crates/geo-engine-duckdb/src/cost_model_v1.json
+index a463a32..9fc840a 100644
+--- a/crates/geo-engine-duckdb/src/cost_model_v1.json
++++ b/crates/geo-engine-duckdb/src/cost_model_v1.json
+@@ -156,10 +156,10 @@
+     }
+   },
+   "timeout_risk": {
+-    "version": "duckdb-timeout-risk-v1",
++    "version": "duckdb-timeout-risk-v2",
+     "timeout_ms": 60000.0,
+-    "elevated_at": 0.1,
+-    "timeout_risk_at": 0.2,
++    "elevated_at": 0.05,
++    "timeout_risk_at": 0.1,
+     "regime_feature": "ln_candidate_pairs",
+     "regime_min_ln": 16.11809565095832,
+     "model": {
+diff --git a/crates/geo-executor/tests/cost_model_parity.rs b/crates/geo-executor/tests/cost_model_parity.rs
+index 32d9b34..003e3fe 100644
+--- a/crates/geo-executor/tests/cost_model_parity.rs
++++ b/crates/geo-executor/tests/cost_model_parity.rs
+@@ -179,3 +179,25 @@ fn every_observed_duckdb_timeout_is_rated_timeout_risk_and_postgis_is_not() {
+         assert_ne!(p.level, "timeout_risk", "{}: PostGIS completed this case in {} ms: {p:?}", r["id"], r["postgis_actual_ms"]);
+     }
+ }
++
++/// Eleven cases the 0.20 threshold of `duckdb-timeout-risk-v1` missed (DuckDB timeout probability 0.10-0.20, DuckDB hit/passed the 60 s timeout, PostGIS finished in
++/// 2.6-22 s). They were found by the threshold confirmation (frozen candidates 0.10/0.15/0.20, fresh seed) and fix `duckdb-timeout-risk-v2` at 0.10: each must be a
++/// DuckDB timeout risk, PostGIS must never be one.
++#[test]
++fn duckdb_timeouts_missed_by_the_old_threshold_are_timeout_risk_in_v2() {
++    use geo_executor::cost_model::timeout_verdict;
++    let fx = read("benchmarks/results/postgis-cost/timeout-regression-cases-r2.json");
++    let load = |f: &str| -> ModelFile { serde_json::from_value(read(f)).unwrap() };
++    let (duck, pg) = (load("crates/geo-engine-duckdb/src/cost_model_v1.json"), load("crates/geo-engine-postgis/src/cost_model_v1.json"));
++    assert_eq!(duck.timeout_risk.as_ref().unwrap().version, "duckdb-timeout-risk-v2");
++    let rows = fx["rows"].as_array().unwrap();
++    assert_eq!(rows.len(), 11);
++    for r in rows {
++        let f = features_of(&r["sj"]);
++        let class = workload_class(&f);
++        let d = timeout_verdict(&duck, class, &f).unwrap();
++        assert_eq!(d.level, "timeout_risk", "{} ({class}): {d:?}", r["id"]);
++        let p = timeout_verdict(&pg, class, &f).unwrap();
++        assert_ne!(p.level, "timeout_risk", "{}: PostGIS completed this case in {} ms: {p:?}", r["id"], r["postgis_actual_ms"]);
++    }
++}
+diff --git a/crates/geo-planner/src/lib.rs b/crates/geo-planner/src/lib.rs
+index 8f2292b..ec31755 100644
+--- a/crates/geo-planner/src/lib.rs
++++ b/crates/geo-planner/src/lib.rs
+@@ -428,7 +428,7 @@ pub struct Uncertainty {
+ }
+ 
+ /// Version of the planner's risk / uncertainty policy for metric semi joins (R5e). A change to the rules below bumps it.
+-pub const METRIC_SEMIJOIN_POLICY_VERSION: &str = "metric-semijoin-policy-v1";
++pub const METRIC_SEMIJOIN_POLICY_VERSION: &str = "metric-semijoin-policy-v1.1";
+ 
+ #[derive(Debug, Clone, Serialize)]
+ pub struct ProbeSummary {
