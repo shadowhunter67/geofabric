@@ -181,7 +181,7 @@ const root = document.documentElement;
 let bottomH = Number(stored("gf.bottomH")) || 0;
 function applyBottomH(h?: number) {
   const max = Math.round(window.innerHeight * 0.55);
-  const dflt = Math.min(380, Math.round(window.innerHeight * 0.38));
+  const dflt = Math.min(DEV() ? 460 : 380, Math.round(window.innerHeight * (DEV() ? 0.48 : 0.38)));
   bottomH = Math.max(170, Math.min(max, h ?? (bottomH || dflt)));
   root.style.setProperty("--bottom-h", `${bottomH}px`);
   requestAnimationFrame(() => map?.resize());
@@ -241,6 +241,7 @@ function setMode(m: Mode) {
   S.mode = m;
   store("gf.mode", m);
   if (!DEV() && S.tab === "profile") S.tab = "query";
+  if (!stored("gf.bottomH")) { bottomH = 0; applyBottomH(); } // no height chosen by the user: Developer gets the taller default
   renderAll();
 }
 function changeLang(l: Lang) {
@@ -673,6 +674,8 @@ function renderRight() {
 }
 
 // ---------- left: data ----------
+/** Icon for a layer card from its geometry type (point / line / polygon, anything else is a generic layer). */
+function geoIcon(g: string): string { return /point/i.test(g) ? "pin" : /line|road|string/i.test(g) ? "line" : /poly/i.test(g) ? "polygon" : "layers"; }
 function row(k: string, v: string) { return el("tr", {}, el("th", { scope: "row" }, k), el("td", {}, v)); }
 function renderSourceItem(s: SourceMeta): HTMLElement {
   if (s.error) return el("div", { class: "item" }, el("div", { class: "name" }, s.id), el("div", { class: "meta" }, s.error));
@@ -684,6 +687,7 @@ function renderSourceItem(s: SourceMeta): HTMLElement {
     ...(DEV() ? [row(t("data.row_groups"), String(s.row_groups)), row(t("data.covering"), s.has_covering ? t(s.covering_inferred ? "data.covering_inferred" : "data.covering_declared") : t("data.covering_none")), row("id", s.id)] : []));
   return el("div", { class: `item${S.cur?.id === s.id ? " sel" : ""}`, role: "listitem", "data-testid": "dataset", "data-id": s.id },
     el("button", { type: "button", class: "pick", "aria-current": S.cur?.id === s.id ? "true" : null, onclick: () => void selectSource(s) },
+      el("span", { class: "gi" }, icon(geoIcon(s.geometry_type), 16)),
       el("span", { class: "name" }, lab.title),
       el("span", { class: "meta" }, traits.join(" · ")),
       DEV() ? el("span", { class: "meta raw" }, `${s.id} · ${fmtInt(s.rows)} · ${s.row_groups} rg · ${s.crs}`) : null),
@@ -769,6 +773,7 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
   const searchable = `${d.title.vi} ${d.title.en} ${d.provider} ${t(`catalog.group.${d.group}` as Key)} ${d.coverage.name}`;
   return el("div", { class: `item${S.cur?.id === source ? " sel" : ""}`, "data-testid": "dataset", "data-id": d.id, "data-search": searchable },
     el("button", { type: "button", class: "pick", onclick: () => { const found = S.sources.find((s) => s.id === source); if (found) void selectSource(found); } },
+      el("span", { class: "gi" }, icon(geoIcon(d.geometry_type), 16)),
       el("span", { class: "name" }, d.title[getLang()]),
       el("span", { class: "meta" }, `${geometryLabel(d.geometry_type)} · ${fmtBytes(d.files.reduce((n, f) => n + f.size_bytes, 0))}`)),
     (source || isRaster) ? el("div", { class: "layer-controls" },
@@ -1204,7 +1209,34 @@ function executionTab(): HTMLElement {
     ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
   const toggle = DEV() ? null : el("button", { type: "button", class: `adv-toggle${S.advancedOpen ? " open" : ""}`, "data-testid": "advanced-toggle", "aria-expanded": S.advancedOpen, "aria-controls": "adv", onclick: () => { S.advancedOpen = !S.advancedOpen; renderTab(); } },
     icon("chevron", 14), el("span", {}, t("exec.advanced")));
-  return el("div", { class: "exec" }, card, opt, toggle, advanced);
+  return el("div", { class: "exec" }, card, opt, DEV() ? overviewCards(r) : null, toggle, advanced);
+}
+
+/** Developer overview on the Execution tab: the first rows, the timing profile and the latest log lines, each linking to its full tab. Real data only (same sources as those tabs). */
+function overviewCards(r: RunResp): HTMLElement {
+  const cols = r.columns.filter((c) => !c.geometry && !c.type.startsWith("Struct")).slice(0, 5);
+  const more = (tab: string, key: Key) => el("button", { type: "button", class: "ov-more", "data-testid": `ov-more-${tab}`, onclick: () => setTab(tab) }, t(key), icon("chevron", 12));
+  const head = (ic: string, title: string, tab: string, key: Key) => el("div", { class: "ov-head" }, el("span", { class: "ov-title" }, icon(ic, 15), title), more(tab, key));
+  const ir = r.ir as PlanGraph;
+  const kv = (k: string, v: string) => el("tr", {}, el("th", { scope: "row" }, k), el("td", {}, v));
+  const lines = S.logs.slice(-3);
+  return el("div", { class: "overview", "data-testid": "overview" },
+    el("section", { class: "ov-card", "data-testid": "ov-results", "aria-label": t("ov.results", { n: fmtInt(r.rows_total) }) },
+      head("table", t("ov.results", { n: fmtInt(r.rows_total) }), "results", "ov.all"),
+      el("table", { class: "ov-table" },
+        el("thead", {}, el("tr", {}, ...cols.map((c) => el("th", { scope: "col" }, c.name)))),
+        el("tbody", {}, ...r.rows.slice(0, 3).map((rw) => el("tr", {}, ...cols.map((c) => el("td", { title: String(rw[c.name] ?? "") }, String(rw[c.name] ?? "∅")))))))),
+    el("section", { class: "ov-card", "data-testid": "ov-profile", "aria-label": t("ov.profile") },
+      head("doc", t("ov.profile"), "profile", "ov.details"),
+      el("table", { class: "ov-table kv" }, el("tbody", {},
+        kv(t("ov.ir"), `v${ir.ir_version} · ${Object.keys(ir.nodes).length} node`),
+        kv(t("ov.total"), fmtMs(r.timing.total_ms.value ?? 0)),
+        kv(t("profile.engine"), fmtMs(r.metrics.elapsed_ms.value ?? 0)),
+        kv(t("profile.boundary"), fmtMs(r.timing.boundary_conversion_ms.value ?? 0)))),
+      el("div", {}, badge(t("ov.ok"), "ok"))),
+    el("section", { class: "ov-card", "data-testid": "ov-logs", "aria-label": t("ov.logs") },
+      head("log", t("ov.logs"), "logs", "ov.all"),
+      el("div", { class: "log" }, ...(lines.length ? lines.map((l) => el("div", { class: l.includes(" ERROR ") ? "err" : "" }, l)) : [el("div", { class: "empty" }, t("ov.no_logs"))]))));
 }
 
 function engineSteps(p: Physical, r: RunResp): HTMLElement {

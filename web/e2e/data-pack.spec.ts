@@ -192,7 +192,8 @@ test.describe("demo workflows (Explorer, Vietnamese; every query goes through th
   test("A: buildings in the view", async ({ page }) => {
     const s = await run(page, "a");
     expect(s).toMatch(/\d[\d.]* tòa nhà trong khu vực đang xem/);
-    expect(await layerCount(page, "res-fill")).toBeGreaterThan(20);
+    // the status text appears before the map has drawn the new source: poll instead of reading once
+    await expect.poll(() => layerCount(page, "res-fill"), { timeout: 20_000 }).toBeGreaterThan(20);
   });
 
   test("B: buildings within 200 m of main roads (metric Transform + SpatialSemiJoin on the server, each building once)", async ({ page }) => {
