@@ -95,3 +95,17 @@ A two-stage bbox prefilter or generated projected column for the metric semi-joi
 ## Addendum 3 (2026-10-28/29): risk-threshold confirmation — no change
 
 Thresholds 0.10 / 0.15 / 0.20 for `duckdb-timeout-risk-v1` were frozen (`benchmarks/risk_threshold_candidates.json`, commit a69b081) and compared on 140 fresh heavy-regime cases (seeds 20261301/20261303, selection 20261302). Unsafe choices 10 / 5 / 1 at 0.20 / 0.15 / 0.10 (chosen-engine timeouts equal); unnecessary reroutes 0 at all three; 0 DuckDB/PostGIS mismatches. The frozen primary gate (unsafe == 0) is met by none, so **0.20 stays and the status is "risk model needs feature improvement"**. Cause of the 0.20 failures: PostGIS' overridable >50,000-probe block is lifted by R5e only when DuckDB is `timeout_risk`; the one case 0.10 cannot fix is also blocked by the non-overridable 1 M-row result cap (an uncertainty note is attached). A tested alternative (`duckdb-timeout-risk-v2` at 0.10 + `metric-semijoin-policy-v1.1`) is saved as `benchmarks/results/postgis-cost/proposed-threshold-0.10.patch`, not applied. `semijoin_metric_small` stays limited: candidate pairs do not explain PostGIS time; a 256-grid histogram is the only offline-promising change. See `REPORT-GEOFABRIC-RISK-THRESHOLD-CONFIRMATION.md`.
+
+## Addendum 4 (2026-10-30): result policy + fresh confirmation of 0.10 — 0.20 kept
+
+`result-policy-v1` (ADR-016) separates result delivery from execution risk. The 0.10 candidate (`duckdb-timeout-risk-v2`, elevated 0.05) and the definitions (`benchmarks/result_policy_freeze.json`) were committed BEFORE a fresh 156-case set ran (pool seed 20261501, selection 20261502, commit c35ba19; result-row bands 500k to 2M+, P bands 0.08-0.22, raw/limit/count/group/projection shapes). Gate: 0 avoidable unsafe, 0 chosen-engine timeouts with a safe alternative, 0 cap bypasses, 0 mismatches.
+
+| | 0.20 (replay, parity-checked against the real planner) | 0.10 (real planner) |
+|---|---|---|
+| chosen-engine timeouts with the other engine completing | 8 | **3** |
+| regret P50 / P90 / P95 / max (83 decidable) | 1.0 / 7.02 / 11.2 / 20.6 | 1.0 / 4.24 / 6.24 / 20.6 |
+| mean / max penalty | 13.6 s / 56.6 s | 5.0 s / 48.6 s |
+
+0 result-cap violations, 0 correctness mismatches, 27 `NO_SAFE_PLAN`, 8 `UNAVOIDABLE_UNCERTAIN`. The 3 misses: `rp_pool-1086` (near_count, P = 0.00, model blind), `5104` (P 0.0998, just under) and `5990` (P 0.082), the latter two noted as uncertain but not avoided. **Gate missed, final decision C: shipped threshold stays 0.20, the candidate was reverted, `proposed-threshold-0.10.patch` stays as evidence (it would have avoided 5 of the 8), no further threshold search.** The risk model needs a feature/policy improvement, not a different constant.
+
+metric_small, confirmation set `ms_conf` (seed 20261409, 76 cases, 0 mismatches): the 256-cell histogram (benchmark-time grids over the planner's extent) improves left-count error P90 x2.81 -> x1.61, right x5.32 -> x1.86, and the held-out PostGIS time prediction (time model fitted only on ms_disc + ms_cal) P90 x3.18 -> x2.53, median x1.41 -> x1.32 (gate 3.0 / 1.6). `candidate_pairs` is unchanged (P90 x32). Cost: 364 KB of int32 cells vs 95 KB, grid build ~1.5 s for both. Status: **limited, improved; not promoted** (no Rust 256 grid, no regret test through the planner).

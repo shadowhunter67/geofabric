@@ -1,0 +1,121 @@
+{
+ "set": "ms_conf (seed 20261409)",
+ "time_model": "[ln_probes, ln_right], fitted on ms_disc + ms_cal only",
+ "usable_conf": 76,
+ "estimate_error": {
+  "current_128_planner": {
+   "left": {
+    "n": 76,
+    "median": 1.287,
+    "p90": 2.808,
+    "p95": 5.993,
+    "max": 7.27
+   },
+   "right": {
+    "n": 76,
+    "median": 1.558,
+    "p90": 5.319,
+    "p95": 8.865,
+    "max": 23.56
+   },
+   "pairs": {
+    "n": 76,
+    "median": 3.646,
+    "p90": 32.48,
+    "p95": 361.748,
+    "max": 11301.42
+   }
+  },
+  "grid_128": {
+   "left": {
+    "n": 76,
+    "median": 1.287,
+    "p90": 2.785,
+    "p95": 5.931,
+    "max": 7.19
+   },
+   "right": {
+    "n": 76,
+    "median": 1.27,
+    "p90": 3.678,
+    "p95": 4.314,
+    "max": 14.63
+   }
+  },
+  "grid_256": {
+   "left": {
+    "n": 76,
+    "median": 1.156,
+    "p90": 1.609,
+    "p95": 1.925,
+    "max": 2.92
+   },
+   "right": {
+    "n": 76,
+    "median": 1.141,
+    "p90": 1.863,
+    "p95": 2.695,
+    "max": 4.0
+   }
+  }
+ },
+ "postgis_time_prediction": {
+  "current_planner_estimates": {
+   "heldout_conf": {
+    "n": 76,
+    "median": 1.413,
+    "p90": 3.18,
+    "p95": 4.444,
+    "max": 8.05
+   },
+   "in_sample": {
+    "n": 284,
+    "median": 1.528,
+    "p90": 3.098,
+    "p95": 3.711,
+    "max": 7.27
+   }
+  },
+  "grid_128": {
+   "heldout_conf": {
+    "n": 76,
+    "median": 1.441,
+    "p90": 2.898,
+    "p95": 4.378,
+    "max": 7.03
+   },
+   "in_sample": {
+    "n": 284,
+    "median": 1.506,
+    "p90": 3.067,
+    "p95": 3.713,
+    "max": 7.9
+   }
+  },
+  "grid_256": {
+   "heldout_conf": {
+    "n": 76,
+    "median": 1.322,
+    "p90": 2.531,
+    "p95": 3.431,
+    "max": 7.05
+   },
+   "in_sample": {
+    "n": 284,
+    "median": 1.404,
+    "p90": 2.781,
+    "p95": 3.299,
+    "max": 6.65
+   }
+  }
+ },
+ "cost_proxies": {
+  "grid_128_us_per_buildings_estimate": 123.9,
+  "grid_256_us_per_buildings_estimate": 188.4,
+  "grid_bytes_int32": {
+   "128": 95480,
+   "256": 364320
+  },
+  "note": "numpy mirror of the planner estimator, not the Rust implementation; no Rust 256 grid exists, nothing is promoted"
+ }
+}

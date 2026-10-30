@@ -1,0 +1,409 @@
+{
+ "set": "raw/rp_heavy.jsonl",
+ "cases": 156,
+ "classes": {
+  "SAFE": 118,
+  "NO_SAFE_PLAN": 27,
+  "UNAVOIDABLE_UNCERTAIN": 8,
+  "AVOIDABLE_UNSAFE": 3
+ },
+ "planned": 129,
+ "decidable_planned": 83,
+ "avoidable_unsafe": [
+  "rp_pool-1086",
+  "rp_pool-5104",
+  "rp_pool-5990"
+ ],
+ "unavoidable_uncertain": [
+  "rp_pool-1016",
+  "rp_pool-1565",
+  "rp_pool-1575",
+  "rp_pool-1672",
+  "rp_pool-2252",
+  "rp_pool-3458",
+  "rp_pool-3599",
+  "rp_pool-5738"
+ ],
+ "chosen_engine_timeouts": [
+  "rp_pool-1086",
+  "rp_pool-5104",
+  "rp_pool-5990"
+ ],
+ "chosen_timeouts_where_alt_existed": [
+  "rp_pool-1086",
+  "rp_pool-5104",
+  "rp_pool-5990"
+ ],
+ "result_cap_violations": [],
+ "correctness_mismatches": [],
+ "no_safe_plan": [
+  {
+   "id": "rp_pool-0022",
+   "rows_actual": 867433,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-0615",
+   "rows_actual": 143984,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-0713",
+   "rows_actual": 656776,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-0763",
+   "rows_actual": 515456,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-0870",
+   "rows_actual": 265810,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-1004",
+   "rows_actual": 0,
+   "over_conservative": false
+  },
+  {
+   "id": "rp_pool-1665",
+   "rows_actual": 647775,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-2091",
+   "rows_actual": 0,
+   "over_conservative": false
+  },
+  {
+   "id": "rp_pool-2300",
+   "rows_actual": 283852,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-2768",
+   "rows_actual": 420721,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-2845",
+   "rows_actual": 145461,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-3131",
+   "rows_actual": 273455,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-3144",
+   "rows_actual": 0,
+   "over_conservative": false
+  },
+  {
+   "id": "rp_pool-3164",
+   "rows_actual": 0,
+   "over_conservative": false
+  },
+  {
+   "id": "rp_pool-3279",
+   "rows_actual": 825621,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-3532",
+   "rows_actual": 937834,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-3710",
+   "rows_actual": 862371,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-3964",
+   "rows_actual": 858837,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-4349",
+   "rows_actual": 408088,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-4557",
+   "rows_actual": 0,
+   "over_conservative": false
+  },
+  {
+   "id": "rp_pool-4612",
+   "rows_actual": 931566,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-4773",
+   "rows_actual": 803422,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-4802",
+   "rows_actual": 850640,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-5038",
+   "rows_actual": 805793,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-5181",
+   "rows_actual": 912329,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-5518",
+   "rows_actual": 54514,
+   "over_conservative": true
+  },
+  {
+   "id": "rp_pool-5638",
+   "rows_actual": 901384,
+   "over_conservative": true
+  }
+ ],
+ "chosen_engine_failures_not_timeout": [
+  {
+   "id": "rp_pool-0973",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-1016",
+   "kind": "oom",
+   "alt_completed": false,
+   "alt_liftable": false
+  },
+  {
+   "id": "rp_pool-1315",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-1350",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-1470",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-1559",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-1565",
+   "kind": "oom",
+   "alt_completed": false,
+   "alt_liftable": false
+  },
+  {
+   "id": "rp_pool-1575",
+   "kind": "oom",
+   "alt_completed": false,
+   "alt_liftable": false
+  },
+  {
+   "id": "rp_pool-1672",
+   "kind": "oom",
+   "alt_completed": false,
+   "alt_liftable": false
+  },
+  {
+   "id": "rp_pool-2021",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-2224",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-2225",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  },
+  {
+   "id": "rp_pool-2252",
+   "kind": "oom",
+   "alt_completed": false,
+   "alt_liftable": false
+  },
+  {
+   "id": "rp_pool-2453",
+   "kind": "oom",
+   "alt_completed": true,
+   "alt_liftable": true
+  }
+ ],
+ "failure_kinds_all_runs": {
+  "duckdb:timeout": 31,
+  "postgis:error": 14,
+  "duckdb:oom": 38,
+  "duckdb:row_cap": 2,
+  "postgis:row_cap": 3,
+  "postgis:timeout": 5
+ },
+ "alternate_engine_saved": [
+  "rp_pool-0298",
+  "rp_pool-0365",
+  "rp_pool-0389",
+  "rp_pool-0437",
+  "rp_pool-2715",
+  "rp_pool-3033",
+  "rp_pool-3111",
+  "rp_pool-3165",
+  "rp_pool-3211",
+  "rp_pool-3335",
+  "rp_pool-3446",
+  "rp_pool-3487",
+  "rp_pool-3901",
+  "rp_pool-4419",
+  "rp_pool-4456",
+  "rp_pool-4539",
+  "rp_pool-4549",
+  "rp_pool-4834",
+  "rp_pool-5206",
+  "rp_pool-5648",
+  "rp_pool-5662",
+  "rp_pool-5783"
+ ],
+ "replay_parity_bad": [],
+ "real_planner": {
+  "n": 83,
+  "p50_regret": 1.0,
+  "p90_regret": 4.239,
+  "p95_regret": 6.24,
+  "max_regret": 20.63,
+  "mean_penalty_ms": 5042.4,
+  "max_penalty_ms": 48608.5,
+  "optimal_share": 0.783
+ },
+ "replay_context": {
+  "0.2": {
+   "n": 83,
+   "p50_regret": 1.0,
+   "p90_regret": 7.024,
+   "p95_regret": 11.173,
+   "max_regret": 20.63,
+   "mean_penalty_ms": 13633.4,
+   "max_penalty_ms": 56559.5,
+   "optimal_share": 0.53,
+   "chosen_timeouts_alt_completed": 8,
+   "chosen_oom_alt_completed_in_all_planned": null
+  },
+  "0.1": {
+   "n": 83,
+   "p50_regret": 1.0,
+   "p90_regret": 4.239,
+   "p95_regret": 6.24,
+   "max_regret": 20.63,
+   "mean_penalty_ms": 5042.4,
+   "max_penalty_ms": 48608.5,
+   "optimal_share": 0.783,
+   "chosen_timeouts_alt_completed": 3,
+   "chosen_oom_alt_completed_in_all_planned": null
+  }
+ },
+ "verdicts": {
+  "('duckdb', 'uncertain')": 36,
+  "('postgis', 'safe')": 14,
+  "('postgis', 'bounded')": 9,
+  "('duckdb', 'bounded')": 21,
+  "('postgis', 'uncertain')": 43,
+  "('duckdb', 'safe')": 6
+ },
+ "by_p_band": {
+  "0.08-0.12": {
+   "n": 21,
+   "classes": {
+    "SAFE": 18,
+    "AVOIDABLE_UNSAFE": 2,
+    "UNAVOIDABLE_UNCERTAIN": 1
+   }
+  },
+  "0.12-0.18": {
+   "n": 24,
+   "classes": {
+    "SAFE": 20,
+    "UNAVOIDABLE_UNCERTAIN": 4
+   }
+  },
+  "0.18-0.22": {
+   "n": 21,
+   "classes": {
+    "SAFE": 20,
+    "UNAVOIDABLE_UNCERTAIN": 1
+   }
+  },
+  "<0.08": {
+   "n": 25,
+   "classes": {
+    "SAFE": 24,
+    "AVOIDABLE_UNSAFE": 1
+   }
+  },
+  ">=0.22": {
+   "n": 21,
+   "classes": {
+    "SAFE": 19,
+    "UNAVOIDABLE_UNCERTAIN": 2
+   }
+  },
+  "n/a": {
+   "n": 44,
+   "classes": {
+    "NO_SAFE_PLAN": 27,
+    "SAFE": 17
+   }
+  }
+ },
+ "by_rows_band": {
+  "500-800k": {
+   "n": 22,
+   "classes": {
+    "SAFE": 19,
+    "NO_SAFE_PLAN": 3
+   }
+  },
+  "800-950k": {
+   "n": 27,
+   "classes": {
+    "NO_SAFE_PLAN": 11,
+    "SAFE": 16
+   }
+  },
+  "<500k": {
+   "n": 107,
+   "classes": {
+    "SAFE": 83,
+    "NO_SAFE_PLAN": 13,
+    "UNAVOIDABLE_UNCERTAIN": 8,
+    "AVOIDABLE_UNSAFE": 3
+   }
+  }
+ }
+}

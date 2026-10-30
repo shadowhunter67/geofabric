@@ -89,6 +89,19 @@ mod tests {
         assert_eq!(assess(2_000_000, 2_000_000, 0, CAP, true).verdict, DeliveryVerdict::TooLarge);
     }
 
+    /// Fixed regression `thr_pool2-0726` (near_ids, raw features, recorded planner estimate): the point estimate is above the cap, so result-policy-v1 says
+    /// `NO_SAFE_PLAN` with semantically valid alternatives instead of picking a DuckDB that times out. NOTE: PostGIS actually returned 925,879 rows (under the
+    /// cap) - v1 judges the ESTIMATE and is conservative there (22 of 27 refusals in the rp_heavy confirmation fitted); see the report, P1 "result-policy-v2".
+    #[test]
+    fn thr_pool2_0726_is_a_labelled_refusal_with_valid_alternatives() {
+        let d = assess(1_095_005, 2_371_958, 113_538_770 + 56_802_383, CAP, false);
+        assert_eq!(d.verdict, DeliveryVerdict::TooLarge);
+        for alt in ["filter", "area", "limit", "aggregate"] {
+            assert!(d.reason.contains(alt), "{alt}: {}", d.reason);
+        }
+        assert!(!d.reason.to_lowercase().contains("first"), "must never offer silent truncation: {}", d.reason);
+    }
+
     #[test]
     fn the_boundary_is_exact() {
         assert_eq!(assess(CAP, CAP, 0, CAP, false).verdict, DeliveryVerdict::Safe);

@@ -4,7 +4,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import "./style.css";
 import { compile } from "./engine/lowering.ts";
 import { ensureLowering } from "./engine/lowering-loader.ts";
-import { semiJoinLine, summarizeCostModel, uncertaintyLines } from "./ui/cost-model.ts";
+import { deliveryLine, semiJoinLine, summarizeCostModel, uncertaintyLines } from "./ui/cost-model.ts";
 import type { PlanGraph } from "./engine/contract.ts";
 import { usable } from "./engine/probe.ts";
 import { createPlacement } from "./placement.ts";
@@ -555,7 +555,8 @@ async function run() {
   } catch (e) {
     log(String(e), true);
     // an unreachable layer is not a crash: say what happened; the other layers and the map keep working
-    setStatus(e instanceof LayerUnavailable ? "status.layer_failed" : "status.error");
+    const noSafePlan = String(e).includes("NO_SAFE_PLAN"); // result-policy-v1: the full result cannot be delivered; the log keeps the planner's own explanation
+    setStatus(e instanceof LayerUnavailable ? "status.layer_failed" : noSafePlan ? "status.no_safe_plan" : "status.error");
     if (!(e instanceof LayerUnavailable)) setTab("logs");
   } finally { S.busy = false; setRunDisabled(false); }
 }
@@ -1266,6 +1267,7 @@ function plannerPanel(r: RunResp): HTMLElement {
     ...[...(sel ? [sel] : []), ...alts].filter((c) => c.cost_model).map(costModelLine),
     // Developer only: the candidate-work features the models saw for a metric semi join, and the planner's own admission when it is not sure the chosen engine is safe
     ...(semiJoinLine(p.workload?.semi_join) ? [el("div", { class: "note", "data-testid": "semijoin-features" }, semiJoinLine(p.workload?.semi_join)!.text)] : []),
+    ...(deliveryLine(p.assessment?.result_delivery) ? [el("div", { class: "note", "data-testid": "result-delivery" }, `${t("dev.delivery")}: ${deliveryLine(p.assessment?.result_delivery)}`)] : []),
     ...uncertaintyLines(p.assessment?.uncertainty).map((u) => el("div", { class: "dec", "data-testid": "planner-uncertain" }, badge(t("dev.uncertain"), "warn"), " ", u)),
     ...alts.map((c: Candidate) => el("div", { class: "alt dev", "data-testid": "engine-alternative", "data-engine": c.engine },
       el("b", {}, `${t("dev.alternative")}: ${ENGINE_LABEL[c.engine] ?? c.engine}`), "  ",

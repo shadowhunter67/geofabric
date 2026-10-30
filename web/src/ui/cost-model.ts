@@ -68,3 +68,8 @@ export function semiJoinLine(s: SemiJoinInfo | null | undefined): { text: string
 export function uncertaintyLines(u: { state: string; policy_version: string; reasons: string[] } | null | undefined): string[] {
   return u && u.reasons.length ? u.reasons.map((r) => `${r} (${u.policy_version})`) : [];
 }
+
+/** Developer line for the result-delivery verdict (empty when the planner did not attach one). Only the OUTPUT rows count; this never describes truncation. */
+export function deliveryLine(d: { version: string; verdict: string; rows: number; rows_high: number; cap_rows: number; reason: string } | null | undefined): string {
+  return d ? `${d.verdict} · ${d.rows.toLocaleString("en-US")} rows (up to ${d.rows_high.toLocaleString("en-US")}) / cap ${d.cap_rows.toLocaleString("en-US")} · ${d.reason} (${d.version})` : "";
+}

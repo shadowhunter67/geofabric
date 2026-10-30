@@ -49,6 +49,8 @@ export interface Assessment {
   browser_access: BrowserAccessInfo[];
   /** Present when the planner could not establish that the chosen engine is safe for this plan (policy metric-semijoin-policy-v1). */
   uncertainty?: { state: string; policy_version: string; reasons: string[] } | null;
+  /** Can the FULL result be delivered, whichever engine computes it (result-policy-v1)? Separate from execution risk. */
+  result_delivery?: { version: string; verdict: "safe" | "bounded" | "uncertain" | "too_large"; rows: number; rows_high: number; bytes: number; cap_rows: number; reason: string } | null;
 }
 /** Plan-time candidate-work features of a metric semi join (null = the planner could not estimate it). */
 export interface SemiJoinInfo {

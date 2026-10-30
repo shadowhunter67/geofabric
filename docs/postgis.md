@@ -111,3 +111,7 @@ python benchmarks/postgis_cost_eval.py decide|report ...             # gates in 
 ## Risk-threshold confirmation (2026-10-29; ADR-015 addendum 3)
 
 The DuckDB `timeout_risk` threshold stays at 0.20 (frozen candidates 0.10/0.15/0.20 gave 10/5/1 unsafe choices on 140 fresh heavy cases; the frozen gate is 0). 0.10 is the prepared, tested alternative (`benchmarks/results/postgis-cost/proposed-threshold-0.10.patch`) awaiting a decision and a fresh confirmation. Threshold replay for the benchmark: `benchmarks/risk_threshold_eval.py` (must equal the real planner; it lifts only blocks whose reasons are all `risk policy`). metric_small research tools: `metric_small_truth.py` (PostgreSQL ground truth, finer grids), `metric_small_models.py`, `metric_small_grid_eval.py`.
+
+## Result delivery (2026-10-30, ADR-016, `result-policy-v1`)
+
+The 1,000,000-row cap (`geo_executor::limits::DEFAULT_MAX_ROWS`; the gateway uses 100,001) is a RESULT-DELIVERY limit, not a PostGIS limit and not an execution risk. The planner judges the plan's OUTPUT rows (a `COUNT(*)` over 2 M matches returns 1 row and is `safe`) the same way for every server engine: `safe | bounded | uncertain | too_large`. `too_large` is `NO_SAFE_PLAN`, never a silent truncation. The verdict is in `Assessment.result_delivery` (developer mode shows it). The DuckDB `timeout_risk` threshold stays 0.20: the fresh 156-case confirmation of 0.10 still had 3 avoidable unsafe choices (see ADR-015 addendum 4).

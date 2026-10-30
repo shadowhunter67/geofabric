@@ -156,10 +156,10 @@
     }
   },
   "timeout_risk": {
-    "version": "duckdb-timeout-risk-v2",
+    "version": "duckdb-timeout-risk-v1",
     "timeout_ms": 60000.0,
-    "elevated_at": 0.05,
-    "timeout_risk_at": 0.1,
+    "elevated_at": 0.1,
+    "timeout_risk_at": 0.2,
     "regime_feature": "ln_candidate_pairs",
     "regime_min_ln": 16.11809565095832,
     "model": {

@@ -179,25 +179,3 @@ fn every_observed_duckdb_timeout_is_rated_timeout_risk_and_postgis_is_not() {
         assert_ne!(p.level, "timeout_risk", "{}: PostGIS completed this case in {} ms: {p:?}", r["id"], r["postgis_actual_ms"]);
     }
 }
-
-/// Eleven cases the 0.20 threshold of `duckdb-timeout-risk-v1` missed (DuckDB timeout probability 0.10-0.20, DuckDB hit/passed the 60 s timeout, PostGIS finished in
-/// 2.6-22 s). They were found by the threshold confirmation (frozen candidates 0.10/0.15/0.20, fresh seed) and fix `duckdb-timeout-risk-v2` at 0.10: each must be a
-/// DuckDB timeout risk, PostGIS must never be one.
-#[test]
-fn duckdb_timeouts_missed_by_the_old_threshold_are_timeout_risk_in_v2() {
-    use geo_executor::cost_model::timeout_verdict;
-    let fx = read("benchmarks/results/postgis-cost/timeout-regression-cases-r2.json");
-    let load = |f: &str| -> ModelFile { serde_json::from_value(read(f)).unwrap() };
-    let (duck, pg) = (load("crates/geo-engine-duckdb/src/cost_model_v1.json"), load("crates/geo-engine-postgis/src/cost_model_v1.json"));
-    assert_eq!(duck.timeout_risk.as_ref().unwrap().version, "duckdb-timeout-risk-v2");
-    let rows = fx["rows"].as_array().unwrap();
-    assert_eq!(rows.len(), 11);
-    for r in rows {
-        let f = features_of(&r["sj"]);
-        let class = workload_class(&f);
-        let d = timeout_verdict(&duck, class, &f).unwrap();
-        assert_eq!(d.level, "timeout_risk", "{} ({class}): {d:?}", r["id"]);
-        let p = timeout_verdict(&pg, class, &f).unwrap();
-        assert_ne!(p.level, "timeout_risk", "{}: PostGIS completed this case in {} ms: {p:?}", r["id"], r["postgis_actual_ms"]);
-    }
-}
