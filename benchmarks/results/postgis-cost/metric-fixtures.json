@@ -960,7 +960,7 @@
    "duckdb": {
     "time_ms": 5030.584008841839,
     "risk": {
-     "level": "elevated",
+     "level": "timeout_risk",
      "p": 0.12568248489379608
     }
    }

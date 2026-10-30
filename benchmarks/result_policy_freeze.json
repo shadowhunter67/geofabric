@@ -1,0 +1,18 @@
+{
+  "frozen_at": "2026-10-30, BEFORE the confirmation set (pool seed 20261501, selection seed 20261502, benchmarks/results/postgis-cost/cases-rp_heavy.json) is run",
+  "candidate": {"duckdb_timeout_risk": "duckdb-timeout-risk-v2 (timeout_risk_at 0.10, elevated_at 0.05, coefficients unchanged)", "metric_policy": "metric-semijoin-policy-v1.1", "result_policy": "result-policy-v1", "shipped_before": "threshold 0.20"},
+  "no_new_threshold_search": true,
+  "outcome_classes_per_case": {
+    "NO_SAFE_PLAN": "the planner refuses the plan at plan time because the FULL result cannot be delivered (result-policy-v1 too_large). Counted separately; NOT an engine choice and NOT unsafe.",
+    "UNAVOIDABLE_UNCERTAIN": "the planner chose an engine at timeout risk, attached an uncertainty note, and no other engine was execution-feasible and delivery-allowed. Counted separately; NOT 'avoidable unsafe'.",
+    "AVOIDABLE_UNSAFE": "the chosen engine timed out at 60 s (censored) while the other engine completed AND was feasible/liftable under policy (not blocked by delivery or another non-overridable reason); or the chosen engine was rated timeout_risk without an uncertainty note while a non-risk deliverable engine existed.",
+    "RESULT_CAP_VIOLATION": "a planned (non-refused) case whose delivered/actual rows exceed the cap, or a refused case whose result policy verdict was not too_large."
+  },
+  "ship_gate_0.10": {"avoidable_unsafe": 0, "chosen_engine_timeouts_where_a_safe_alternative_existed": 0, "result_cap_violations": 0, "correctness_mismatches": 0},
+  "if_gate_missed": "do not ship 0.10; keep 0.20; report that the risk model still needs improvement",
+  "final_decision_options": ["A. APPROVE 0.10 FOR SHIPPING", "B. KEEP 0.20", "C. RESULT POLICY FIXED BUT RISK MODEL STILL INSUFFICIENT"],
+  "timeouts": "censored lower bounds at 60 s",
+  "unnecessary_reroute": "unchanged from risk_threshold_candidates.json",
+  "replay_parity": "any counterfactual replay must equal the real planner on every decidable case before use; final numbers are the real planner's recorded decisions",
+  "excluded_seeds": [20261301, 20261302, 20261303, 20261401, 20261405, 20261409]
+}

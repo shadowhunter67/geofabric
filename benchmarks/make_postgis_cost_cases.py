@@ -31,16 +31,18 @@ SEEDS = {"calibration": 20261103, "heldout": 20261107, "confirm": 20261111, "fre
          "msj_heavy": 20261213,
          # risk-threshold confirmation phase (2026-10-28): a POOL of heavy-regime candidates (planned only; the confirmation set is selected from it by
          # plan-time features) and three metric_small stages (discovery / calibration / confirmation pool). All seeds new.
-         "thr_pool": 20261301, "thr_pool2": 20261303, "ms_disc": 20261401, "ms_cal": 20261405, "ms_conf": 20261409}
-COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320, "msj_heavy": 70, "thr_pool": 900, "thr_pool2": 4000, "ms_disc": 260, "ms_cal": 260, "ms_conf": 130}
-METRIC_ONLY = {"msj_disc", "msj_cal", "msj_heavy", "thr_pool", "thr_pool2", "ms_disc", "ms_cal", "ms_conf"}
+         "thr_pool": 20261301, "thr_pool2": 20261303, "ms_disc": 20261401, "ms_cal": 20261405, "ms_conf": 20261409,
+         # result-risk-policy phase (2026-10-29): plan-only pool; the confirmation set is selected from it by plan-time features only
+         "rp_pool": 20261501}
+COUNTS = {"calibration": 240, "heldout": 220, "confirm": 260, "fresh": 300, "fresh2": 300, "msj_disc": 150, "msj_cal": 200, "msj_conf": 320, "msj_heavy": 70, "thr_pool": 900, "thr_pool2": 4000, "ms_disc": 260, "ms_cal": 260, "ms_conf": 130, "rp_pool": 6000}
+METRIC_ONLY = {"msj_disc", "msj_cal", "msj_heavy", "thr_pool", "thr_pool2", "ms_disc", "ms_cal", "ms_conf", "rp_pool"}
 MSJ_CONF_WEIGHTS = {"near_count": 56, "near_ids": 40, "semi_admin": 20}  # ~36 % metric semi joins, every other class still present
 # "fresh" (2026-10-26): the validation set for model v2, after the PostGIS connector latency fix invalidated every earlier PostGIS timing; same semi-join
 # enrichment as the confirmation set, a new seed, drawn before any v2 measurement exists
 # the confirmation set is enriched in the semi-join shapes (they are the classes with the least evidence) and keeps their windows in the regime where
 # the probe count straddles PROBES_SMALL; it is a representativeness choice made before any confirm result exists
 CONFIRM_WEIGHTS = {"near_count": 34, "near_ids": 18, "semi_admin": 18}
-NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09, "msj_heavy": 0.10, "thr_pool": 0.11, "thr_pool2": 0.11, "ms_disc": 0.03, "ms_cal": 0.03, "ms_conf": 0.03}
+NEAR_HI = {"calibration": 0.11, "heldout": 0.11, "confirm": 0.07, "fresh": 0.07, "fresh2": 0.07, "msj_disc": 0.10, "msj_cal": 0.10, "msj_conf": 0.09, "msj_heavy": 0.10, "thr_pool": 0.11, "thr_pool2": 0.11, "ms_disc": 0.03, "ms_cal": 0.03, "ms_conf": 0.03, "rp_pool": 0.11}
 RADII = [25, 50, 100, 200, 500, 1000]
 # right-side (road) filters: none, selective, medium, dense - so the right-side density varies realistically
 ROAD_FILTERS = [None, None, ["motorway", "trunk", "primary"], ["motorway", "trunk"], ["primary", "secondary", "tertiary"], ["secondary", "tertiary"], ["residential", "service", "unclassified"], ["residential"]]
@@ -102,6 +104,10 @@ def make_metric_case(rng: random.Random, idx: int, split: str) -> dict:
         dist = rng.choices([200, 500, 1000], [2, 4, 4])[0]
         hi, lo = NEAR_HI[split], 0.03
         bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "medium"]))
+    elif split == "rp_pool":
+        dist = rng.choices([100, 200, 500, 1000], [3, 3, 3, 2])[0]
+        hi, lo = NEAR_HI[split], 0.02
+        bbox, kind = window(rng, lo, hi, rng.choice(["dense", "dense", "dense", "medium"]))
     elif split == "thr_pool":
         # heavy-regime pool, wider than msj_heavy: every radius (100 m over a big window reaches 1e7 pairs too) and also the medium/sparse areas, so that
         # probes (10 k - 500 k), candidate pairs (1e7 - 1e9), density and overlap vary independently
@@ -116,6 +122,22 @@ def make_metric_case(rng: random.Random, idx: int, split: str) -> dict:
     else:
         bbox, kind = window(rng, lo, hi)
     roads = rng.choice(ROAD_FILTERS)
+    if split == "rp_pool":
+        # result-risk-policy corpus: heavy windows, every radius, and every RESULT SHAPE that a metric semi join can take
+        shape = rng.choices(["raw_geom", "raw_ids", "limit", "count", "near_limit"], [3, 3, 2, 2, 1])[0]
+        if shape == "count" or shape == "near_limit":
+            with_ = {"source": "transport", "distance_m": dist}
+            if roads:
+                with_["filter"] = {"column": "class", "op": "in", "values": roads}
+            if shape == "count":
+                return {**base, "template": "near_count", "kind": "request", "region": kind, "request": {"kind": "near_count", "source": "buildings", "bbox": bbox, "crs": "OGC:CRS84", "with": with_}}
+            return {**base, "template": "near_features_limit", "kind": "request", "region": kind, "request": {"kind": "near", "source": "buildings", "bbox": bbox, "crs": "OGC:CRS84", "limit": rng.choice([1000, 20000, 100000]), "with": with_}}
+        params = {"bbox": bbox, "distance_m": dist, "road_classes": roads}
+        if shape == "raw_ids":
+            params["cols"] = "ids"
+        if shape == "limit":
+            params["limit"] = rng.choice([1000, 20000, 100000, 500000])
+        return {**base, "template": "near_ids", "kind": "template", "region": kind, "name": "near_ids", "shape": shape, "params": params}
     if rng.random() < 0.5:
         with_ = {"source": "transport", "distance_m": dist}
         if roads:

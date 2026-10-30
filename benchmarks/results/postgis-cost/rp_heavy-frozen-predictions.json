@@ -1,0 +1,1379 @@
+[
+ {
+  "id": "rp_pool-0016",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 725144,
+  "p": 0.0010288115393567443,
+  "pairs": 20279959.102782827,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-0022",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1007867,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-0042",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.1972007769816606,
+  "pairs": 64285162.47871738,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-0108",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 576390,
+  "p": 0.0903105374197124,
+  "pairs": 52828837.31119508,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-0180",
+  "shape": "limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.14545262595090414,
+  "pairs": 85127550.52265084,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-0227",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 975449,
+  "p": 0.0014430084165152346,
+  "pairs": 20125944.29104626,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-0254",
+  "shape": "limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.12460984655568141,
+  "pairs": 62075013.788781,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-0277",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 625887,
+  "p": null,
+  "pairs": 369480.4603355862,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-0298",
+  "shape": "limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.21803835376830238,
+  "pairs": 101006212.13071924,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-0329",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.00021551119114393558,
+  "pairs": 21900052.66616943,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-0365",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 540937,
+  "p": 0.9977846673496602,
+  "pairs": 470818930.2245303,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-0389",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 989690,
+  "p": 0.9995839948501826,
+  "pairs": 536325429.0584704,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-0437",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 101600,
+  "p": 0.1810603467043136,
+  "pairs": 95284016.51371418,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-0519",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.02583722314250192,
+  "pairs": 48333279.65498998,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-0555",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 813104,
+  "p": null,
+  "pairs": 5435876.63607238,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-0558",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.11967012814602351,
+  "pairs": 65876432.92604886,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-0568",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 388052,
+  "p": 0.012178455098602159,
+  "pairs": 35737907.77759334,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-0615",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1050848,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-0673",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.08273669666467587,
+  "pairs": 60397035.18402702,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-0713",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1022592,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-0756",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 105240,
+  "p": 0.2003714403097958,
+  "pairs": 98096776.52693848,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-0763",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1081892,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-0816",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.08299706204273072,
+  "pairs": 71716860.32290035,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-0870",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1056753,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-0951",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.16534281664543538,
+  "pairs": 67587492.22208646,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-0973",
+  "shape": "limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.0599607021568247,
+  "pairs": 50342788.39624194,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1004",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1209292,
+  "p": null,
+  "stratum": "refused_1.2M+"
+ },
+ {
+  "id": "rp_pool-1016",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.17964283191177421,
+  "pairs": 72092644.75023024,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-1086",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.00040110733741438587,
+  "pairs": 18259079.350186463,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1144",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 582311,
+  "p": 0.1753288600478643,
+  "pairs": 64886963.75711856,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-1260",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 896879,
+  "p": 0.5170654748806025,
+  "pairs": 98498324.58062848,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-1315",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 707701,
+  "p": 2.9511208394339405e-05,
+  "pairs": 12483674.222104192,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1350",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 455821,
+  "p": 0.09276735432028493,
+  "pairs": 55464485.51120153,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-1387",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 989469,
+  "p": null,
+  "pairs": 5819384.86342666,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-1449",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.17927568419702167,
+  "pairs": 64117173.75473622,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-1470",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 359089,
+  "p": 0.0952900986750791,
+  "pairs": 58918113.22793058,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-1474",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 542911,
+  "p": 0.9935484423758303,
+  "pairs": 390095736.1626676,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-1492",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.10830211925779132,
+  "pairs": 62484183.24633536,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-1523",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 184396,
+  "p": 0.1739933998436567,
+  "pairs": 82420684.2333146,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-1547",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 829238,
+  "p": 0.4858552066528916,
+  "pairs": 95904687.86675785,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-1559",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 3.531541132861804e-07,
+  "pairs": 11121928.410926092,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1565",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.13892720566543126,
+  "pairs": 61706247.107446305,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-1575",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.9984421064930715,
+  "pairs": 452216011.26311064,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1665",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1013043,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-1672",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.9809740318799893,
+  "pairs": 345315362.2046199,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-1750",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.10552204989123837,
+  "pairs": 57661587.67494492,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-1789",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 813940,
+  "p": null,
+  "pairs": 2778769.721518212,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-1892",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 665341,
+  "p": 0.190216731672873,
+  "pairs": 65007816.82648448,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-1975",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 318386,
+  "p": 0.15114305881675305,
+  "pairs": 69899183.33353035,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-2021",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 3.6736914279522637e-06,
+  "pairs": 10760986.810922699,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-2066",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.13377392819630174,
+  "pairs": 55829120.64221193,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2080",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 221761,
+  "p": 0.1251548924181356,
+  "pairs": 70387273.79890054,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2091",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1113863,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-2104",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 744601,
+  "p": 0.413860008852996,
+  "pairs": 89431549.93372831,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-2137",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 298784,
+  "p": 0.11944988586300753,
+  "pairs": 65565267.07615316,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-2165",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 576794,
+  "p": 0.13296869201120454,
+  "pairs": 59230009.18522472,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2187",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 887946,
+  "p": 0.1273848860398309,
+  "pairs": 53563821.75910872,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-2224",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 288318,
+  "p": 0.09524338405310606,
+  "pairs": 61627135.30246392,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-2225",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 966277,
+  "p": 0.0014971834012071916,
+  "pairs": 20293830.26186178,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-2252",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.12311692881447289,
+  "pairs": 68899218.47046755,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2281",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 931910,
+  "p": 0.1966768918202536,
+  "pairs": 61325512.84871274,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-2300",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1111020,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-2316",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 539245,
+  "p": null,
+  "pairs": 1415910.2858396224,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-2323",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 862063,
+  "p": null,
+  "pairs": 2181600.3738173936,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-2340",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 336660,
+  "p": 0.16417393760740073,
+  "pairs": 70965958.82106762,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2365",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.10172761455778556,
+  "pairs": 75715275.72333178,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-2376",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 984457,
+  "p": 0.2055069619664892,
+  "pairs": 61708048.74430642,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-2453",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 765131,
+  "p": 0.0006838595455469498,
+  "pairs": 18850729.870026503,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-2509",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 898325,
+  "p": 0.7466014052466283,
+  "pairs": 136024645.9636338,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-2526",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 527484,
+  "p": null,
+  "pairs": 340099.0638525506,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-2537",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.21408111134057672,
+  "pairs": 67438424.69287308,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-2550",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.1307640134567437,
+  "pairs": 55722796.553046376,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-2588",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 924876,
+  "p": 0.5237887889327848,
+  "pairs": 98735051.28063457,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-2617",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 548472,
+  "p": 0.32135900192182243,
+  "pairs": 83802267.33437338,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-2623",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 969526,
+  "p": 0.001921664748561147,
+  "pairs": 21113989.495067403,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-2634",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 933943,
+  "p": null,
+  "pairs": 766498.9259672496,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-2644",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.09307565533649309,
+  "pairs": 56604641.49338794,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-2715",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 978491,
+  "p": 0.8704916429509013,
+  "pairs": 170069515.03904477,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-2717",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 989595,
+  "p": 0.00040603970379848864,
+  "pairs": 16540464.195135703,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-2749",
+  "shape": "limit",
+  "refused": false,
+  "rows": 68014,
+  "p": 1.4606922066340289e-06,
+  "pairs": 14490229.321893156,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-2768",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1140751,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-2832",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 651334,
+  "p": 0.19092909612778075,
+  "pairs": 65339773.61366536,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-2845",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1016659,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-2854",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 359775,
+  "p": 8.630832887379647e-06,
+  "pairs": 12447185.316965258,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-3033",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 520135,
+  "p": 0.15382291510829393,
+  "pairs": 63251322.054887116,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-3047",
+  "shape": "limit",
+  "refused": false,
+  "rows": 500000,
+  "p": 0.09028632111105261,
+  "pairs": 54080035.63745648,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-3067",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 174099,
+  "p": 8.598488370203938e-07,
+  "pairs": 11264762.540731799,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-3111",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 567862,
+  "p": 0.6542838722579005,
+  "pairs": 130203514.73439492,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-3131",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1098603,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-3144",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1238431,
+  "p": null,
+  "stratum": "refused_1.2M+"
+ },
+ {
+  "id": "rp_pool-3164",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1227623,
+  "p": null,
+  "stratum": "refused_1.2M+"
+ },
+ {
+  "id": "rp_pool-3165",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 105852,
+  "p": 0.20586901692117499,
+  "pairs": 98972355.04693145,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-3178",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 944257,
+  "p": 0.1252987797184626,
+  "pairs": 52590021.48997098,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-3211",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 967683,
+  "p": 0.9990418977547291,
+  "pairs": 476479391.4605286,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-3279",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1006957,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-3335",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.864650453227656,
+  "pairs": 163759829.3555396,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-3359",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.20674853352774747,
+  "pairs": 90653828.91151693,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-3367",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.199363251973095,
+  "pairs": 94506765.81313735,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-3391",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 510741,
+  "p": null,
+  "pairs": 684112.7423196356,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-3446",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 960727,
+  "p": 0.9987926003589873,
+  "pairs": 460270374.6926252,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-3458",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.19337276058388764,
+  "pairs": 65498520.72293231,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-3459",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 804034,
+  "p": null,
+  "pairs": 2064527.1974573447,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-3487",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 742274,
+  "p": 0.9982737532723556,
+  "pairs": 458845091.9072629,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-3518",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.027479694266471788,
+  "pairs": 48103229.73422099,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-3532",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1087414,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-3580",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 815818,
+  "p": null,
+  "pairs": 105766.3343037618,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-3599",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.13334856170614184,
+  "pairs": 80044299.99103095,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-3639",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.0960985248380597,
+  "pairs": 62235765.10994661,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-3710",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1000241,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-3901",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.18594479094513805,
+  "pairs": 63238812.44151949,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-3938",
+  "shape": "limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.09761239525093868,
+  "pairs": 76831594.65803133,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-3964",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1005666,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-4149",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 206717,
+  "p": 7.986293149686574e-06,
+  "pairs": 13864036.089050926,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-4349",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1084979,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-4417",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 553238,
+  "p": 0.15940006589975786,
+  "pairs": 63436846.39937936,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-4419",
+  "shape": "limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.21697346250544824,
+  "pairs": 68452669.17105049,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-4456",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 391372,
+  "p": 0.2090941358727697,
+  "pairs": 75062346.62390222,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-4481",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 623290,
+  "p": 0.16982846555541797,
+  "pairs": 63100101.224972576,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-4510",
+  "shape": "limit",
+  "refused": false,
+  "rows": 100000,
+  "p": 0.14497250904754877,
+  "pairs": 54183841.03799546,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-4539",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 477466,
+  "p": 0.9712304228162975,
+  "pairs": 295390869.8942988,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-4547",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 497573,
+  "p": 0.13244046028092304,
+  "pairs": 60753766.547944784,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-4549",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 926171,
+  "p": 0.6994737305138261,
+  "pairs": 125307579.87835896,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-4557",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1177688,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-4612",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1071445,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-4681",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.0935488815915766,
+  "pairs": 61883897.16296367,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-4737",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 583899,
+  "p": null,
+  "pairs": 3725201.8637066763,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-4764",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 124233,
+  "p": 9.159932844249319e-05,
+  "pairs": 20712609.739332523,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-4772",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 978643,
+  "p": null,
+  "pairs": 7024759.74241018,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-4773",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1028226,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-4802",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1093093,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-4827",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.14620700776085171,
+  "pairs": 56560340.44588177,
+  "stratum": "P_0.12-0.18"
+ },
+ {
+  "id": "rp_pool-4834",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 966808,
+  "p": 0.9998830070418725,
+  "pairs": 642196472.7296053,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-5038",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1026324,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-5063",
+  "shape": "limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.03659580109465188,
+  "pairs": 52504605.68130253,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-5077",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 856513,
+  "p": null,
+  "pairs": 4437112.696336902,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-5104",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 293525,
+  "p": 0.09970399393009943,
+  "pairs": 62229568.71413342,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-5181",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1061727,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-5182",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.21542238400052216,
+  "pairs": 68387230.04788409,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-5199",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 977040,
+  "p": 0.000696941571681986,
+  "pairs": 17999487.10297501,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-5206",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 952684,
+  "p": 0.37357727914851036,
+  "pairs": 80576275.77352792,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-5289",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.06408137489494248,
+  "pairs": 54665653.84164873,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-5347",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 965480,
+  "p": null,
+  "pairs": 788571.0977345144,
+  "stratum": "rows_950k-1M"
+ },
+ {
+  "id": "rp_pool-5474",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.19381848276897817,
+  "pairs": 73561138.68694395,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-5503",
+  "shape": "limit",
+  "refused": false,
+  "rows": 102493,
+  "p": 0.19294962803440807,
+  "pairs": 97329776.52664673,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-5515",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 699277,
+  "p": null,
+  "pairs": 936749.0195032088,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-5518",
+  "shape": "raw_ids",
+  "refused": true,
+  "rows": 1078288,
+  "p": null,
+  "stratum": "refused_1.05M-1.2M"
+ },
+ {
+  "id": "rp_pool-5638",
+  "shape": "raw_geom",
+  "refused": true,
+  "rows": 1048040,
+  "p": null,
+  "stratum": "refused_1.0M-1.05M"
+ },
+ {
+  "id": "rp_pool-5648",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 677712,
+  "p": 0.2176267740109501,
+  "pairs": 67926678.13066326,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-5662",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 540475,
+  "p": 0.10135584939785491,
+  "pairs": 54972676.60232617,
+  "stratum": "rows_500k-800k"
+ },
+ {
+  "id": "rp_pool-5738",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 1000,
+  "p": 0.10025509190352055,
+  "pairs": 62805634.158499986,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-5742",
+  "shape": "near_features_limit",
+  "refused": false,
+  "rows": 20000,
+  "p": 0.0005589251642545978,
+  "pairs": 23865262.58804546,
+  "stratum": "heavy_fill"
+ },
+ {
+  "id": "rp_pool-5783",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 300336,
+  "p": 0.1054981574661693,
+  "pairs": 62984358.84577884,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-5807",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 345938,
+  "p": 0.18775104720644575,
+  "pairs": 74075511.82019415,
+  "stratum": "P_0.18-0.22"
+ },
+ {
+  "id": "rp_pool-5841",
+  "shape": "raw_ids",
+  "refused": false,
+  "rows": 822881,
+  "p": null,
+  "pairs": 255968.42029688784,
+  "stratum": "rows_800k-950k"
+ },
+ {
+  "id": "rp_pool-5990",
+  "shape": "raw_geom",
+  "refused": false,
+  "rows": 288873,
+  "p": 0.08183614112635129,
+  "pairs": 58946368.564418,
+  "stratum": "P_0.08-0.12"
+ },
+ {
+  "id": "rp_pool-5998",
+  "shape": "near_count",
+  "refused": false,
+  "rows": 1,
+  "p": 0.00023279209660409528,
+  "pairs": 18540710.205373164,
+  "stratum": "heavy_fill"
+ }
+]

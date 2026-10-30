@@ -236,6 +236,8 @@ fn max_rows_limit_enforced() {
     let mut c = ctx();
     c.max_rows = 10;
     match rt().run(&Plan::new(Node::Project { input: Box::new(src), columns: vec!["id".into()] }), &c) {
+        // result-policy-v1 refuses a full result above the cap at PLAN time (before any work); an engine that is still reached enforces it after execution
+        Err(RuntimeError::Plan(e)) => assert!(e.to_string().contains("result-delivery policy"), "{e}"),
         Err(RuntimeError::Execution(EngineError::LimitExceeded(_))) => {}
         other => panic!("expected limit exceeded, got {:?}", other.map(|_| ())),
     }

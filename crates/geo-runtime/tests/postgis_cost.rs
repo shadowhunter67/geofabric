@@ -256,7 +256,9 @@ fn build(e: &Env, case: &serde_json::Value) -> Result<(Plan, f64), String> {
                 output_column: "geometry".into(),
             };
             let left = Node::Transform { input: Box::new(w), geometry_column: "geometry".into(), input_crs: Crs::OgcCrs84, output_crs: Crs::Epsg(32648), output_column: "geometry_metric".into() };
-            sort_id(project(
+            // result shape of the result-policy corpus: `cols` = "ids" projects the id only (small), `limit` is an explicit ORDERED limit (deterministic on both engines)
+            let cols: Vec<&str> = if p["cols"] == "ids" { vec!["id"] } else { vec!["id", "class", "geometry"] };
+            let shaped = sort_id(project(
                 Node::SpatialSemiJoin {
                     left: Box::new(left),
                     right: Box::new(right),
@@ -264,8 +266,12 @@ fn build(e: &Env, case: &serde_json::Value) -> Result<(Plan, f64), String> {
                     right_column: "geometry".into(),
                     predicate: SpatialPredicate::WithinDistance { distance: Distance::new(dist, DistanceUnit::Meter).unwrap() },
                 },
-                &["id", "class", "geometry"],
-            ))
+                &cols,
+            ));
+            match p["limit"].as_u64() {
+                Some(n) => Node::Limit { input: Box::new(shaped), n },
+                None => shaped,
+            }
         }
         "transform_col" => sort_id(project(
             Node::Transform { input: Box::new(w), geometry_column: "geometry".into(), input_crs: Crs::OgcCrs84, output_crs: Crs::Epsg(32648), output_column: "geometry_metric".into() },
@@ -450,6 +456,7 @@ fn planner_json_with(rt: &Runtime, e: &Env, plan: &Plan) -> serde_json::Value {
             "uncertainty": p.assessment.uncertainty,
             "workload": p.workload,
             "estimate_rows": p.result_rows_estimate,
+            "result_delivery": p.assessment.result_delivery,
         }),
         Err(err) => serde_json::json!({"error": err.to_string()}),
     }

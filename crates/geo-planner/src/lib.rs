@@ -33,6 +33,7 @@ mod features;
 mod failure;
 mod network;
 mod probe;
+pub mod result_policy;
 mod state;
 
 pub use browser_model::{BrowserInputs, BrowserModel, BrowserParts};
@@ -417,6 +418,8 @@ pub struct Assessment {
     /// `Some` when the planner could NOT establish that the chosen engine is safe for this plan (every option at timeout risk, or the risk of the chosen
     /// engine unknown). Being unvalidated never implies that the other engine is safe; this is where that is said.
     pub uncertainty: Option<Uncertainty>,
+    /// Engine-neutral verdict on delivering the FULL result (`result-policy-v1`); independent of execution risk.
+    pub result_delivery: result_policy::ResultDelivery,
 }
 
 /// The planner's honest statement that it is unsure (policy `metric-semijoin-policy-v1`).
@@ -428,7 +431,7 @@ pub struct Uncertainty {
 }
 
 /// Version of the planner's risk / uncertainty policy for metric semi joins (R5e). A change to the rules below bumps it.
-pub const METRIC_SEMIJOIN_POLICY_VERSION: &str = "metric-semijoin-policy-v1";
+pub const METRIC_SEMIJOIN_POLICY_VERSION: &str = "metric-semijoin-policy-v1.1";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProbeSummary {
@@ -536,6 +539,15 @@ struct PlanFacts<'a> {
     read_classes: &'a [ReadClass],
     familiarity: usize,
     inputs: &'a PlanInputs,
+    /// The plan-level result-delivery cap: the tightest of any SERVER engine's declared limit and the runtime's enforced `ExecutionContext::max_rows` (see `result_policy`).
+    result_cap: u64,
+}
+
+impl PlanFacts<'_> {
+    /// The engine-neutral result-delivery verdict.
+    fn delivery(&self) -> result_policy::ResultDelivery {
+        result_policy::assess(self.est.rows, self.est.high, self.result_bytes, self.result_cap, self.est.bounded_by_limit)
+    }
 }
 
 impl Planner {
@@ -637,7 +649,14 @@ impl Planner {
         let access = browser_access(plan, &scans, &est, &cfg.cost);
         let source_keys: Vec<String> = scans.iter().map(|s| source_key(&s.uri)).collect();
         let read_classes: Vec<ReadClass> = scans.iter().map(|s| s.read_class).collect();
+        let result_cap = engines
+            .iter()
+            .map(|e| e.capabilities())
+            .filter(|c| c.kind != EngineKind::Browser)
+            .filter_map(|c| c.limits.max_result_rows)
+            .fold(ctx.max_rows, u64::min); // ctx.max_rows is what every engine enforces after execution
         let facts = PlanFacts {
+            result_cap,
             plan,
             scans: &scans,
             est: &est,
@@ -691,8 +710,9 @@ impl Planner {
             ));
         }
         if !candidates.iter().any(|c| c.feasible) {
+            let delivery_blocked = candidates.iter().any(|c| c.rejected_because.iter().any(|r| r.starts_with("result-delivery policy")));
             return Err(PlanError::NoEngine(
-                candidates.iter().map(|c| format!("{}: {}", c.engine, c.rejected_because.join(", "))).collect::<Vec<_>>().join("; "),
+                format!("{}{}", if delivery_blocked { "NO_SAFE_PLAN (the full result cannot be delivered): " } else { "" }, candidates.iter().map(|c| format!("{}: {}", c.engine, c.rejected_because.join(", "))).collect::<Vec<_>>().join("; ")),
             ));
         }
 
@@ -795,6 +815,12 @@ impl Planner {
                 }
             } else if level(&candidates[chosen]) == "unknown" {
                 uncertainty.push(format!("{}: the timeout risk of this plan is UNKNOWN (a needed feature is missing or the plan is outside the measured envelope); unknown is not low", candidates[chosen].engine));
+            }
+        }
+        if candidates[chosen].kind != EngineKind::Browser {
+            let d = facts.delivery();
+            if d.verdict == result_policy::DeliveryVerdict::Uncertain {
+                uncertainty.push(format!("result delivery ({}): {}", d.version, d.reason));
             }
         }
         if !hinted && candidates[chosen].kind == EngineKind::Browser {
@@ -958,6 +984,7 @@ impl Planner {
                 )
             })
             .collect();
+        let result_delivery = facts.delivery();
         let health = candidates.iter().map(|c| (c.engine.to_string(), c.health.clone())).collect();
         let assessment = Assessment {
             engine_confidence: engine_conf.score,
@@ -971,6 +998,7 @@ impl Planner {
             browser_access: access.clone(),
             policy,
             browser_warm: inputs.browser_warm,
+            result_delivery,
             uncertainty: (!uncertainty.is_empty()).then(|| Uncertainty { state: "uncertain".into(), policy_version: METRIC_SEMIJOIN_POLICY_VERSION.into(), reasons: uncertainty }),
         };
 
@@ -1074,11 +1102,18 @@ impl Planner {
                 why.push(format!("estimated input {:.1} MB within the engine limit {:.1} MB", mb(engine_input), mb(l)));
             }
         }
-        if let Some(l) = rows_limit {
-            // the pessimistic bound decides: an underestimate is the dangerous direction
-            let rows_for_limit = if browser { est.high } else { result_rows };
-            if rows_for_limit > l {
-                why_not.push(format!("estimated result {result_rows} rows (up to {}) exceeds the engine limit {l}", est.high));
+        if browser {
+            if let Some(l) = rows_limit {
+                // the pessimistic bound decides: an underestimate is the dangerous direction
+                if est.high > l {
+                    why_not.push(format!("estimated result {result_rows} rows (up to {}) exceeds the engine limit {l}", est.high));
+                }
+            }
+        } else {
+            // server engines: ONE result-delivery policy, the same for every engine (not a per-engine capability): see result_policy.rs
+            let d = f.delivery();
+            if d.verdict == result_policy::DeliveryVerdict::TooLarge {
+                why_not.push(format!("result-delivery policy ({}): {}", d.version, d.reason));
             }
         }
         if f.has_bbox_filter && caps.bbox_filter_requires_covering {

@@ -82,6 +82,8 @@ struct Stub {
     calibration: EngineCalibration,
     time_ms: f64,
     risk: RiskVerdict,
+    /// declared result-row limit (None = the inner engine's own)
+    cap: Option<u64>,
 }
 
 impl EngineDescriptor for Stub {
@@ -89,7 +91,11 @@ impl EngineDescriptor for Stub {
         EngineId::new(self.id)
     }
     fn capabilities(&self) -> Capabilities {
-        self.inner.capabilities()
+        let mut c = self.inner.capabilities();
+        if self.cap.is_some() {
+            c.limits.max_result_rows = self.cap;
+        }
+        c
     }
     fn source_residency(&self, plan: &Plan, ctx: &ExecutionContext) -> Result<(), String> {
         self.inner.source_residency(plan, ctx)
@@ -131,8 +137,8 @@ fn plan(duck: RiskVerdict, pg: RiskVerdict, hint: Option<&str>, tag: &str) -> ge
     let engine = Arc::new(PostGisEngine::new(catalog(&uri), Arc::new(NoDb)));
     let mut rt = Runtime::empty();
     // registered first: on equal cost the tie would go to PostGIS, so only a POLICY can keep or move the choice
-    rt.register_client(Box::new(Stub { id: "postgis", inner: engine.clone(), calibration: EngineCalibration::Unmeasured, time_ms: 100.0, risk: pg }));
-    rt.register_client(Box::new(Stub { id: "duckdb", inner: engine, calibration: EngineCalibration::Measured, time_ms: 100.0, risk: duck }));
+    rt.register_client(Box::new(Stub { id: "postgis", inner: engine.clone(), calibration: EngineCalibration::Unmeasured, time_ms: 100.0, risk: pg, cap: None }));
+    rt.register_client(Box::new(Stub { id: "duckdb", inner: engine, calibration: EngineCalibration::Measured, time_ms: 100.0, risk: duck, cap: None }));
     let ctx = ExecutionContext::new(vec![dir]);
     let src = rt.open_source(&uri, &ctx).unwrap();
     let f = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(105.99, 10.69, 106.03, 10.72, Crs::OgcCrs84).unwrap() };
@@ -215,4 +221,71 @@ fn an_explicit_engine_request_bypasses_the_policy_and_is_never_second_guessed() 
     let p = plan(risk("timeout_risk", Some(0.99)), risk("low", Some(0.01)), Some("duckdb"), "hint");
     assert_eq!(p.engine.0, "duckdb");
     assert!(!p.assessment.policy.iter().any(|m| m.starts_with("R5e")));
+}
+
+// ---- result-delivery policy (result-policy-v1): separate from execution risk, the same for every server engine ----
+
+#[derive(Clone, Copy)]
+enum Shape {
+    /// every matching feature (a few dozen in the fixture): the result is as large as the match
+    Raw,
+    /// the same match, explicitly limited
+    Limited(u64),
+    /// the same match, counted: one output row however many rows match
+    Count,
+}
+
+/// `cap` is declared by ONE engine only (postgis); the policy must still apply to both.
+fn plan_shape(duck: RiskVerdict, pg: RiskVerdict, cap: u64, shape: Shape, tag: &str) -> Result<geo_planner::PhysicalPlan, geo_runtime::RuntimeError> {
+    let (dir, uri) = fixture(tag);
+    let engine = Arc::new(PostGisEngine::new(catalog(&uri), Arc::new(NoDb)));
+    let mut rt = Runtime::empty();
+    rt.register_client(Box::new(Stub { id: "postgis", inner: engine.clone(), calibration: EngineCalibration::Unmeasured, time_ms: 100.0, risk: pg, cap: Some(cap) }));
+    rt.register_client(Box::new(Stub { id: "duckdb", inner: engine, calibration: EngineCalibration::Measured, time_ms: 100.0, risk: duck, cap: None }));
+    let ctx = ExecutionContext::new(vec![dir]);
+    let src = rt.open_source(&uri, &ctx).unwrap();
+    let f = Node::BboxFilter { input: Box::new(src), geometry_column: "geometry".into(), bbox: BoundingBox::new(105.99, 10.69, 106.03, 10.72, Crs::OgcCrs84).unwrap() };
+    let root = match shape {
+        Shape::Raw => f,
+        Shape::Limited(n) => Node::Limit { input: Box::new(f), n },
+        Shape::Count => Node::Aggregate { input: Box::new(f), group_by: vec![], aggregates: vec![AggExpr { func: AggFunc::Count, column: None, alias: "n".into() }] },
+    };
+    rt.plan(&Plan::new(root), &ctx)
+}
+
+#[test]
+fn an_aggregate_over_a_match_larger_than_the_cap_is_still_deliverable() {
+    // cap 5 < the ~50 matching rows, but COUNT returns one row: the cap looks at the OUTPUT only
+    let p = plan_shape(risk("low", Some(0.01)), risk("low", Some(0.01)), 5, Shape::Count, "agg").expect("a COUNT must not be refused for the size of its input");
+    assert_eq!(p.assessment.result_delivery.verdict, geo_planner::result_policy::DeliveryVerdict::Safe);
+    assert!(p.assessment.result_delivery.rows <= 5);
+}
+
+#[test]
+fn an_explicit_limit_under_the_cap_is_allowed_and_marked_bounded() {
+    let p = plan_shape(risk("low", Some(0.01)), risk("low", Some(0.01)), 5, Shape::Limited(3), "lim").expect("limit 3 fits the cap");
+    assert_eq!(p.assessment.result_delivery.verdict, geo_planner::result_policy::DeliveryVerdict::Bounded);
+}
+
+#[test]
+fn a_raw_result_above_the_cap_is_refused_for_every_server_engine_not_just_the_one_that_declares_the_cap() {
+    let e = plan_shape(risk("low", Some(0.01)), risk("low", Some(0.01)), 5, Shape::Raw, "raw").expect_err("the full result is over the cap");
+    let msg = e.to_string();
+    assert!(msg.contains("NO_SAFE_PLAN") && msg.contains("result-delivery policy") && msg.contains("duckdb") && msg.contains("postgis"), "{msg}");
+    assert!(msg.contains("explicit limit") && msg.contains("aggregate"), "the refusal must name the semantically valid alternatives: {msg}");
+}
+
+#[test]
+fn a_timeout_risk_duckdb_next_to_a_delivery_blocked_postgis_is_no_safe_plan_not_a_false_safe_pick() {
+    // DuckDB would time out; PostGIS could execute it but the full result cannot be delivered: the planner must not hand the user a DuckDB run as "safe"
+    let e = plan_shape(risk("timeout_risk", Some(0.4)), risk("low", Some(0.02)), 5, Shape::Raw, "nosafe").expect_err("no safe full-result path");
+    assert!(e.to_string().contains("NO_SAFE_PLAN"), "{e}");
+}
+
+#[test]
+fn delivery_blocking_is_not_an_execution_risk_of_the_engine() {
+    // with a limit the SAME plan is deliverable, and R5e then reasons about execution risk alone
+    let p = plan_shape(risk("timeout_risk", Some(0.4)), risk("low", Some(0.02)), 5, Shape::Limited(3), "exec").unwrap();
+    assert_eq!(p.engine.0, "postgis", "{:?}", p.assessment.policy);
+    assert!(p.assessment.uncertainty.is_none());
 }
