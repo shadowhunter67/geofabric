@@ -181,7 +181,7 @@ const root = document.documentElement;
 let bottomH = Number(stored("gf.bottomH")) || 0;
 function applyBottomH(h?: number) {
   const max = Math.round(window.innerHeight * 0.55);
-  const dflt = Math.min(300, Math.round(window.innerHeight * 0.36));
+  const dflt = Math.min(380, Math.round(window.innerHeight * 0.38));
   bottomH = Math.max(170, Math.min(max, h ?? (bottomH || dflt)));
   root.style.setProperty("--bottom-h", `${bottomH}px`);
   requestAnimationFrame(() => map?.resize());
@@ -208,11 +208,11 @@ function renderHeader() {
     el("button", { type: "button", class: `mode${S.mode === m ? " on" : ""}`, "aria-pressed": S.mode === m, "data-testid": `mode-${m}`, onclick: () => setMode(m) }, t(m === "explorer" ? "mode.explorer" : "mode.developer"));
   const langSel = el("select", { "aria-label": t("lang.label"), title: t("lang.label"), "data-testid": "lang", onchange: (e: Event) => changeLang((e.target as HTMLSelectElement).value as Lang) },
     ...LANGS.map((l) => el("option", { value: l, selected: l === getLang() }, l === "vi" ? "Tiếng Việt" : "English")));
-  const runBtn = el("button", { type: "button", class: "primary", id: "run", "data-testid": "run", title: t("top.run"), onclick: () => void run() }, t("top.run"));
+  const runBtn = el("button", { type: "button", class: "primary", id: "run", "data-testid": "run", title: t("top.run"), onclick: () => void run() }, icon("play", 13), t("top.run"));
   runBtn.disabled = S.busy;
   const open = (k: string) => !popover.hidden && popover.dataset.kind === k;
-  const settingsBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("settings"), "data-testid": "settings", title: t("top.settings"), onclick: () => togglePopover("settings") }, t("top.settings"));
-  const helpBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("help"), "data-testid": "help", title: t("top.help"), onclick: () => togglePopover("help") }, t("top.help"));
+  const settingsBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("settings"), "data-testid": "settings", title: t("top.settings"), onclick: () => togglePopover("settings") }, icon("gear", 14), t("top.settings"));
+  const helpBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("help"), "data-testid": "help", title: t("top.help"), onclick: () => togglePopover("help") }, icon("help", 14), t("top.help"));
   fill(header,
     el("div", { class: "brand" }, "Geo", el("span", {}, "Fabric")),
     el("div", { class: "modes", role: "group", "aria-label": t("mode.label") }, modeBtn("explorer"), modeBtn("developer")),
@@ -923,6 +923,7 @@ async function refreshContextOnce(): Promise<void> {
 function tabList(): [string, Key][] {
   return [["query", "tab.query"], ["results", "tab.results"], ["execution", "tab.execution"], ...(DEV() ? [["profile", "tab.profile"] as [string, Key]] : []), ["logs", "tab.logs"]];
 }
+function tabIcon(id: string): string { return ({ query: "query", results: "table", execution: "server", profile: "doc", logs: "log" } as Record<string, string>)[id] ?? "info"; }
 function setTab(id: string) { S.tab = id; renderTab(); }
 function renderTab() {
   bottom.setAttribute("aria-label", t("a11y.bottom"));
@@ -936,7 +937,7 @@ function renderTab() {
         const go = (j: number) => { e.preventDefault(); setTab(ids[(j + ids.length) % ids.length]); (tabsEl.querySelector('[aria-selected="true"]') as HTMLElement | null)?.focus(); };
         if (e.key === "ArrowRight") go(i + 1);
         if (e.key === "ArrowLeft") go(i - 1);
-      } }, t(key))));
+      } }, icon(tabIcon(id), 14), t(key))));
   tabBody.replaceChildren();
   if (S.tab === "query") tabBody.append(queryTab());
   else if (S.tab === "results") tabBody.append(resultsTab());
@@ -1222,9 +1223,10 @@ const BADGE: Record<string, [Key, string]> = {
   source_estimated: ["metric.badge.estimated", "est"], planner_estimated: ["metric.badge.estimated", "est"],
   derived: ["metric.badge.derived", "der"], unknown: ["metric.badge.unavailable", "na"],
 };
-function mcard(label: string, m: Metric<number>, fmt: (v: number) => string, prefix = ""): HTMLElement {
+function mcard(label: string, m: Metric<number>, fmt: (v: number) => string, prefix = "", ic = "info"): HTMLElement {
   const [text, cls] = m.value == null ? BADGE.unknown : (BADGE[m.source] ?? BADGE.unknown);
   return el("div", { class: "card", "data-metric": label, "data-source": m.value == null ? "unknown" : m.source },
+    el("span", { class: "ci" }, icon(ic, 15)),
     el("div", { class: "v" }, m.value == null ? t("metric.unknown") : prefix + fmt(m.value)),
     el("div", { class: "l" }, label, " ", el("span", { class: `badge ${cls}` }, t(text))));
 }
@@ -1232,10 +1234,10 @@ function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
   const skipped = m.row_groups_skipped.value, total = m.row_groups_total.value;
   const rg: Metric<number> = { value: skipped, source: m.row_groups_skipped.source };
   return el("div", { class: "cards" },
-    mcard(t("metric.total"), tm.total_ms, fmtMs), mcard(t("metric.engine"), m.elapsed_ms, fmtMs), mcard(t("metric.rows"), m.rows_returned, fmtInt),
-    mcard(t("metric.rg_total"), m.row_groups_total, fmtInt), mcard(t("metric.rg_skipped", { total: total ?? "?" }), rg, fmtInt),
-    mcard(t("metric.rows_scanned"), m.rows_scanned_upper_bound, fmtInt, "≤ "), mcard(t("metric.bytes_ub"), m.estimated_bytes_upper_bound, fmtBytes, "≤ "),
-    mcard(t("metric.bytes_read"), m.bytes_read, fmtBytes), mcard(t("metric.peak"), m.peak_memory_bytes, fmtBytes));
+    mcard(t("metric.total"), tm.total_ms, fmtMs, "", "clock"), mcard(t("metric.engine"), m.elapsed_ms, fmtMs, "", "clock"), mcard(t("metric.rows"), m.rows_returned, fmtInt, "", "table"),
+    mcard(t("metric.rg_total"), m.row_groups_total, fmtInt, "", "grid"), mcard(t("metric.rg_skipped", { total: total ?? "?" }), rg, fmtInt, "", "doc"),
+    mcard(t("metric.rows_scanned"), m.rows_scanned_upper_bound, fmtInt, "≤ ", "search"), mcard(t("metric.bytes_ub"), m.estimated_bytes_upper_bound, fmtBytes, "≤ ", "source"),
+    mcard(t("metric.bytes_read"), m.bytes_read, fmtBytes, "", "source"), mcard(t("metric.peak"), m.peak_memory_bytes, fmtBytes, "", "memory"));
 }
 
 function costModelLine(c: Candidate): HTMLElement {
