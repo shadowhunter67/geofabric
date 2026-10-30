@@ -122,7 +122,7 @@ Status: limited, **improved**; prediction meets the earlier 3.0 / 1.6 gate on th
 
 ## 21. CI / Pages
 
-See the final response; filled after the push (CI and Pages status are verified against the pushed commit).
+Pushed commit `369398e` (includes freeze `c35ba19`): CI success, Deploy static demo (Pages) success. Public site smoke (`PUBLIC_URL=https://shadowhunter67.github.io/geofabric/`): Chrome 13/13, Edge 13/13. A docs-only follow-up commit records these results.
 
 ## 22. Architecture Risks
 
