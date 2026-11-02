@@ -78,3 +78,6 @@ benchmarks/results/postgis-cost/raw/
 
 # per-run scratch of the DuckDB engine (profile dir) created next to test binaries
 **/.tmp/
+
+# Reports stay on the maintainer machine; they are not published
+/REPORT-*.md
