@@ -47,7 +47,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 #app.no-inspector section.right { display: none; }
 header { grid-area: top; display: flex; align-items: center; gap: 8px; padding: 0 4px; background: transparent; min-width: 0; }
 header .brand { display: inline-flex; align-items: center; gap: 0; font-weight: 700; font-size: 17px; letter-spacing: .01em; margin-right: 8px; white-space: nowrap; }
-header .brand::before { content: ""; margin-right: 8px; width: 24px; height: 24px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 35%, #0a3a5a)); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
+header .brand svg { margin-right: 8px; color: var(--accent); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent)); }
 header .brand span { color: var(--accent); }
 header .spacer { flex: 1; min-width: 8px; }
 header .status { color: var(--text); font-family: var(--mono); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); }

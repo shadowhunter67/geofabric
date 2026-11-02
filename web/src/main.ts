@@ -214,7 +214,7 @@ function renderHeader() {
   const settingsBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("settings"), "data-testid": "settings", title: t("top.settings"), onclick: () => togglePopover("settings") }, icon("gear", 14), t("top.settings"));
   const helpBtn = el("button", { type: "button", "aria-haspopup": "dialog", "aria-expanded": open("help"), "data-testid": "help", title: t("top.help"), onclick: () => togglePopover("help") }, icon("help", 14), t("top.help"));
   fill(header,
-    el("div", { class: "brand" }, "Geo", el("span", {}, "Fabric")),
+    el("div", { class: "brand" }, icon("brand", 24), "Geo", el("span", {}, "Fabric")),
     el("div", { class: "modes", role: "group", "aria-label": t("mode.label") }, modeBtn("explorer"), modeBtn("developer")),
     langSel,
     runBtn,
