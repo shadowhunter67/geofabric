@@ -263,3 +263,57 @@ button.ov-more:hover:not(:disabled) { text-decoration: underline; }
 .item button.pick:has(.gi) { display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 8px; align-items: center; }
 .item button.pick .gi { grid-row: 1 / span 3; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--accent); background: var(--accent-soft); }
 .item button.pick:has(.gi) .name, .item button.pick:has(.gi) .meta { grid-column: 2; }
+
+/* ---- matching the reference design: header chips, data panel, execution overview ---- */
+header .lang { position: relative; display: inline-flex; align-items: center; }
+header .lang svg { position: absolute; left: 10px; color: var(--muted); pointer-events: none; }
+header .lang select { padding-left: 32px; }
+header .status.chips { display: flex; gap: 6px; padding: 0; border: 0; background: transparent; max-width: none; overflow: visible; font-size: 12.5px; }
+.status.chips .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); white-space: nowrap; }
+.status.chips .chip svg { color: var(--accent); flex: none; }
+.status.chips .sep { font-size: 0; width: 0; overflow: hidden; } /* the " · " stays in the text for assistive technology and tests, it is just not drawn */
+.devstrip .probe { display: inline-flex; align-items: center; gap: 7px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px color-mix(in srgb, var(--ok) 70%, transparent); }
+.dot.bad { background: var(--bad); box-shadow: 0 0 8px color-mix(in srgb, var(--bad) 70%, transparent); }
+
+.panel-title { display: flex; align-items: center; gap: 8px; }
+.panel-title svg { color: var(--accent); }
+.search-box { position: relative; margin: 6px 8px; }
+.search-box > svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search-box .dataset-search { margin: 0; width: 100%; padding-left: 34px; }
+h3.catalog-group { padding: 8px 8px 0; }
+button.grp-toggle { display: flex; width: 100%; align-items: center; justify-content: flex-start; gap: 8px; border: 0; background: transparent; padding: 6px 4px; font: inherit; font-size: 11.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+button.grp-toggle > svg:first-child { color: var(--accent); flex: none; }
+.grp-count { font-weight: 500; }
+button.grp-toggle > svg:last-child { margin-left: auto; flex: none; transform: rotate(-90deg); transition: transform .12s; }
+button.grp-toggle[aria-expanded="false"] > svg:last-child { transform: rotate(90deg); }
+.item.grp-folded { display: none; }
+
+.card .l { flex-direction: column; align-items: flex-start; }
+.card .l .badge { align-self: flex-end; margin-top: 2px; }
+.exec > .cards { grid-column: 1 / -1; margin: 0; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }
+.pipe .step { position: relative; counter-increment: st; padding-left: 40px; padding-right: 38px; border-left-width: 1px; }
+.pipe .step::before { content: counter(st); position: absolute; left: 10px; top: 9px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--text); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.pipe .step .step-ok { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ok); display: inline-flex; }
+.exec > .pipe { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 8px; margin: 0; counter-reset: st; }
+.exec > .pipe .arrow { display: none; }
+.exec > .pipe .step { flex: 1 1 220px; min-width: 0; }
+
+.rec { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 14px; row-gap: 2px; align-items: center; }
+.rec .rec-ic { grid-column: 1; grid-row: 1 / span 3; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; color: var(--accent); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 22%, transparent); }
+.rec .rec-head, .rec .rec-where, .rec ul.why { grid-column: 2; }
+.rec .stats { grid-column: 3; grid-row: 1 / span 3; margin: 0; flex-wrap: nowrap; }
+.rec .alt { grid-column: 1 / -1; }
+@media (max-width: 1100px) { .rec { grid-template-columns: auto minmax(0, 1fr); } .rec .stats { grid-column: 1 / -1; grid-row: auto; flex-wrap: wrap; } }
+.pipe-title { color: var(--muted); font-size: 11.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; padding: 0 6px 0 2px; }
+
+/* header: controls never wrap; the status chips give way first on narrower windows */
+header button, header select, header .brand, header .modes, header .lang { white-space: nowrap; flex: none; }
+header .devstrip, header .status.chips { min-width: 0; }
+@media (max-width: 1640px) { .devstrip span:not(.probe) { display: none; } }
+@media (max-width: 1380px) { .devstrip { display: none; } header .status.chips .chip:last-child { display: none; } }
+
+/* Developer metric cards: six across like the reference design (nine cards wrap as 6 + 3), fewer columns when narrow */
+.exec > .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1250px) { .exec > .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .exec > .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

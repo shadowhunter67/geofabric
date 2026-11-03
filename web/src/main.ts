@@ -78,6 +78,8 @@ setLang(initialLang);
 
 // ---------- state ----------
 const S = {
+  /** catalog groups the user folded in the data panel (display only) */
+  collapsedGroups: new Set<string>(),
   sources: [] as SourceMeta[],
   catalog: null as Catalog | null,
   /** The optional PostGIS engine as /api/state reports it (never credentials). null until asked. */
@@ -173,8 +175,19 @@ function setStatus(key: Key, p: Record<string, string | number> = {}) {
   S.status = { key, params: p };
   renderStatus();
 }
+/** Status line as chips: "4.805 kết quả · 6,02 s · duckdb-wasm" keeps its exact text (separators are in the DOM but not drawn), each part gets an icon. */
 function renderStatus() {
-  statusEl.textContent = t(S.status.key, S.status.params);
+  const text = t(S.status.key, S.status.params);
+  const parts = text.split(" · ");
+  if (parts.length < 2) { statusEl.textContent = text; statusEl.classList.remove("chips"); return; }
+  const kind = (p: string): string => (/^\d[\d.,]*\s?(ms|s)$/.test(p) ? "clock" : /duckdb|postgis|browser|server/i.test(p) ? "source" : "bars");
+  const nodes: (Node | string)[] = [];
+  parts.forEach((p, i) => {
+    if (i) nodes.push(el("span", { class: "sep", "aria-hidden": "false" }, " · "));
+    nodes.push(el("span", { class: "chip" }, icon(kind(p), 14), p));
+  });
+  statusEl.classList.add("chips");
+  statusEl.replaceChildren(...nodes);
 }
 
 // ---------- bottom panel height (drag or keyboard) ----------
@@ -206,7 +219,7 @@ window.addEventListener("resize", () => applyBottomH());
 // ---------- header ----------
 function renderHeader() {
   const modeBtn = (m: Mode) =>
-    el("button", { type: "button", class: `mode${S.mode === m ? " on" : ""}`, "aria-pressed": S.mode === m, "data-testid": `mode-${m}`, onclick: () => setMode(m) }, t(m === "explorer" ? "mode.explorer" : "mode.developer"));
+    el("button", { type: "button", class: `mode${S.mode === m ? " on" : ""}`, "aria-pressed": S.mode === m, "data-testid": `mode-${m}`, onclick: () => setMode(m) }, icon(m === "explorer" ? "compass" : "code", 14), t(m === "explorer" ? "mode.explorer" : "mode.developer"));
   const langSel = el("select", { "aria-label": t("lang.label"), title: t("lang.label"), "data-testid": "lang", onchange: (e: Event) => changeLang((e.target as HTMLSelectElement).value as Lang) },
     ...LANGS.map((l) => el("option", { value: l, selected: l === getLang() }, l === "vi" ? "Tiếng Việt" : "English")));
   const runBtn = el("button", { type: "button", class: "primary", id: "run", "data-testid": "run", title: t("top.run"), onclick: () => void run() }, icon("play", 13), t("top.run"));
@@ -217,7 +230,7 @@ function renderHeader() {
   fill(header,
     el("div", { class: "brand" }, icon("brand", 24), "Geo", el("span", {}, "Fabric")),
     el("div", { class: "modes", role: "group", "aria-label": t("mode.label") }, modeBtn("explorer"), modeBtn("developer")),
-    langSel,
+    el("div", { class: "lang" }, icon("globe", 15), langSel),
     runBtn,
     settingsBtn,
     helpBtn,
@@ -234,7 +247,7 @@ function devStrip(): HTMLElement {
   return el("div", { class: "devstrip", "data-testid": "dev-strip" },
     el("span", {}, `${t("top.engine")}: ${S.engine === "auto" ? "auto" : S.engine}`),
     el("span", {}, `${t("top.network")}: ${S.network}`),
-    el("span", {}, `${t("top.probe")}: ${pr ? (usable(pr) ? "OK" : "FAILED") : placement.state.probing ? "…" : "—"}`));
+    el("span", { class: "probe" }, `${t("top.probe")}: ${pr ? (usable(pr) ? "OK" : "FAILED") : placement.state.probing ? "…" : "—"}`, pr ? el("i", { class: `dot ${usable(pr) ? "ok" : "bad"}`, "aria-hidden": "true" }) : null));
 }
 
 function setMode(m: Mode) {
@@ -713,14 +726,18 @@ function renderRecent(): HTMLElement {
     : el("div", { class: "empty" }, t("data.recent_empty"));
 }
 
+const GROUP_ICON: Record<string, string> = { buildings: "polygon", transport: "line", admin: "layers", places: "pin", landuse: "grid", terrain: "layers" };
 function renderLeft() {
   left.setAttribute("aria-label", t("a11y.sources"));
   const list = el("div", { class: "list", role: "list" });
   if (S.catalog) {
     // product catalog: groups of friendly datasets (Explorer); Developer adds the benchmark files that are not part of the pack
     for (const { group, datasets } of datasetsByGroup(S.catalog, { developer: DEV() })) {
-      list.append(el("h3", { class: "catalog-group" }, t(`catalog.group.${group}` as Key)));
-      for (const d of datasets) list.append(renderCatalogDataset(d));
+      const folded = S.collapsedGroups.has(group);
+      list.append(el("h3", { class: "catalog-group" },
+        el("button", { type: "button", class: "grp-toggle", "aria-expanded": !folded, onclick: () => { if (S.collapsedGroups.has(group)) S.collapsedGroups.delete(group); else S.collapsedGroups.add(group); renderLeft(); } },
+          icon(GROUP_ICON[group] ?? "layers", 15), el("span", { class: "grp-name" }, t(`catalog.group.${group}` as Key)), el("span", { class: "grp-count" }, ` (${datasets.length})`), icon("chevron", 13))));
+      for (const d of datasets) { const item = renderCatalogDataset(d); if (folded) item.classList.add("grp-folded"); list.append(item); }
     }
     if (!list.children.length) list.append(el("div", { class: "empty" }, t("catalog.empty")));
     if (DEV()) {
@@ -733,7 +750,7 @@ function renderLeft() {
     }
     searchEl.placeholder = t("catalog.search");
     searchEl.setAttribute("aria-label", t("catalog.search"));
-    left.replaceChildren(el("h2", {}, t("data.title")), searchEl, list, el("h3", {}, t("data.recent")), renderRecent());
+    left.replaceChildren(el("h2", { class: "panel-title" }, icon("source", 18), t("data.title")), el("div", { class: "search-box" }, icon("search", 15), searchEl), list, el("h3", {}, t("data.recent")), renderRecent());
     applySearch();
     list.querySelector(".item.sel")?.scrollIntoView?.({ block: "nearest" });
     return;
@@ -1198,6 +1215,7 @@ function executionTab(): HTMLElement {
     sm.memoryBytes != null ? stat(t("exec.memory"), `~${fmtBytes(sm.memoryBytes)}`, "stat-memory") : null,
   ];
   const card = el("div", { class: "rec", "data-testid": "exec-summary" },
+    el("span", { class: "rec-ic", "aria-hidden": "true" }, icon("spark", 22)),
     el("div", { class: "rec-head" }, icon("ok"), el("span", {}, t("exec.recommended"))),
     el("div", { class: "rec-where", "data-testid": "exec-where", "data-where": sm.where }, icon(sm.where), el("b", {}, whereTxt(sm.where))),
     el("ul", { class: "why" }, ...sm.reasons.map((k) => el("li", {}, icon("ok", 14), el("span", {}, t(k))))),
@@ -1211,13 +1229,14 @@ function executionTab(): HTMLElement {
           sm.processBytes != null ? el("li", {}, icon("ok", 14), el("span", {}, t("exec.optimize.process", { size: fmtBytes(sm.processBytes) }))) : null)
       : el("ul", {}, el("li", {}, icon("info", 14), el("span", {}, t("exec.optimize.none")))));
   const advanced = el("div", { class: "adv", id: "adv", "data-testid": "advanced", hidden: !DEV() && !S.advancedOpen },
-    plannerPanel(r), metricCards(r.metrics, r.timing), engineSteps(r.physical, r),
+    plannerPanel(r), ...(DEV() ? [] : [metricCards(r.metrics, r.timing), engineSteps(r.physical, r)]),
     el("h3", {}, t("dev.planner_decisions")),
     ...r.physical.decisions.map((d) => el("div", { class: "dec" }, el("span", { class: `o-${d.outcome}` }, `[${d.outcome}] `), `${d.rule} · ${d.subject}: ${d.reason}`)),
     ...r.metrics.notes.map((n) => el("div", { class: "note" }, n)));
   const toggle = DEV() ? null : el("button", { type: "button", class: `adv-toggle${S.advancedOpen ? " open" : ""}`, "data-testid": "advanced-toggle", "aria-expanded": S.advancedOpen, "aria-controls": "adv", onclick: () => { S.advancedOpen = !S.advancedOpen; renderTab(); } },
     icon("chevron", 14), el("span", {}, t("exec.advanced")));
-  return el("div", { class: "exec" }, card, opt, DEV() ? overviewCards(r) : null, toggle, advanced);
+  // Developer: the numbers first, then how the plan ran, then what was chosen (the order of the design); Explorer keeps its own order
+  return el("div", { class: "exec" }, DEV() ? metricCards(r.metrics, r.timing) : null, DEV() ? engineSteps(r.physical, r) : null, card, opt, DEV() ? overviewCards(r) : null, toggle, advanced);
 }
 
 /** Developer overview on the Execution tab: the first rows, the timing profile and the latest log lines, each linking to its full tab. Real data only (same sources as those tabs). */
@@ -1252,7 +1271,7 @@ function engineSteps(p: Physical, r: RunResp): HTMLElement {
   const steps = [...p.steps.map((s) => ({ t: s.label, d: s.detail })), { t: "Render", d: `${r.rows_total} rows → table / map (GeoJSON boundary conversion ${fmtMs(r.timing.boundary_conversion_ms.value ?? 0)})` }];
   steps.forEach((s, i) => {
     if (i) pipe.append(el("div", { class: "arrow", "aria-hidden": "true" }, "↓"));
-    pipe.append(el("div", { class: "step" }, el("div", { class: "t" }, s.t), el("div", { class: "d" }, s.d.replace("\\\\?\\", ""))));
+    pipe.append(el("div", { class: "step" }, el("div", { class: "t" }, s.t), el("div", { class: "d" }, s.d.replace("\\\\?\\", "")), el("span", { class: "step-ok", "aria-hidden": "true" }, icon("ok", 15))));
   });
   return pipe;
 }
@@ -1274,10 +1293,10 @@ function metricCards(m: Metrics, tm: RunResp["timing"]): HTMLElement {
   const skipped = m.row_groups_skipped.value, total = m.row_groups_total.value;
   const rg: Metric<number> = { value: skipped, source: m.row_groups_skipped.source };
   return el("div", { class: "cards" },
-    mcard(t("metric.total"), tm.total_ms, fmtMs, "", "clock"), mcard(t("metric.engine"), m.elapsed_ms, fmtMs, "", "clock"), mcard(t("metric.rows"), m.rows_returned, fmtInt, "", "table"),
+    mcard(t("metric.total"), tm.total_ms, fmtMs, "", "clock"), mcard(t("metric.rows"), m.rows_returned, fmtInt, "", "table"),
     mcard(t("metric.rg_total"), m.row_groups_total, fmtInt, "", "grid"), mcard(t("metric.rg_skipped", { total: total ?? "?" }), rg, fmtInt, "", "doc"),
     mcard(t("metric.rows_scanned"), m.rows_scanned_upper_bound, fmtInt, "≤ ", "search"), mcard(t("metric.bytes_ub"), m.estimated_bytes_upper_bound, fmtBytes, "≤ ", "source"),
-    mcard(t("metric.bytes_read"), m.bytes_read, fmtBytes, "", "source"), mcard(t("metric.peak"), m.peak_memory_bytes, fmtBytes, "", "memory"));
+    mcard(t("metric.engine"), m.elapsed_ms, fmtMs, "", "clock"), mcard(t("metric.bytes_read"), m.bytes_read, fmtBytes, "", "source"), mcard(t("metric.peak"), m.peak_memory_bytes, fmtBytes, "", "memory"));
 }
 
 function costModelLine(c: Candidate): HTMLElement {
@@ -1385,7 +1404,7 @@ function renderPipeline() {
       el("span", { class: "ic" }, icon(ICONED.has(s.key) ? s.key : "filter", 18)),
       el("span", { class: "tx" }, el("span", { class: "t" }, t(s.title)), el("span", { class: "s" }, t(s.sub)))));
   });
-  pipeEl.replaceChildren(...nodes.map((n) => n as Node));
+  pipeEl.replaceChildren(el("span", { class: "pipe-title" }, t("pipe.title")), ...nodes.map((n) => n as Node));
 }
 
 // ---------- everything that depends on language or mode ----------

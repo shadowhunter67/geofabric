@@ -12,9 +12,11 @@ Open the **public demo** (no install, no account, nothing runs on a server): a r
 
 - pan/zoom: the visible buildings are queried live (a spatially representative sample is drawn when a view holds more than the draw budget; counts are always the full logical count),
 - click a feature to inspect it, filter by an attribute, count by a category,
-- switch Vietnamese / English; switch to **Developer** mode to see the PlanGraph, the generated SQL, the planner's view and which engines this deployment has.
+- switch Vietnamese / English; switch to **Developer** mode to see the PlanGraph, the generated SQL, the planner's view and which engines this deployment has. Developer's *Execution* tab is a one-screen overview: metric cards that say whether each number was **observed** or only **estimated**, the numbered steps of the run, the planner's recommendation with the data it expects to touch, and the first rows, the timing profile and the latest log lines (each opens its full tab).
 
 Analyses that need a server (metric distance such as "buildings within 200 m of main roads", spatial joins, exact intersection) are shown as disabled with the reason: *"This analysis requires GeoFabric Server."* They are never approximated.
+
+The interface is a compact dark dashboard: a data panel grouped by theme (buildings, transport, administrative, places, land use) with per-layer visibility, opacity and *zoom to layer*, the map, and a bottom panel with Query / Results / Execution / Profile / Logs. It uses its own icon set of 33 line icons drawn from GIS primitives (a round vertex dot is its signature). *Zoom to layer* never trusts a bad extent: an extent that leaves Vietnam's bounding box falls back to the reviewed Vietnam start view instead of zooming out to a region.
 
 | Explorer (Vietnamese) | Developer (English) |
 |---|---|
@@ -103,6 +105,7 @@ cd web && npx playwright test -c playwright.static.config.ts   # static-mode bro
 * The browser engine runs a subset of the plan (scan, filter, bbox, aggregate, project, sort, limit). Metric distance, spatial joins and exact intersection need a server engine.
 * The planner's cost model is calibrated for DuckDB; PostGIS has no calibrated cost model (the planner never picks it on predicted cost).
 * One development machine produced all measurements; the public demo's pack is a single roughly 9 km × 8 km window of central Ho Chi Minh City.
+* **Vietnam-wide coverage is not deployed.** The demo still opens on that one window. A Vietnam-wide demo is being built on spatially partitioned shards (adaptive quadtree, shards of about 25 MB, the browser reads only the shards the view needs; see `adr/ADR-017-vietnam-public-data-partitioning.md`, status *Proposed* until validated on real multi-region data). Until it is verified the catalog does not claim national coverage.
 * Not production-ready, not a distributed system, not a universal GIS: it is a runtime for studying one plan on several engines with evidence.
 
 ## Contributing and security
