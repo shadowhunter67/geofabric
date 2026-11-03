@@ -1,0 +1,377 @@
+{
+  "bbox": [
+    106.3499984741211,
+    10.349998474121094,
+    107.05001068115234,
+    11.249939918518066
+  ],
+  "data_version": "v0-test",
+  "dataset": "places_test",
+  "min_zoom": 0,
+  "partition_scheme": "adaptive-quadtree-v1",
+  "partitions": [
+    {
+      "bbox": [
+        106.3499984741211,
+        10.349998474121094,
+        106.49996185302734,
+        10.499967575073242
+      ],
+      "bytes": 347162,
+      "crs": "OGC:CRS84",
+      "density": 210139.02465425918,
+      "format": "GeoParquet",
+      "id": "q030300",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 4726,
+      "sha256": "38e964d60d5b64e9f7d6c522d0dd6b9e2fbed6bf959bef37072750198304dc81",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030300.parquet"
+    },
+    {
+      "bbox": [
+        106.50000762939453,
+        10.350028038024902,
+        106.97675323486328,
+        10.49988079071045
+      ],
+      "bytes": 152575,
+      "crs": "OGC:CRS84",
+      "density": 28120.854492635048,
+      "format": "GeoParquet",
+      "id": "q030301",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 2009,
+      "sha256": "587bb3862e397ba43e2af7f31b278f227e3a4b679adc605ac10cd333c6733934",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030301.parquet"
+    },
+    {
+      "bbox": [
+        106.3499984741211,
+        10.500086784362793,
+        106.49998474121094,
+        10.999704360961914
+      ],
+      "bytes": 637831,
+      "crs": "OGC:CRS84",
+      "density": 119355.54100555491,
+      "format": "GeoParquet",
+      "id": "q030302",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 8944,
+      "sha256": "4a60e0f8c6cad7b5dd19fb8bc235ff86dd614c74982cde8f1a1183f39d83c777",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030302.parquet"
+    },
+    {
+      "bbox": [
+        106.50005340576172,
+        10.500039100646973,
+        106.74999237060547,
+        10.749999046325684
+      ],
+      "bytes": 3209579,
+      "crs": "OGC:CRS84",
+      "density": 738426.5597365393,
+      "format": "GeoParquet",
+      "id": "q0303030",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 46133,
+      "sha256": "57dafd196c202a8cc34b73d064676a36bd2646c17e3cb9963c1f19f1d4e499a4",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303030.parquet"
+    },
+    {
+      "bbox": [
+        106.75,
+        10.501090049743652,
+        106.99959564208984,
+        10.749981880187988
+      ],
+      "bytes": 200237,
+      "crs": "OGC:CRS84",
+      "density": 42657.77840864959,
+      "format": "GeoParquet",
+      "id": "q0303031",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 2650,
+      "sha256": "b687a6eb6e1918e3ad70a252b6fe70dc093b5a6e83b940b9b2f0427f17e2a834",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303031.parquet"
+    },
+    {
+      "bbox": [
+        106.5,
+        10.75,
+        106.625,
+        10.875
+      ],
+      "bytes": 2526302,
+      "crs": "OGC:CRS84",
+      "density": 2316096.0,
+      "format": "GeoParquet",
+      "id": "q03030320",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 36189,
+      "sha256": "29b69557ac8bcb8069623a3f9367f47e06db63a3d7b1c2a504ab1ac9bf77dad5",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03030320.parquet"
+    },
+    {
+      "bbox": [
+        106.625,
+        10.75,
+        106.65625,
+        10.781249046325684
+      ],
+      "bytes": 1093771,
+      "crs": "OGC:CRS84",
+      "density": 16032233.264931181,
+      "format": "GeoParquet",
+      "id": "q0303032100",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 15656,
+      "sha256": "629c2f49ad377c3f3349418bdd32f80ae9a40d737032b87a93cffbd3ebc234c3",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303032100.parquet"
+    },
+    {
+      "bbox": [
+        106.65624237060547,
+        10.749999046325684,
+        106.6875,
+        10.78125
+      ],
+      "bytes": 2243381,
+      "crs": "OGC:CRS84",
+      "density": 33129588.43993415,
+      "format": "GeoParquet",
+      "id": "q0303032101",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 32362,
+      "sha256": "92e71091a7dc1b0797a0aa4a5a5f6d196f74c3ee3fc4d1a161647af8132bee94",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303032101.parquet"
+    },
+    {
+      "bbox": [
+        106.625,
+        10.78125,
+        106.65625,
+        10.812493324279785
+      ],
+      "bytes": 1586947,
+      "crs": "OGC:CRS84",
+      "density": 23647163.579133727,
+      "format": "GeoParquet",
+      "id": "q0303032102",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 23088,
+      "sha256": "ffdd80860c5bafce21257b6ab8da1c497f9c9462cbb383321828e9d088c3d2d6",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303032102.parquet"
+    },
+    {
+      "bbox": [
+        106.65624237060547,
+        10.78125,
+        106.6875,
+        10.8125
+      ],
+      "bytes": 1997675,
+      "crs": "OGC:CRS84",
+      "density": 29813649.277031973,
+      "format": "GeoParquet",
+      "id": "q0303032103",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 29122,
+      "sha256": "785a409930593042ca40c99cf67ae76a86054150b6f777fdf668ec486cb27c4e",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303032103.parquet"
+    },
+    {
+      "bbox": [
+        106.68749237060547,
+        10.75,
+        106.74999237060547,
+        10.812499046325684
+      ],
+      "bytes": 4999305,
+      "crs": "OGC:CRS84",
+      "density": 18725149.72310979,
+      "format": "GeoParquet",
+      "id": "q030303211",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 73144,
+      "sha256": "89a4ca57cf11d324ca5dacf17b9599f1f9b67155d72fadf7bdafd9386d6c0e55",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030303211.parquet"
+    },
+    {
+      "bbox": [
+        106.62499237060547,
+        10.8125,
+        106.6875,
+        10.874996185302734
+      ],
+      "bytes": 2552551,
+      "crs": "OGC:CRS84",
+      "density": 9422528.964675682,
+      "format": "GeoParquet",
+      "id": "q030303212",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 36809,
+      "sha256": "089f0906e0c750956f4a58f821b6f178109375d24e9110b24926e075c862f407",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030303212.parquet"
+    },
+    {
+      "bbox": [
+        106.68749237060547,
+        10.812499046325684,
+        106.75,
+        10.874978065490723
+      ],
+      "bytes": 1538375,
+      "crs": "OGC:CRS84",
+      "density": 5686975.101990755,
+      "format": "GeoParquet",
+      "id": "q030303213",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 22210,
+      "sha256": "a8ced44e9e45a244d5f86cb93f7fce3fc0504f9aa606b5808ee96cf875de485d",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q030303213.parquet"
+    },
+    {
+      "bbox": [
+        106.49999237060547,
+        10.875009536743164,
+        106.625,
+        10.999964714050293
+      ],
+      "bytes": 479985,
+      "crs": "OGC:CRS84",
+      "density": 416828.0347983693,
+      "format": "GeoParquet",
+      "id": "q03030322",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 6511,
+      "sha256": "29d182b98c2c9c731d2c16f0ed3562ccefd56c04d729e72a79853bc75210b66f",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03030322.parquet"
+    },
+    {
+      "bbox": [
+        106.62499237060547,
+        10.874999046325684,
+        106.75,
+        11.0
+      ],
+      "bytes": 1799690,
+      "crs": "OGC:CRS84",
+      "density": 1643535.1466321326,
+      "format": "GeoParquet",
+      "id": "q03030323",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 25682,
+      "sha256": "a2f44b675d12f1b755854f1a4eee7e22731fd41213cee442274e8ed5039b70bb",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03030323.parquet"
+    },
+    {
+      "bbox": [
+        106.74999237060547,
+        10.750004768371582,
+        106.99996185302734,
+        10.999940872192383
+      ],
+      "bytes": 4680669,
+      "crs": "OGC:CRS84",
+      "density": 1073173.2557950967,
+      "format": "GeoParquet",
+      "id": "q0303033",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 67048,
+      "sha256": "e7be1481b374617e21ff7da95efffd8d2163f1dbe992afaee3b1b4d2848c1f89",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q0303033.parquet"
+    },
+    {
+      "bbox": [
+        107.0,
+        10.496109962463379,
+        107.05001068115234,
+        10.999839782714844
+      ],
+      "bytes": 181476,
+      "crs": "OGC:CRS84",
+      "density": 97015.42051099078,
+      "format": "GeoParquet",
+      "id": "q03031",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 2444,
+      "sha256": "2c8659f44edbf7bed5d7857d7639963c1921dd28eb673f549c18aca2588f3c3b",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03031.parquet"
+    },
+    {
+      "bbox": [
+        106.3499984741211,
+        11.0,
+        106.99999237060547,
+        11.249939918518066
+      ],
+      "bytes": 1046123,
+      "crs": "OGC:CRS84",
+      "density": 90508.75512183482,
+      "format": "GeoParquet",
+      "id": "q03032",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 14704,
+      "sha256": "51ec616ece2a27661a67a41420bfe39fe1c95b80f80cf841dac2d93a4fe01aa0",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03032.parquet"
+    },
+    {
+      "bbox": [
+        107.0,
+        11.000566482543945,
+        107.05000305175781,
+        11.186485290527344
+      ],
+      "bytes": 37212,
+      "crs": "OGC:CRS84",
+      "density": 44963.12055734423,
+      "format": "GeoParquet",
+      "id": "q03033",
+      "kind": "regular",
+      "license": "ODbL-1.0",
+      "rows": 418,
+      "sha256": "5cfaa51b311a122b30eb6dcc162280491a7f7dfac68a591fee3a05ff9f37cfd5",
+      "source_release": "2026-09-23.1",
+      "url": "places_test/q03033.parquet"
+    }
+  ],
+  "rows": 449849,
+  "schema": 3
+}

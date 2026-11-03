@@ -41,6 +41,8 @@ export interface PlanGraph {
 
 export interface Covering { xmin: string; ymin: string; xmax: string; ymax: string; declared: boolean }
 
+export interface ShardBinding { id: string; url: string; bytes: number; access: "full" | "range" }
+
 /** What the gateway/planner tells the browser about each source. */
 export interface SourceBinding {
   /** Authorized URL serving the Parquet bytes (HTTP range requests). */
@@ -48,6 +50,8 @@ export interface SourceBinding {
   covering: Covering | null;
   /** How to get the bytes: whole file once (small files) or HTTP range requests. Decided by the planner. */
   access?: "full" | "range";
+  /** When present the engine reads ALL these shards as ONE logical source (same schema, disjoint rows); `url`/`access` stay the first shard's for compatibility. */
+  shards?: ShardBinding[];
 }
 
 export type MetricSource = "engine_observed" | "source_observed" | "source_estimated" | "planner_estimated" | "derived" | "unknown";
@@ -90,6 +94,10 @@ export interface ExecutionResult {
   sql: string;
   /** Wall-clock phases of this execution (ms), for cost-model calibration: where the time went (ADR-010). */
   phases?: ExecutionPhases;
+  /** Present when whole-file shard failures produced a deliberately partial result. */
+  incomplete?: { failed_shards: { id: string; reason: string }[]; total_shards: number };
+  /** Shard I/O performed while opening a multi-shard logical source. */
+  io?: { shards: number; shards_fetched: number; whole_file_shards: number; range_shards: number; whole_file_bytes: number };
 }
 
 /**

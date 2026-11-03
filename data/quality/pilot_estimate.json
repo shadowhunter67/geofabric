@@ -1,0 +1,272 @@
+{
+  "admin_vn_counts_by_subtype": {
+    "country": 2,
+    "locality": 3388,
+    "macrohood": 1,
+    "microhood": 170,
+    "neighborhood": 20,
+    "region": 55
+  },
+  "download_gate_bytes": 3000000000,
+  "estimated_pilot_download_bytes": 1200658430,
+  "explanations": {
+    "admin": "An upper bound from Parquet row groups intersecting the national extent of the Vietnam sanity box because country cannot be filtered from footers.",
+    "buildings": "An upper bound from Parquet row groups whose bbox statistics intersect the five pilot regions, conservatively including groups without usable statistics.",
+    "land_use": "An upper bound from Parquet row groups whose bbox statistics intersect the five pilot regions, conservatively including groups without usable statistics.",
+    "places": "An upper bound from Parquet row groups whose bbox statistics intersect the five pilot regions, conservatively including groups without usable statistics.",
+    "roads": "An upper bound from Parquet row groups whose bbox statistics intersect the five pilot regions, conservatively including groups without usable statistics."
+  },
+  "partial": false,
+  "regions": {
+    "buon_ma_thuot": {
+      "buildings": {
+        "compressed_bytes": 42750839,
+        "files_touched": 1,
+        "row_groups_total": 82688,
+        "row_groups_touched": 11,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 423040,
+        "uncompressed_bytes": 77290205
+      },
+      "land_use": {
+        "compressed_bytes": 15342924,
+        "files_touched": 3,
+        "row_groups_total": 3936,
+        "row_groups_touched": 3,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 44846,
+        "uncompressed_bytes": 21546548
+      },
+      "places": {
+        "compressed_bytes": 4098334,
+        "files_touched": 1,
+        "row_groups_total": 4864,
+        "row_groups_touched": 2,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 39773,
+        "uncompressed_bytes": 8546545
+      },
+      "roads": {
+        "compressed_bytes": 14139274,
+        "files_touched": 1,
+        "row_groups_total": 16384,
+        "row_groups_touched": 4,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 90458,
+        "uncompressed_bytes": 22355870
+      }
+    },
+    "da_nang": {
+      "buildings": {
+        "compressed_bytes": 56157584,
+        "files_touched": 1,
+        "row_groups_total": 82688,
+        "row_groups_touched": 15,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 577270,
+        "uncompressed_bytes": 103958703
+      },
+      "land_use": {
+        "compressed_bytes": 15342924,
+        "files_touched": 3,
+        "row_groups_total": 3936,
+        "row_groups_touched": 3,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 44846,
+        "uncompressed_bytes": 21546548
+      },
+      "places": {
+        "compressed_bytes": 9642140,
+        "files_touched": 1,
+        "row_groups_total": 4864,
+        "row_groups_touched": 5,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 94338,
+        "uncompressed_bytes": 20079179
+      },
+      "roads": {
+        "compressed_bytes": 22018603,
+        "files_touched": 1,
+        "row_groups_total": 16384,
+        "row_groups_touched": 7,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 149576,
+        "uncompressed_bytes": 35564552
+      }
+    },
+    "hanoi": {
+      "buildings": {
+        "compressed_bytes": 202320772,
+        "files_touched": 2,
+        "row_groups_total": 82688,
+        "row_groups_touched": 52,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 2048660,
+        "uncompressed_bytes": 377972784
+      },
+      "land_use": {
+        "compressed_bytes": 24128984,
+        "files_touched": 3,
+        "row_groups_total": 3936,
+        "row_groups_touched": 6,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 82124,
+        "uncompressed_bytes": 36353253
+      },
+      "places": {
+        "compressed_bytes": 40203705,
+        "files_touched": 2,
+        "row_groups_total": 4864,
+        "row_groups_touched": 20,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 399209,
+        "uncompressed_bytes": 83010432
+      },
+      "roads": {
+        "compressed_bytes": 44498771,
+        "files_touched": 2,
+        "row_groups_total": 16384,
+        "row_groups_touched": 19,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 421677,
+        "uncompressed_bytes": 81412716
+      }
+    },
+    "hcmc": {
+      "buildings": {
+        "compressed_bytes": 168653022,
+        "files_touched": 1,
+        "row_groups_total": 82688,
+        "row_groups_touched": 43,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 1682908,
+        "uncompressed_bytes": 305320598
+      },
+      "land_use": {
+        "compressed_bytes": 11592145,
+        "files_touched": 2,
+        "row_groups_total": 3936,
+        "row_groups_touched": 3,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 42787,
+        "uncompressed_bytes": 17850178
+      },
+      "places": {
+        "compressed_bytes": 51770169,
+        "files_touched": 2,
+        "row_groups_total": 4864,
+        "row_groups_touched": 25,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 506098,
+        "uncompressed_bytes": 107143881
+      },
+      "roads": {
+        "compressed_bytes": 35042051,
+        "files_touched": 1,
+        "row_groups_total": 16384,
+        "row_groups_touched": 16,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 342962,
+        "uncompressed_bytes": 65869281
+      }
+    },
+    "mekong_can_tho": {
+      "buildings": {
+        "compressed_bytes": 64306397,
+        "files_touched": 1,
+        "row_groups_total": 82688,
+        "row_groups_touched": 16,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 636079,
+        "uncompressed_bytes": 115749998
+      },
+      "land_use": {
+        "compressed_bytes": 8062576,
+        "files_touched": 2,
+        "row_groups_total": 3936,
+        "row_groups_touched": 2,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 27995,
+        "uncompressed_bytes": 12065753
+      },
+      "places": {
+        "compressed_bytes": 6736770,
+        "files_touched": 1,
+        "row_groups_total": 4864,
+        "row_groups_touched": 3,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 63955,
+        "uncompressed_bytes": 14149661
+      },
+      "roads": {
+        "compressed_bytes": 15037653,
+        "files_touched": 1,
+        "row_groups_total": 16384,
+        "row_groups_touched": 4,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 87556,
+        "uncompressed_bytes": 23664620
+      }
+    },
+    "national": {
+      "admin": {
+        "compressed_bytes": 383387734,
+        "files_touched": 3,
+        "row_groups_total": 544,
+        "row_groups_touched": 24,
+        "row_groups_without_stats": 0,
+        "rows_upper_bound": 52351,
+        "uncompressed_bytes": 510960081
+      }
+    }
+  },
+  "release": "2026-09-23.1",
+  "schema": 1,
+  "theme_unions": {
+    "admin": {
+      "compressed_bytes": 383387734,
+      "files_touched": 3,
+      "row_groups_total": 544,
+      "row_groups_touched": 24,
+      "row_groups_without_stats": 0,
+      "rows_upper_bound": 52351,
+      "uncompressed_bytes": 510960081
+    },
+    "buildings": {
+      "compressed_bytes": 534188614,
+      "files_touched": 6,
+      "row_groups_total": 82688,
+      "row_groups_touched": 137,
+      "row_groups_without_stats": 0,
+      "rows_upper_bound": 5367957,
+      "uncompressed_bytes": 980292288
+    },
+    "land_use": {
+      "compressed_bytes": 43488742,
+      "files_touched": 4,
+      "row_groups_total": 3936,
+      "row_groups_touched": 10,
+      "row_groups_without_stats": 0,
+      "rows_upper_bound": 140628,
+      "uncompressed_bytes": 64796983
+    },
+    "places": {
+      "compressed_bytes": 112451118,
+      "files_touched": 4,
+      "row_groups_total": 4864,
+      "row_groups_touched": 55,
+      "row_groups_without_stats": 0,
+      "rows_upper_bound": 1103373,
+      "uncompressed_bytes": 232929698
+    },
+    "roads": {
+      "compressed_bytes": 127142222,
+      "files_touched": 3,
+      "row_groups_total": 16384,
+      "row_groups_touched": 49,
+      "row_groups_without_stats": 0,
+      "rows_upper_bound": 1068391,
+      "uncompressed_bytes": 223145570
+    }
+  }
+}

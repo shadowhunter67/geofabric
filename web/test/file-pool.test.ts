@@ -43,3 +43,69 @@ test("a file bigger than the whole budget is served but not kept", async () => {
   await pool.get("big");
   assert.equal(pool.downloads, 2);
 });
+
+test("one aborted waiter does not cancel a download another waiter still needs", async () => {
+  let calls = 0;
+  let underlyingSignal: AbortSignal | undefined;
+  let finish!: (value: ArrayBuffer) => void;
+  const pool = new FilePool(1000, async (_url, signal) => {
+    calls++;
+    underlyingSignal = signal;
+    return new Promise<ArrayBuffer>((resolve) => { finish = resolve; });
+  });
+  const firstController = new AbortController();
+  const first = pool.get("shared", firstController.signal);
+  const second = pool.get("shared");
+  await Promise.resolve();
+  firstController.abort();
+  await assert.rejects(first, (error: unknown) => error instanceof Error && error.name === "AbortError");
+  assert.equal(underlyingSignal?.aborted, false);
+  finish(bytes(12));
+  const received = await second;
+  assert.equal(received.byteLength, 12);
+  assert.strictEqual(await pool.get("shared"), received, "completed bytes remain cached");
+  assert.equal(calls, 1);
+});
+
+test("the last aborted waiter cancels the fetch, removes it, and a later get refetches", async () => {
+  let calls = 0;
+  let firstSignal: AbortSignal | undefined;
+  const pool = new FilePool(1000, async (_url, signal) => {
+    calls++;
+    if (calls > 1) return bytes(9);
+    firstSignal = signal;
+    return new Promise<ArrayBuffer>((_resolve, reject) => {
+      if (signal?.aborted) reject(new DOMException("stopped", "AbortError"));
+      else signal?.addEventListener("abort", () => reject(new DOMException("stopped", "AbortError")), { once: true });
+    });
+  });
+  const controller = new AbortController();
+  const waiting = pool.get("region", controller.signal);
+  await Promise.resolve();
+  controller.abort();
+  await assert.rejects(waiting, (error: unknown) => error instanceof Error && error.name === "AbortError");
+  assert.equal(firstSignal?.aborted, true);
+  assert.equal(pool.heldBytes, 0);
+  const retry = await pool.get("region");
+  assert.equal(retry.byteLength, 9);
+  assert.equal(calls, 2);
+  assert.strictEqual(await pool.get("region"), retry, "returning to the region uses the immutable cache");
+  assert.equal(calls, 2);
+});
+
+test("an abort after bytes arrive cancels that caller but keeps the completed bytes cached", async () => {
+  let calls = 0;
+  let finish!: (value: ArrayBuffer) => void;
+  const pool = new FilePool(1000, async () => {
+    calls++;
+    return new Promise<ArrayBuffer>((resolve) => { finish = resolve; });
+  });
+  const controller = new AbortController();
+  const waiting = pool.get("arrived", controller.signal);
+  const arrived = bytes(7);
+  finish(arrived);
+  controller.abort();
+  await assert.rejects(waiting, (error: unknown) => error instanceof Error && error.name === "AbortError");
+  assert.strictEqual(await pool.get("arrived"), arrived);
+  assert.equal(calls, 1);
+});

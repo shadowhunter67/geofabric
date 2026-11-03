@@ -37,6 +37,30 @@ class Preset:
 
 
 PRESETS = {
+    "buildings": Preset(
+        theme="buildings",
+        type_name="building",
+        extra_where="",
+        select=(
+            "id",
+            "names.primary AS name",
+            "subtype",
+            "class",
+            "height",
+            "num_floors",
+            "is_underground",
+            "has_parts",
+            "sources[1].dataset AS source_dataset",
+            "version",
+            "geometry",
+            "bbox",
+        ),
+        row_group_size=50_000,
+        description=(
+            "Normalized flat schema. Missing height and num_floors values stay NULL; "
+            "nothing is inferred or defaulted."
+        ),
+    ),
     "transport": Preset(
         theme="transportation",
         type_name="segment",

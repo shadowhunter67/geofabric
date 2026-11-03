@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildIndex, selectForView, shardsInView, validateDatasetPartitions, type DatasetPartitions, type PartitionEntry } from "../src/static/partitions.ts";
+import { ALLOWED_CRS, MAX_SHARD_BYTES, buildIndex, cellBBox, cellIdForPoint, partitionStats, selectForView, shardsInView, validateDatasetPartitions, type DatasetPartitions, type PartitionEntry } from "../src/static/partitions.ts";
 import type { BBox } from "../src/vietnam.ts";
 
 // A synthetic quadtree over a Vietnam-sized root: dense corners are split deeper, like real building density.
@@ -24,8 +24,9 @@ const dense = (b: BBox) => [hanoi, hcmc].some((c) => b[0] <= c[2] && b[2] >= c[0
 
 function fixture(): DatasetPartitions {
   const l = leaves(9, dense);
+  const ids = l.map((b) => cellIdForPoint((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, 13));
   const parts: PartitionEntry[] = l.map((b, i) => ({
-    id: l.ids![i], bbox: b, url: `https://cdn.example/gh/owner/data@0123456789abcdef0123456789abcdef01234567/v2/buildings/${l.ids![i]}.parquet`,
+    id: ids[i], bbox: b, url: `https://cdn.example/gh/owner/data@0123456789abcdef0123456789abcdef01234567/v2/buildings/${ids[i]}.parquet`,
     bytes: 5_000_000 + i, sha256: i.toString(16).padStart(64, "0"), format: "GeoParquet", crs: "OGC:CRS84", rows: 10_000 + i,
     license: "ODbL-1.0", source_release: "2026-09-23.1",
   }));
@@ -47,6 +48,64 @@ test("CI rules: duplicate ids, bad checksums, mutable URLs, outliers, inconsiste
   m.data_version = "latest";
   const problems = validateDatasetPartitions(m).join("\n");
   for (const needle of ["duplicate partition id", "sha256 is not 64", "pinned to a commit", "sanity box", "bytes must be positive", "add up to", "never 'latest'"]) assert.match(problems, new RegExp(needle), needle);
+});
+
+test("partition contract rules accept finite limits and reject invalid numbers, sizes, zooms, ids, kinds, cells, CRS, and union extents", () => {
+  const valid = fixture();
+  valid.partitions[0].kind = "regular";
+  valid.partitions[0].density = 1;
+  valid.partitions[0].min_zoom = 0;
+  valid.partitions[0].max_zoom = 22;
+  assert.deepEqual(validateDatasetPartitions(valid), []);
+  assert.deepEqual(ALLOWED_CRS, ["OGC:CRS84"]);
+
+  const cases: Array<[string, (m: DatasetPartitions) => void, RegExp]> = [
+    ["NaN bbox", (m) => { m.partitions[0].bbox[0] = Number.NaN; }, /bbox is not a valid box/],
+    ["infinite bytes", (m) => { m.partitions[0].bytes = Infinity; }, /bytes must be positive and finite/],
+    ["NaN rows", (m) => { m.partitions[0].rows = Number.NaN; }, /rows must be positive and finite/],
+    ["infinite density", (m) => { m.partitions[0].density = Infinity; }, /density must be finite/],
+    ["NaN zoom", (m) => { m.partitions[0].min_zoom = Number.NaN; }, /min_zoom must be finite/],
+    ["large shard", (m) => { m.partitions[0].bytes = MAX_SHARD_BYTES + 1; }, /shard limit/],
+    ["more rows than bytes", (m) => { m.partitions[0].bytes = m.partitions[0].rows - 1; }, /rows cannot exceed bytes/],
+    ["zoom outside range", (m) => { m.partitions[0].max_zoom = 23; }, /not a map zoom/],
+    ["reversed zoom range", (m) => { m.partitions[0].min_zoom = 12; m.partitions[0].max_zoom = 5; }, /min_zoom cannot exceed max_zoom/],
+    ["invalid id", (m) => { m.partitions[0].id = "q4"; }, /id must match/],
+    ["wrong kind", (m) => { m.partitions[0].kind = "oversize"; }, /disagrees with its id prefix/],
+    ["wrong cell", (m) => { m.partitions[0].id = "q3333333333333"; }, /does not intersect its quadtree cell/],
+    ["wrong CRS", (m) => { m.partitions[0].crs = "EPSG:3857"; }, /allowed CRS/],
+    ["wrong union", (m) => { m.bbox[0] -= 0.25; }, /does not equal the union/],
+  ];
+  for (const [name, mutate, expected] of cases) {
+    const m = fixture();
+    mutate(m);
+    assert.match(validateDatasetPartitions(m).join("\n"), expected, name);
+  }
+});
+
+test("build URLs are exact dataset/id paths and published URLs remain immutable https URLs", () => {
+  const build = fixture();
+  for (const p of build.partitions) p.url = `${build.dataset}/${p.id}.parquet`;
+  assert.deepEqual(validateDatasetPartitions(build, { stage: "build" }), []);
+  build.partitions[0].url = "../x.parquet";
+  assert.match(validateDatasetPartitions(build, { stage: "build" }).join("\n"), /build url must be exactly/);
+  assert.equal(validateDatasetPartitions(fixture()).some((problem) => problem.includes("url")), false);
+});
+
+test("quadtree helpers validate ids and boundaries, and partition statistics use nearest-rank p90", () => {
+  assert.deepEqual(cellBBox("q03"), [104, 8, 112, 16]);
+  assert.deepEqual(cellBBox("L03"), [104, 8, 112, 16]);
+  assert.equal(cellIdForPoint(128, 32, 2), "q33");
+  assert.throws(() => cellBBox("q4"));
+  assert.throws(() => cellIdForPoint(95, 0, 1));
+  assert.throws(() => cellIdForPoint(100, 10, 14));
+  const m = fixture();
+  const stats = partitionStats(m);
+  const sorted = m.partitions.map((p) => p.bytes).sort((a, b) => a - b);
+  assert.equal(stats.count, m.partitions.length);
+  assert.equal(stats.regular, m.partitions.length);
+  assert.equal(stats.oversize, 0);
+  assert.equal(stats.bytes.p90, sorted[Math.ceil(sorted.length * 0.9) - 1]);
+  assert.equal(stats.rows, m.rows);
 });
 
 test("viewport lookup: exactly the shards whose data extent meets the view, in id order, and the same whatever order the manifest lists them in", () => {

@@ -11,7 +11,8 @@ import { compile, SUPPORTED_OPS } from "./lowering.ts";
 import { ensureLowering } from "./lowering-loader.ts";
 import { EngineError } from "./contract.ts";
 import { FilePool } from "./file-pool.ts";
-import type { Capabilities, ExecutionContext, ExecutionEngine, ExecutionResult, PlanGraph } from "./contract.ts";
+import { expandSourceSql, loadShards, shardFileName, summarizeIncomplete } from "./shards.ts";
+import type { Capabilities, ExecutionContext, ExecutionEngine, ExecutionResult, PlanGraph, ShardBinding } from "./contract.ts";
 
 export const ENGINE_ID = "duckdb-wasm";
 
@@ -33,8 +34,8 @@ export class DuckDbWasmEngine implements ExecutionEngine {
   private starting: Promise<duckdb.AsyncDuckDB> | null = null;
   private cumulativeInput = 0;
   /** Whole-file downloads are shared by every query of the session (a layer is downloaded once, not once per query). */
-  readonly files = new FilePool(96 * 1024 * 1024, async (url) => {
-    const r = await fetch(url);
+  readonly files = new FilePool(96 * 1024 * 1024, async (url, signal) => {
+    const r = await fetch(url, { signal });
     if (!r.ok) throw new EngineError("engine", `fetching ${url} failed: HTTP ${r.status}`);
     return r.arrayBuffer();
   });
@@ -108,7 +109,9 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     const seq = ++this.seq;
     const files = compiled.files.map((f) => ({ ...f, name: f.name.replace("gf_src_", `gf${seq}_src_`) }));
     let sql = compiled.sql;
-    compiled.files.forEach((f, i) => { sql = sql.split(`'${f.name}'`).join(`'${files[i].name}'`); });
+    compiled.files.forEach((f, i) => {
+      if (!f.shards) sql = sql.split(`'${f.name}'`).join(`'${files[i].name}'`);
+    });
     const est = ctx.estimatedInputBytes ?? 0;
     if (this.cumulativeInput > 0 && this.cumulativeInput + est > this.recycleBudget) await this.recycle();
     this.cumulativeInput += est;
@@ -117,24 +120,100 @@ export class DuckDbWasmEngine implements ExecutionEngine {
     const initMs = performance.now() - tInit0;
     const tOpen0 = performance.now();
     const buffered: string[] = [];
-    for (const f of files) {
+    const registered: string[] = [];
+    const rangeFiles: { name: string; url: string }[] = [];
+    const failedShards: { shard: ShardBinding; reason: string }[] = [];
+    const totalShards = compiled.files.reduce((total, file) => total + (file.shards?.length ?? 0), 0);
+    let shardsFetched = 0;
+    let wholeFileShards = 0;
+    let rangeShards = 0;
+    let wholeFileBytes = 0;
+    const dropRegistered = async () => {
+      for (const name of [...buffered, ...registered]) {
+        try { await db.dropFile(name); } catch { /* ignore */ }
+      }
+    };
+    const cancelledDuringOpen = () => new EngineError("cancelled", "browser query cancelled while opening shards");
+    const conn = await (async () => {
       try {
-        await db.dropFile(f.name);
-      } catch {
-        /* not registered yet */
+        if (totalShards > 0 && ctx.signal?.aborted) throw cancelledDuringOpen();
+        for (let sourceIndex = 0; sourceIndex < files.length; sourceIndex++) {
+          const f = files[sourceIndex];
+          const original = compiled.files[sourceIndex];
+          if (!original.shards) {
+            try {
+              await db.dropFile(f.name);
+            } catch {
+              /* not registered yet */
+            }
+            const url = new URL(f.url, location.href).href;
+            if (f.access === "full") {
+              // small file: one request for all of it (dozens of sequential range requests are slower than one download)
+              const bytes = await this.files.get(url, totalShards > 0 ? ctx.signal : undefined);
+              // registerFileBuffer takes ownership of what it is given: hand it a copy, keep the pooled bytes
+              await db.registerFileBuffer(f.name, new Uint8Array(bytes.slice(0)));
+              buffered.push(f.name);
+            } else {
+              db.registerFileURL(f.name, url, duckdb.DuckDBDataProtocol.HTTP, true);
+            }
+            registered.push(f.name);
+            continue;
+          }
+
+          if (original.shards.length === 0) throw new EngineError("engine", `source ${original.uri} has no shards`);
+          const loaded = await loadShards(original.shards, {
+            concurrency: 4,
+            signal: ctx.signal,
+            getBytes: (url, signal) => this.files.get(new URL(url, location.href).href, signal),
+          });
+          failedShards.push(...loaded.failed);
+          if (ctx.signal?.aborted) throw cancelledDuringOpen();
+          const loadedBytes = new Map(loaded.loaded.map(({ shard, bytes }) => [shard, bytes]));
+          const shardNames: string[] = [];
+          for (let shardIndex = 0; shardIndex < original.shards.length; shardIndex++) {
+            if (ctx.signal?.aborted) throw cancelledDuringOpen();
+            const shard = original.shards[shardIndex];
+            const name = shardFileName(`gf${seq}`, sourceIndex, shardIndex);
+            const url = new URL(shard.url, location.href).href;
+            if (shard.access === "full") {
+              const bytes = loadedBytes.get(shard);
+              if (!bytes) continue;
+              try { await db.dropFile(name); } catch { /* not registered yet */ }
+              await db.registerFileBuffer(name, new Uint8Array(bytes.slice(0)));
+              buffered.push(name);
+              wholeFileShards++;
+              wholeFileBytes += bytes.byteLength;
+            } else {
+              try { await db.dropFile(name); } catch { /* not registered yet */ }
+              db.registerFileURL(name, url, duckdb.DuckDBDataProtocol.HTTP, true);
+              rangeFiles.push({ name, url });
+              rangeShards++;
+            }
+            registered.push(name);
+            shardNames.push(name);
+            shardsFetched++;
+          }
+          if (ctx.signal?.aborted) throw cancelledDuringOpen();
+          if (shardNames.length === 0) {
+            const reasons = loaded.failed.slice(0, 3).map(({ shard, reason }) => `${shard.id}: ${reason}`).join("; ");
+            throw new EngineError("engine", `all shards for ${original.uri} failed${reasons ? `: ${reasons}` : ""}`);
+          }
+          sql = expandSourceSql(sql, original.name, shardNames);
+        }
+        if (totalShards > 0 && ctx.signal?.aborted) throw cancelledDuringOpen();
+        const connection = await db.connect();
+        if (totalShards > 0 && ctx.signal?.aborted) {
+          await connection.close();
+          throw cancelledDuringOpen();
+        }
+        return connection;
+      } catch (e) {
+        await dropRegistered();
+        if (totalShards > 0 && ctx.signal?.aborted) throw cancelledDuringOpen();
+        if (e instanceof EngineError) throw e;
+        throw new EngineError("engine", e instanceof Error ? e.message : String(e));
       }
-      const url = new URL(f.url, location.href).href;
-      if (f.access === "full") {
-        // small file: one request for all of it (dozens of sequential range requests are slower than one download)
-        const bytes = await this.files.get(url);
-        // registerFileBuffer takes ownership of what it is given: hand it a copy, keep the pooled bytes
-        await db.registerFileBuffer(f.name, new Uint8Array(bytes.slice(0)));
-        buffered.push(f.name);
-      } else {
-        db.registerFileURL(f.name, url, duckdb.DuckDBDataProtocol.HTTP, true);
-      }
-    }
-    const conn = await db.connect();
+    })();
     const openMs = performance.now() - tOpen0;
     let cancelled: "timeout" | "cancelled" | null = null;
     const cancel = (why: "timeout" | "cancelled") => {
@@ -163,6 +242,7 @@ export class DuckDbWasmEngine implements ExecutionEngine {
       const elapsed = performance.now() - t0;
       if (firstMs < 0) firstMs = performance.now() - tFirst0; // an empty result has no batch
       const drainMs = tDrain0 > 0 ? performance.now() - tDrain0 : 0;
+      const incomplete = summarizeIncomplete(failedShards, totalShards);
       return {
         columns,
         rows,
@@ -174,18 +254,27 @@ export class DuckDbWasmEngine implements ExecutionEngine {
           bytes_read: { value: null, source: "unknown" },
           notes: ["bytes read over the network is not measured by the browser engine"],
         },
+        ...(incomplete ? { incomplete } : {}),
+        ...(totalShards > 0 ? { io: {
+          shards: totalShards,
+          shards_fetched: shardsFetched,
+          whole_file_shards: wholeFileShards,
+          range_shards: rangeShards,
+          whole_file_bytes: wholeFileBytes,
+        } } : {}),
       };
     } catch (e) {
       if (e instanceof EngineError) throw e;
       if (cancelled) throw new EngineError(cancelled, cancelled === "timeout" ? `browser query interrupted after ${ctx.timeoutMs} ms` : "browser query cancelled");
-      throw new EngineError("engine", e instanceof Error ? e.message : String(e));
+      let message = e instanceof Error ? e.message : String(e);
+      const rangeFile = rangeFiles.find(({ name, url }) => message.includes(name) || message.includes(url));
+      if (rangeFile && !message.includes(rangeFile.url)) message = `${message} (shard ${rangeFile.url})`;
+      throw new EngineError("engine", message);
     } finally {
       clearTimeout(timer);
       ctx.signal?.removeEventListener("abort", onAbort);
       await conn.close();
-      for (const n of [...buffered, ...files.map((f) => f.name)]) {
-        try { await db.dropFile(n); } catch { /* ignore */ }
-      }
+      await dropRegistered();
     }
   }
 }

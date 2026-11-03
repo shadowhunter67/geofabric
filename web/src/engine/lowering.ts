@@ -6,7 +6,7 @@
 // No DOM and no bundler imports: the Vite loader (lowering-loader.ts) fetches the wasm, node tests read it from disk.
 
 import { EngineError } from "./contract.ts";
-import type { PlanGraph, SourceBinding } from "./contract.ts";
+import type { PlanGraph, ShardBinding, SourceBinding } from "./contract.ts";
 
 /**
  * The operations the browser lowering accepts. The Rust constant `geo_lowering::browser::SUPPORTED_OPS` is the source of truth; this copy exists
@@ -17,7 +17,7 @@ export const SUPPORTED_OPS = ["source", "filter", "bbox_filter", "aggregate", "p
 export interface Compiled {
   sql: string;
   /** Registered-file names used by the SQL, mapped from the plan's source uri. */
-  files: { name: string; url: string; uri: string; access: "full" | "range" }[];
+  files: { name: string; url: string; uri: string; access: "full" | "range"; shards?: ShardBinding[] }[];
 }
 
 interface Exports {
@@ -127,6 +127,12 @@ export function compile(plan: PlanGraph, sources: Record<string, SourceBinding>,
   if (!r.ok) throw new EngineError(r.kind === "unsupported" ? "unsupported" : "invalid", r.message);
   return {
     sql: r.sql,
-    files: r.files.map((uri, i) => ({ name: `gf_src_${i}.parquet`, url: sources[uri].url, uri, access: sources[uri].access ?? "range" })),
+    files: r.files.map((uri, i) => ({
+      name: `gf_src_${i}.parquet`,
+      url: sources[uri].url,
+      uri,
+      access: sources[uri].access ?? "range",
+      ...(sources[uri].shards ? { shards: sources[uri].shards } : {}),
+    })),
   };
 }
