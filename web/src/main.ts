@@ -23,6 +23,7 @@ import { lengthOf } from "./measure.ts";
 import { loadDem } from "./raster.ts";
 import { BUILDINGS, DEM, DEMOS, NEAR_DISTANCE_M, PLACES, demoRequests, splitPlaces, topGroup } from "./demos.ts";
 import { BASE_URL, STATIC_PROFILE, STATIC_START_VIEW } from "./static/profile.ts";
+import { fitTarget, startView } from "./vietnam.ts";
 import { installStaticGateway } from "./static/gateway.ts";
 import { LayerUnavailable } from "./static/errors.ts";
 import type { DemoSpec } from "./demos.ts";
@@ -319,7 +320,7 @@ const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const BG_STYLE: maplibregl.StyleSpecification = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": css.getPropertyValue("--bg").trim() || "#14181c" } }] };
 // static browser profile: the page answers its own /api/* calls (before the first one is made); the full stack talks to the Gateway
 const gatewayReady: Promise<void> = STATIC_PROFILE ? installStaticGateway(BASE_URL) : Promise.resolve();
-const map = new maplibregl.Map({ container: mapDiv, style: BG_STYLE, center: [105, 14], zoom: 5, attributionControl: false });
+const map = new maplibregl.Map({ container: mapDiv, style: BG_STYLE, ...startView(mapDiv.clientWidth, mapDiv.clientHeight), attributionControl: false });
 map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
 map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-right");
@@ -453,6 +454,13 @@ async function selectSource(s: SourceMeta) {
   S.settling = true;
   try { await openSource(s); } finally { S.settling = false; }
 }
+/** "Go to this layer": only ever to an extent inside Vietnam's sanity box. A bad extent (one outlier geometry) falls back to the reviewed start view instead of zooming out to a region. */
+function fitLayer(bbox: readonly number[], o: { padding: number; maxZoom?: number }) {
+  const t = fitTarget(bbox);
+  if (t.adjusted) log(`fit-to-layer: ${t.reason}; showing the Vietnam start view instead`);
+  // `maxZoom: undefined` would override MapLibre's default and turn the camera into NaN: pass it only when there is one
+  map.fitBounds([[t.bounds[0], t.bounds[1]], [t.bounds[2], t.bounds[3]]], { padding: o.padding, duration: 0, ...(o.maxZoom !== undefined ? { maxZoom: o.maxZoom } : {}) });
+}
 async function openSource(s: SourceMeta) {
   S.cur = s;
   S.filter.column = s.columns.find((c) => c.type === "utf8")?.name ?? "";
@@ -462,7 +470,7 @@ async function openSource(s: SourceMeta) {
     const [x0, y0, x1, y1] = s.bbox;
     setData("extent", { type: "FeatureCollection", features: [rect(x0, y0, x1, y1, {})] }); // debug overlay only
     if (STATIC_PROFILE) map.jumpTo(STATIC_START_VIEW);
-    else map.fitBounds([[x0, y0], [x1, y1]], { padding: 40, duration: 0 });
+    else fitLayer([x0, y0, x1, y1], { padding: 40 });
   }
   try {
     const rg = await api<{ row_groups: { index: number; bbox: number[] | null }[] }>(`/api/sources/${encodeURIComponent(s.id)}/row_groups`);
@@ -779,7 +787,7 @@ function renderCatalogDataset(d: CatalogDataset): HTMLElement {
     (source || isRaster) ? el("div", { class: "layer-controls" },
       el("label", { class: "check" }, el("input", { type: "checkbox", checked: state.visible, "aria-label": t("catalog.layer_visible", { name: d.title[getLang()] }), onchange: toggle }), t("catalog.visible")),
       el("input", { type: "range", min: "0", max: "100", step: "10", value: String(state.opacity * 100), "aria-label": t("catalog.opacity", { name: d.title[getLang()] }), "aria-valuetext": `${state.opacity * 100}%`, onchange: opacity }),
-      el("button", { type: "button", title: t("catalog.zoom_to"), onclick: () => map.fitBounds(d.coverage.bbox, { padding: 40, maxZoom: 14, duration: 0 }) }, t("catalog.zoom_to")),
+      el("button", { type: "button", title: t("catalog.zoom_to"), onclick: () => fitLayer(d.coverage.bbox, { padding: 40, maxZoom: 14 }) }, t("catalog.zoom_to")),
       el("span", { class: "meta layer-status", role: "status" }, !state.visible ? "" : isRaster ? rasterStatus(d) : policy.hint ? t("catalog.zoom_in") : info?.loading ? t("catalog.loading") : info?.sampling ? t("catalog.sample_status", { shown: fmtInt(info.sampling.shown), total: fmtInt(info.sampling.total) }) : info?.limitHit ? t("catalog.limit_hit", { n: policy.limit }) : info ? t("catalog.features", { n: fmtInt(info.features) }) : "")) : null,
     el("button", { type: "button", class: "more", "aria-expanded": details, onclick: () => { details ? S.expanded.delete(d.id) : S.expanded.add(d.id); renderLeft(); } }, t(details ? "data.hide_details" : "data.details")),
     details ? el("table", { class: "kv detail", "data-testid": "dataset-detail" },
